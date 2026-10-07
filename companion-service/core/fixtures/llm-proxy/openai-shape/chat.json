@@ -1,0 +1,14 @@
+{
+  "id": "chatcmpl-fixture-1",
+  "object": "chat.completion",
+  "created": 1790000000,
+  "model": "qwen3.8-flash-next",
+  "choices": [
+    {
+      "index": 0,
+      "message": { "role": "assistant", "content": "{\"worth\": true, \"reason\": \"The PR is yours and conflicts with master.\"}" },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": { "prompt_tokens": 212, "completion_tokens": 19, "total_tokens": 231 }
+}

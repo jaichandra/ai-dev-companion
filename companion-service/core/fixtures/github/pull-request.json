@@ -1,0 +1,45 @@
+{
+  "url": "https://api.github.com/repos/Octo/hello/pulls/42",
+  "number": 42,
+  "state": "open",
+  "locked": false,
+  "title": "Fix the flaky login test",
+  "draft": false,
+  "html_url": "https://github.com/Octo/hello/pull/42",
+  "user": {
+    "login": "Hubot"
+  },
+  "merged": false,
+  "merged_at": null,
+  "mergeable": false,
+  "mergeable_state": "dirty",
+  "comments": 3,
+  "review_comments": 5,
+  "updated_at": "2026-09-30T12:34:56Z",
+  "head": {
+    "ref": "fix/login-test",
+    "sha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+    "repo": {
+      "id": 101,
+      "name": "hello",
+      "full_name": "Octo/hello",
+      "owner": {
+        "login": "Octo"
+      },
+      "default_branch": "main"
+    }
+  },
+  "base": {
+    "ref": "main",
+    "sha": "0f1e2d3c4b5a69788796a5b4c3d2e1f001122334",
+    "repo": {
+      "id": 101,
+      "name": "hello",
+      "full_name": "Octo/hello",
+      "owner": {
+        "login": "Octo"
+      },
+      "default_branch": "main"
+    }
+  }
+}

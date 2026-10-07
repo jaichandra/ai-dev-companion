@@ -1,0 +1,31 @@
+{
+  "name": "bitbucket-ai-companion",
+  "version": "0.2.0",
+  "description": "Local companion service that runs git + headless Claude jobs, and Jira REST calls, on behalf of the AI Dev Companion Chrome extension.",
+  "private": true,
+  "type": "commonjs",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc -p .",
+    "prestart": "npm run build",
+    "start": "node dist/server.js",
+    "dev": "ts-node server.ts",
+    "setup": "node setup.js",
+    "doctor": "node doctor.js",
+    "service:install": "npm run build && node service.js install",
+    "service:uninstall": "node service.js uninstall",
+    "service:status": "node service.js status",
+    "review-worktrees:provision": "node provision-review-worktrees.js",
+    "test": "node --test environment.test.js core/providers.test.js core/github-normalize.test.js core/github-endpoints.test.js core/github.test.js core/pr-status.test.js core/packs.test.js core/extension-manifest.test.js core/registry.test.js core/git-host.test.js core/pr-features.test.js core/jenkins-urls.test.js core/data-folder.test.js core/cursor-deeplink.test.js core/cli-args.test.js core/mcp-client.test.js core/cli-format.test.js core/cli-run.test.js core/cli-link.test.js core/prereqs.test.js core/review-session.test.js core/terminal-focus.test.js core/launchd.test.js core/feature-registry.test.js core/review-worktree.test.js core/updater.test.js core/settings.test.js core/paths.test.js core/targets.test.js core/target-patterns.test.js core/job-files.test.js core/job-cleanup.test.js core/integrity-baselines.test.js core/process-group.test.js core/claude-args.test.js core/worktree-integrity.test.js core/credential-store.test.js core/external-tokens.test.js core/token-cache.test.js core/session-vault.test.js core/edit-path-policy.test.js core/edit-guard.test.js core/read-guard.test.js core/bash-command-policy.test.js core/bash-guard.test.js core/claude-stream.test.js core/line-splitter.test.js core/location-parse.test.js core/location-resolve.test.js core/editor-url.test.js core/mcp-tool-classifier.test.js core/mcp-guard.test.js core/resume.test.js core/bitbucket-normalize.test.js core/bitbucket-contract.test.js core/scope-key.test.js core/mcp-tools.test.js core/mcp-auth.test.js core/mcp-registration.test.js core/history-schema.test.js core/history-db.test.js core/history-record.test.js core/history-vectors.test.js core/host-guard.test.js core/diagnose-prompt.test.js core/url-parser-twins.test.js core/open-location.test.js core/risk-facts.test.js core/bitbucket-ticket.test.js core/bitbucket-wrappers.test.js core/jira-workflow.test.js core/ticket-git.test.js core/session-cwd.test.js core/analysis-checkout.test.js core/feature-actions.test.js core/resume-session.test.js core/schedule.test.js core/route-policy.test.js core/llm-proxy.test.js core/watchers.test.js core/push-risk.test.js core/git-hook.test.js core/notifications.test.js core/settings-background.test.js core/prewarm-history.test.js core/scheduler.test.js core/bitbucket-dashboard.test.js core/watcher-runner.test.js core/background-routes.test.js core/mcp-background-tools.test.js core/mcp-memory-tools.test.js core/mcp-stdio.test.js core/plugin-files.test.js core/cli-background.test.js core/cli-memory.test.js core/background-wiring.test.js core/similar.test.js core/embed-task.test.js core/similar-search.test.js core/link-guard.test.js setup.test.js doctor.test.js features/create-jira-subtasks/plan.test.js features/review-in-editor/plan.test.js features/analyze-issue/plan.test.js features/summarize-comments/plan.test.js features/resolve-conflict/plan.test.js features/address-review-comments/plan.test.js features/ticket-workspace/plan.test.js features/ticket-workspace/workspace.test.js features/ticket-to-pr/plan.test.js features/ticket-to-pr/start-fix.test.js features/ticket-to-pr/review-mover.test.js features/digest/plan.test.js features/digest/digest.test.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.1",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.14.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
+  }
+}

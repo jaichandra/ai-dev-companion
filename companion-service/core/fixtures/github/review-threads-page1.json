@@ -1,0 +1,90 @@
+{
+  "data": {
+    "repository": {
+      "pullRequest": {
+        "reviewThreads": {
+          "pageInfo": {
+            "hasNextPage": true,
+            "endCursor": "CURSOR1"
+          },
+          "nodes": [
+            {
+              "isResolved": false,
+              "isOutdated": false,
+              "path": "src/login.js",
+              "line": 42,
+              "originalLine": 40,
+              "diffSide": "RIGHT",
+              "comments": {
+                "nodes": [
+                  {
+                    "databaseId": 1001,
+                    "body": "Please handle the empty token.",
+                    "createdAt": "2026-09-29T10:00:00Z",
+                    "author": {
+                      "login": "Reviewer-One"
+                    },
+                    "replyTo": null
+                  },
+                  {
+                    "databaseId": 1002,
+                    "body": "Good point, will do.",
+                    "createdAt": "2026-09-29T10:05:00Z",
+                    "author": {
+                      "login": "Hubot"
+                    },
+                    "replyTo": {
+                      "databaseId": 1001
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "isResolved": true,
+              "isOutdated": false,
+              "path": "src/util.js",
+              "line": 7,
+              "originalLine": 7,
+              "diffSide": "RIGHT",
+              "comments": {
+                "nodes": [
+                  {
+                    "databaseId": 1003,
+                    "body": "Nit: rename this.",
+                    "createdAt": "2026-09-29T10:10:00Z",
+                    "author": {
+                      "login": "Reviewer-One"
+                    },
+                    "replyTo": null
+                  }
+                ]
+              }
+            },
+            {
+              "isResolved": false,
+              "isOutdated": true,
+              "path": "src/old.js",
+              "line": null,
+              "originalLine": 12,
+              "diffSide": "RIGHT",
+              "comments": {
+                "nodes": [
+                  {
+                    "databaseId": 1004,
+                    "body": "This moved.",
+                    "createdAt": "2026-09-29T10:20:00Z",
+                    "author": {
+                      "login": "Reviewer-Two"
+                    },
+                    "replyTo": null
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

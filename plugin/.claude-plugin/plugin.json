@@ -1,0 +1,5 @@
+{
+  "name": "ai-companion",
+  "description": "Talk to your AI Dev Companion companion from Claude Code: tracked jobs, the digest, ticket workspaces and more, over the companion's MCP server.",
+  "version": "0.2.0"
+}

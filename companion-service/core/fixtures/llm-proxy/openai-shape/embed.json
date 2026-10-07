@@ -1,0 +1,9 @@
+{
+  "object": "list",
+  "model": "Qwen3-Embedding-8B",
+  "data": [
+    { "object": "embedding", "index": 1, "embedding": [0.25, -0.5, 0.125] },
+    { "object": "embedding", "index": 0, "embedding": [0.1, 0.2, 0.3] }
+  ],
+  "usage": { "prompt_tokens": 6, "total_tokens": 6 }
+}

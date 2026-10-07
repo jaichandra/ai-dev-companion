@@ -1,0 +1,56 @@
+{
+  "id": 42,
+  "version": 3,
+  "title": "Fix widget rendering on Safari",
+  "description": "Addresses the flicker reported in the design review.",
+  "state": "OPEN",
+  "open": true,
+  "closed": false,
+  "createdDate": 1706000000000,
+  "updatedDate": 1706100000000,
+  "fromRef": {
+    "id": "refs/heads/fix/widget-flicker",
+    "displayId": "fix/widget-flicker",
+    "latestCommit": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+    "repository": {
+      "slug": "sample-app",
+      "project": { "key": "ACME" }
+    }
+  },
+  "toRef": {
+    "id": "refs/heads/master",
+    "displayId": "master",
+    "latestCommit": "0f1e2d3c4b5a69788796a5b4c3d2e1f0a9b8c7d6",
+    "repository": {
+      "slug": "sample-app",
+      "project": { "key": "ACME" }
+    }
+  },
+  "locked": false,
+  "author": {
+    "user": {
+      "name": "jsmith",
+      "emailAddress": "jsmith@example.com",
+      "id": 101,
+      "displayName": "Jane Smith",
+      "active": true,
+      "slug": "jsmith",
+      "type": "NORMAL"
+    },
+    "role": "AUTHOR",
+    "approved": false,
+    "status": "UNAPPROVED"
+  },
+  "reviewers": [],
+  "participants": [],
+  "properties": {
+    "openTaskCount": 1,
+    "resolvedTaskCount": 2,
+    "commentCount": 8
+  },
+  "links": {
+    "self": [
+      { "href": "https://bitbucket.example.com/projects/ACME/repos/sample-app/pull-requests/42" }
+    ]
+  }
+}

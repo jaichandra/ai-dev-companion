@@ -1,0 +1,54 @@
+{
+  "manifest_version": 3,
+  "name": "AI Dev Companion",
+  "version": "0.2.0",
+  "description": "Offers AI-assisted actions on Bitbucket Server, Jira and Jenkins pages (merge-conflict resolution, Jira subtask creation, PR review checkouts, pre-deployment build stats) via a local companion service. Internal tool — talks to internal Bitbucket/Jira/Jenkins hosts and a localhost companion, not for the Chrome Web Store.",
+  "permissions": [
+    "storage",
+    "cookies",
+    "alarms",
+    "contextMenus",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://jira.example.com/*",
+    "https://jenkins.example.com/*",
+    "https://bitbucket.example.com/*",
+    "http://127.0.0.1/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://jira.example.com/*",
+        "https://jenkins.example.com/*",
+        "https://bitbucket.example.com/*"
+      ],
+      "js": [
+        "diff-viewer.js",
+        "open-in-editor.js",
+        "settings-panel.js",
+        "target-patterns.js",
+        "jenkins-urls.js",
+        "registry.js",
+        "ui-kit.js",
+        "jira-helpers.js",
+        "git-host.js",
+        "features/resolve-conflict.js",
+        "features/address-review-comments.js",
+        "features/create-jira-subtasks.js",
+        "features/diagnose-build.js",
+        "features/review-in-editor.js",
+        "features/analyze-issue.js",
+        "features/ticket-workspace.js",
+        "features/ticket-to-pr.js",
+        "features/summarize-comments.js",
+        "features/digest.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

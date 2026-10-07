@@ -1,0 +1,17 @@
+{
+  "state": "pending",
+  "statuses": [
+    {
+      "context": "ci/legacy",
+      "state": "pending",
+      "target_url": "https://ci.example.com/1",
+      "updated_at": "2026-09-30T10:03:00Z"
+    },
+    {
+      "context": "ci/ok",
+      "state": "success",
+      "target_url": null,
+      "updated_at": "2026-09-30T10:04:00Z"
+    }
+  ]
+}

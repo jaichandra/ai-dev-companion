@@ -1,0 +1,32 @@
+{
+  "total_count": 3,
+  "check_runs": [
+    {
+      "id": 11,
+      "name": "build",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Octo/hello/runs/11",
+      "started_at": "2026-09-30T10:00:00Z",
+      "completed_at": "2026-09-30T10:05:00Z"
+    },
+    {
+      "id": 12,
+      "name": "lint",
+      "status": "completed",
+      "conclusion": "failure",
+      "html_url": "https://github.com/Octo/hello/runs/12",
+      "started_at": "2026-09-30T10:00:00Z",
+      "completed_at": "2026-09-30T10:02:00Z"
+    },
+    {
+      "id": 13,
+      "name": "e2e",
+      "status": "in_progress",
+      "conclusion": null,
+      "html_url": "https://github.com/Octo/hello/runs/13",
+      "started_at": "2026-09-30T10:01:00Z",
+      "completed_at": null
+    }
+  ]
+}

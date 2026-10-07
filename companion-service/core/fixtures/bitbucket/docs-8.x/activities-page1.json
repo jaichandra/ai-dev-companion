@@ -1,0 +1,220 @@
+{
+  "values": [
+    {
+      "id": 501,
+      "createdDate": 1706000000000,
+      "user": { "name": "jsmith", "slug": "jsmith", "displayName": "Jane Smith" },
+      "action": "OPENED"
+    },
+    {
+      "id": 502,
+      "createdDate": 1706000100000,
+      "user": { "name": "asmith", "slug": "asmith", "displayName": "Alice Smith" },
+      "action": "COMMENTED",
+      "commentAction": "ADDED",
+      "comment": {
+        "id": 1,
+        "version": 1,
+        "text": "Please rename this variable for clarity.",
+        "author": {
+          "name": "asmith",
+          "emailAddress": "asmith@example.com",
+          "id": 201,
+          "displayName": "Alice Smith",
+          "active": true,
+          "slug": "asmith",
+          "type": "NORMAL"
+        },
+        "createdDate": 1706000100000,
+        "state": "OPEN",
+        "severity": "NORMAL",
+        "threadResolved": false,
+        "comments": []
+      },
+      "commentAnchor": {
+        "fromHash": "0f1e2d3c4b5a69788796a5b4c3d2e1f0a9b8c7d6",
+        "toHash": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+        "path": "src/main/sample-app/widget.js",
+        "srcPath": "src/main/sample-app/widget.js",
+        "line": 42,
+        "lineType": "ADDED",
+        "fileType": "TO",
+        "diffType": "EFFECTIVE",
+        "orphaned": false
+      }
+    },
+    {
+      "id": 503,
+      "createdDate": 1706000200000,
+      "user": { "name": "bwhite", "slug": "bwhite", "displayName": "Bob White" },
+      "action": "COMMENTED",
+      "commentAction": "ADDED",
+      "comment": {
+        "id": 2,
+        "version": 1,
+        "text": "Looks fixed now, thanks!",
+        "author": {
+          "name": "bwhite",
+          "emailAddress": "bwhite@example.com",
+          "id": 202,
+          "displayName": "Bob White",
+          "active": true,
+          "slug": "bwhite",
+          "type": "NORMAL"
+        },
+        "createdDate": 1706000200000,
+        "state": "RESOLVED",
+        "severity": "NORMAL",
+        "threadResolved": true,
+        "comments": []
+      },
+      "commentAnchor": {
+        "fromHash": "0f1e2d3c4b5a69788796a5b4c3d2e1f0a9b8c7d6",
+        "toHash": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+        "path": "src/main/sample-app/widget.js",
+        "srcPath": "src/main/sample-app/widget.js",
+        "line": 10,
+        "lineType": "CONTEXT",
+        "fileType": "TO",
+        "diffType": "EFFECTIVE",
+        "orphaned": false
+      }
+    },
+    {
+      "id": 504,
+      "createdDate": 1706000300000,
+      "user": { "name": "ccole", "slug": "ccole", "displayName": "Carol Cole" },
+      "action": "COMMENTED",
+      "commentAction": "ADDED",
+      "comment": {
+        "id": 3,
+        "version": 1,
+        "text": "Must fix the null check before merge.",
+        "author": {
+          "name": "ccole",
+          "emailAddress": "ccole@example.com",
+          "id": 203,
+          "displayName": "Carol Cole",
+          "active": true,
+          "slug": "ccole",
+          "type": "NORMAL"
+        },
+        "createdDate": 1706000300000,
+        "state": "OPEN",
+        "severity": "BLOCKER",
+        "threadResolved": false,
+        "comments": []
+      },
+      "commentAnchor": {
+        "fromHash": "0f1e2d3c4b5a69788796a5b4c3d2e1f0a9b8c7d6",
+        "toHash": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+        "path": "src/main/sample-app/widget.js",
+        "srcPath": "src/main/sample-app/widget.js",
+        "line": 77,
+        "lineType": "CONTEXT",
+        "fileType": "TO",
+        "diffType": "EFFECTIVE",
+        "orphaned": false
+      }
+    },
+    {
+      "id": 505,
+      "createdDate": 1706000400000,
+      "user": { "name": "dpatel", "slug": "dpatel", "displayName": "Dev Patel" },
+      "action": "COMMENTED",
+      "commentAction": "ADDED",
+      "comment": {
+        "id": 4,
+        "version": 1,
+        "text": "Can you add a test for this branch?",
+        "author": {
+          "name": "dpatel",
+          "emailAddress": "dpatel@example.com",
+          "id": 204,
+          "displayName": "Dev Patel",
+          "active": true,
+          "slug": "dpatel",
+          "type": "NORMAL"
+        },
+        "createdDate": 1706000400000,
+        "state": "OPEN",
+        "severity": "NORMAL",
+        "threadResolved": false,
+        "comments": [
+          {
+            "id": 8,
+            "version": 1,
+            "text": "Good idea, added in the latest push.",
+            "author": {
+              "name": "asmith",
+              "emailAddress": "asmith@example.com",
+              "id": 201,
+              "displayName": "Alice Smith",
+              "active": true,
+              "slug": "asmith",
+              "type": "NORMAL"
+            },
+            "createdDate": 1706000450000,
+            "state": "OPEN",
+            "severity": "NORMAL",
+            "threadResolved": false,
+            "comments": []
+          }
+        ]
+      },
+      "commentAnchor": {
+        "fromHash": "0f1e2d3c4b5a69788796a5b4c3d2e1f0a9b8c7d6",
+        "toHash": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+        "path": "src/main/sample-app/widget.js",
+        "srcPath": "src/main/sample-app/widget.js",
+        "line": 30,
+        "lineType": "CONTEXT",
+        "fileType": "TO",
+        "diffType": "EFFECTIVE",
+        "orphaned": false
+      }
+    },
+    {
+      "id": 506,
+      "createdDate": 1706000500000,
+      "user": { "name": "erobles", "slug": "erobles", "displayName": "Erin Robles" },
+      "action": "COMMENTED",
+      "commentAction": "ADDED",
+      "comment": {
+        "id": 5,
+        "version": 1,
+        "text": "This code no longer exists on the current diff?",
+        "author": {
+          "name": "erobles",
+          "emailAddress": "erobles@example.com",
+          "id": 205,
+          "displayName": "Erin Robles",
+          "active": true,
+          "slug": "erobles",
+          "type": "NORMAL"
+        },
+        "createdDate": 1706000500000,
+        "state": "OPEN",
+        "severity": "NORMAL",
+        "threadResolved": false,
+        "comments": []
+      },
+      "commentAnchor": {
+        "fromHash": "0f1e2d3c4b5a69788796a5b4c3d2e1f0a9b8c7d6",
+        "toHash": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+        "path": "src/main/sample-app/widget.js",
+        "srcPath": "src/main/sample-app/widget.js",
+        "line": 15,
+        "lineType": "CONTEXT",
+        "fileType": "TO",
+        "diffType": "EFFECTIVE",
+        "orphaned": true
+      }
+    }
+  ],
+  "size": 6,
+  "isLastPage": false,
+  "start": 0,
+  "limit": 6,
+  "nextPageStart": 6
+}

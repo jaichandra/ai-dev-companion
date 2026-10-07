@@ -1,0 +1,11 @@
+{
+  "name": "ai-dev-companion",
+  "version": "0.2.0",
+  "description": "A local companion service and Chrome extension that add one-click AI actions (resolve merge conflicts, create subtasks, review, analyze, digest) to your own git host, issue tracker and CI pages. A framework: a distribution supplies the profile and packs for its own servers.",
+  "private": true,
+  "scripts": {
+    "test": "node --test scripts/assemble.test.js && npm --prefix companion-service test",
+    "build": "npm --prefix companion-service run build",
+    "test:example": "node scripts/test-example.js"
+  }
+}
