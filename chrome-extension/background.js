@@ -368,7 +368,7 @@ async function announceInbox() {
       {
         type: "basic",
         iconUrl: NOTIFICATION_ICON,
-        title: String(announce.title || "AI Dev Companion").slice(0, 120),
+        title: String(announce.title || chrome.runtime.getManifest().name).slice(0, 120),
         message: String(announce.message || "").slice(0, 400),
         priority: announce.urgent ? 2 : 0,
       },

@@ -1,6 +1,7 @@
 const test = require("node:test");
 const plan = require("./plan.js");
 const assert = require("node:assert/strict");
+const { PRODUCT_NAME } = require("../../core/product-name.js");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -317,7 +318,7 @@ test("formatAnalysisAsMarkdownComment builds readable Markdown with AI note", ()
       openQuestions: ["Is tenant X on a fork?"],
     },
   });
-  assert.match(body, /AI Dev Companion/);
+  assert.match(body, new RegExp(PRODUCT_NAME));
   assert.match(body, /### AI issue analysis — PROJ-1/);
   assert.match(body, /\*\*Summary:\*\* Null deref/);
   assert.match(body, /`PROJ\/sample-app`/);
@@ -384,7 +385,7 @@ test("formatAnalysisAsWikiComment still yields wiki via MD round-trip", () => {
       nextSteps: ["Add null guard"],
     },
   });
-  assert.match(body, /AI Dev Companion/);
+  assert.match(body, new RegExp(PRODUCT_NAME));
   assert.match(body, /h3\. AI issue analysis — PROJ-1/);
   assert.match(body, /Likely NPE/);
   assert.match(body, /# Add null guard/);
@@ -626,7 +627,7 @@ test("comment summary: prompt carries the analysis; assembled comment keeps the 
 
   const short = assembleSummaryComment({ issueKey: "PROJ-1", summaryText: "```markdown\n- NPE in Foo.bar\n```" });
   assert.match(short, /^### AI issue analysis — PROJ-1\n/);
-  assert.match(short, /AI Dev Companion/);
+  assert.match(short, new RegExp(PRODUCT_NAME));
   assert.match(short, /- NPE in Foo\.bar\n$/);
   assert.doesNotMatch(short, /```/);
 

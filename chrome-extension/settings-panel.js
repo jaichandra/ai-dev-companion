@@ -1159,7 +1159,7 @@
 
     // ---- About ----
     const SUPPORT_EMAIL = branding.supportEmail || "";
-    const about = block(aboutPage, "AI Dev Companion");
+    const about = block(aboutPage, chrome.runtime.getManifest().name);
     let version = "unknown";
     try {
       version = chrome.runtime.getManifest().version;
@@ -1177,7 +1177,7 @@
     aboutItem("Version", version);
     if (SUPPORT_EMAIL) {
       const mail = el("a", "settings-link", SUPPORT_EMAIL);
-      mail.href = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`AI Dev Companion ${version} support`)}`;
+      mail.href = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`${chrome.runtime.getManifest().name} ${version} support`)}`;
       aboutItem("Support", mail);
     }
 
@@ -1260,7 +1260,7 @@
           } else {
             updateStatus.textContent =
               `Updated to v${res.info.current}. Click "Reload extension and page" to finish. ` +
-              "If it doesn't reload, open chrome://extensions and click the reload (↻) icon on AI Dev Companion. " +
+              "If it doesn't reload, open chrome://extensions and click the reload (↻) icon on " + chrome.runtime.getManifest().name + ". " +
               "Refresh any other open Bitbucket, Jira or Jenkins tabs too.";
             updateBtn.textContent = "Reload extension and page";
             updateBtn.classList.add("go");

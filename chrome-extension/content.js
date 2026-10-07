@@ -3272,7 +3272,7 @@
 
   function openUpdatePanel(offer) {
     const { info, extensionVersion } = offer;
-    const { body, footer, close } = openOverlayPanel("Update AI Dev Companion");
+    const { body, footer, close } = openOverlayPanel(`Update ${chrome.runtime.getManifest().name}`);
     const thisPanel = panelHost;
 
     const wrap = document.createElement("div");
@@ -3288,14 +3288,14 @@
       nextTitle = "Next step";
       nextText =
         'Click "Reload extension and page". ' +
-        "If it doesn't reload, open chrome://extensions and click the reload (↻) icon on AI Dev Companion, then refresh this page.";
+        "If it doesn't reload, open chrome://extensions and click the reload (↻) icon on " + chrome.runtime.getManifest().name + ", then refresh this page.";
     } else if (offer.kind === "restart") {
       headline.textContent = `v${info.update.to} is installed — restart the companion service`;
       nextTitle = "Next step";
       nextText =
         "The service isn't running in the background, so restart it yourself " +
         "(cd ~/ai-dev-companion/companion-service && npm start), then click \"Reload extension and page\". " +
-        "If it doesn't reload, open chrome://extensions and click the reload (↻) icon on AI Dev Companion, then refresh this page.";
+        "If it doesn't reload, open chrome://extensions and click the reload (↻) icon on " + chrome.runtime.getManifest().name + ", then refresh this page.";
     } else {
       headline.textContent = `Version ${target} is available`;
       nextText =
@@ -3399,7 +3399,7 @@
           status.textContent =
             `${run.label} It isn't running in the background, so restart it yourself ` +
             "(cd ~/ai-dev-companion/companion-service && npm start), then click \"Reload extension and page\". " +
-        "If it doesn't reload, open chrome://extensions and click the reload (↻) icon on AI Dev Companion, then refresh this page.";
+        "If it doesn't reload, open chrome://extensions and click the reload (↻) icon on " + chrome.runtime.getManifest().name + ", then refresh this page.";
           reloadBtn.style.display = "";
           return;
         } else if (compareVersions(res.info.current, run.to) >= 0) {

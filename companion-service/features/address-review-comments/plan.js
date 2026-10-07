@@ -13,9 +13,10 @@ const ACTIONS = ["fixed", "declined", "needs-discussion"];
 /** Bitbucket accepts much longer comments, but a reply this tool posts is
  * a short note on one review comment — anything past this is far more
  * likely a paste accident than an intended reply. */
+const { PRODUCT_NAME } = require("../../core/product-name.js");
 const REPLY_TEXT_MAX = 4000;
 
-const REPLY_ATTRIBUTION = "_(via AI Dev Companion)_";
+const REPLY_ATTRIBUTION = `_(via ${PRODUCT_NAME})_`;
 
 const REPLY_PREFIX = {
   fixed: "Addressed",
