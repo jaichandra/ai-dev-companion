@@ -5,6 +5,7 @@ const os = require("os");
 const path = require("path");
 const { execFileSync } = require("child_process");
 const { reviewWorktreePath, isRegisteredWorktree, provisionReviewWorktree } = require("./review-worktree.js");
+const { APP_SLUG } = require("./app-slug.js");
 
 // Worktrees live under $HOME/.ai-dev-companion — keep tests out of the real one.
 process.env.HOME = fs.mkdtempSync(path.join(os.tmpdir(), "review-worktree-home-"));
@@ -36,7 +37,7 @@ function cloneFrom(sourceDir, destDir) {
 
 test("reviewWorktreePath is <stateDir>/<repo>.worktrees/pr-review", () => {
   const p = reviewWorktreePath("/Users/x/gitviews/sample-app");
-  assert.equal(p, path.join(os.homedir(), ".ai-dev-companion", "sample-app.worktrees", "pr-review"));
+  assert.equal(p, path.join(os.homedir(), `.${APP_SLUG}`, "sample-app.worktrees", "pr-review"));
 });
 
 test("isRegisteredWorktree is false before anything has been provisioned", async () => {

@@ -5,6 +5,7 @@ const os = require("os");
 const path = require("path");
 const { execFileSync } = require("child_process");
 const tg = require("./ticket-git.js");
+const { APP_SLUG } = require("./app-slug.js");
 
 const git = (cwd, ...args) => execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
 
@@ -29,7 +30,7 @@ function makeRepos() {
   git(clone, "config", "user.name", "T");
   // Worktrees live under the state dir in $HOME — point it into the temp dir.
   process.env.HOME = path.join(root, "home");
-  const wtRoot = path.join(root, "home", ".ai-dev-companion", "sample-app.worktrees");
+  const wtRoot = path.join(root, "home", `.${APP_SLUG}`, "sample-app.worktrees");
   return { root, origin, clone, wtRoot, cleanup: () => fs.rmSync(root, { recursive: true, force: true }) };
 }
 
@@ -45,7 +46,7 @@ test("keyPattern matches the key at a boundary, case-insensitively, and not a lo
 });
 
 test("ticketWorktreePath is <stateDir>/<repo>.worktrees/<KEY>", () => {
-  assert.equal(tg.ticketWorktreePath("/Users/x/gitviews/sample-app", "PROJ-7"), path.join(os.homedir(), ".ai-dev-companion", "sample-app.worktrees", "PROJ-7"));
+  assert.equal(tg.ticketWorktreePath("/Users/x/gitviews/sample-app", "PROJ-7"), path.join(os.homedir(), `.${APP_SLUG}`, "sample-app.worktrees", "PROJ-7"));
   assert.throws(() => tg.ticketWorktreePath("/Users/x/sample-app", "../../etc"));
 });
 

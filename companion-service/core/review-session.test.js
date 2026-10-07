@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
+const { APP_SLUG } = require("./app-slug.js");
 const {
   START_TIMEOUT_MS,
   stateDir,
@@ -128,7 +129,7 @@ test("stateDir creates a private directory and createStatusFile an empty 0600 fi
 test("stateDir tightens a directory that's readable by others", (t) => {
   const base = fs.mkdtempSync(path.join(os.tmpdir(), "review-session-test-"));
   t.after(() => fs.rmSync(base, { recursive: true, force: true }));
-  fs.mkdirSync(path.join(base, "ai-dev-companion-reviews"), { mode: 0o755 });
+  fs.mkdirSync(path.join(base, `${APP_SLUG}-reviews`), { mode: 0o755 });
   assert.equal(fs.statSync(stateDir(base)).mode & 0o777, 0o700);
 });
 
@@ -136,7 +137,7 @@ test("stateDir refuses a symlink", (t) => {
   const base = fs.mkdtempSync(path.join(os.tmpdir(), "review-session-test-"));
   t.after(() => fs.rmSync(base, { recursive: true, force: true }));
   fs.mkdirSync(path.join(base, "elsewhere"));
-  fs.symlinkSync(path.join(base, "elsewhere"), path.join(base, "ai-dev-companion-reviews"));
+  fs.symlinkSync(path.join(base, "elsewhere"), path.join(base, `${APP_SLUG}-reviews`));
   assert.throws(() => stateDir(base), /refusing/);
 });
 

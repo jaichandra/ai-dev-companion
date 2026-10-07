@@ -18,7 +18,8 @@ const { execFileSync } = require("child_process");
 
 // Overridable so a second copy (e.g. a dev checkout) can run as its own
 // job without replacing the installed one.
-const LABEL = process.env.AI_DEV_COMPANION_SERVICE_LABEL || "com.ai-dev-companion.companion-service";
+const { APP_SLUG } = require("./app-slug.js");
+const LABEL = process.env.AI_DEV_COMPANION_SERVICE_LABEL || `com.${APP_SLUG}.companion-service`;
 const COMPANION_SERVICE_DIR = path.join(__dirname, "..");
 
 function plistPath() {

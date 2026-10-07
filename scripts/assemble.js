@@ -86,6 +86,7 @@ function assemble({ frameworkDir, dest, rootDir, rootSkip = [], overlays = [], n
   }
   if (version) stampVersion(dest, version);
   regenerateManifest(dest);
+  stampPluginSlug(dest);
   return dest;
 }
 
@@ -106,6 +107,15 @@ function regenerateManifest(dest) {
   const extensionDir = path.join(dest, "chrome-extension");
   if (!fs.existsSync(tool) || !fs.existsSync(path.join(extensionDir, "manifest.json"))) return;
   require(tool).writeManifest(extensionDir, {});
+}
+
+/** Writes the profile's app slug next to the plugin's MCP launcher, which can't read the profile itself:
+ * it needs it to find the installed companion (~/<slug>). */
+function stampPluginSlug(dest) {
+  const slugModule = path.join(dest, "companion-service", "core", "app-slug.js");
+  const binDir = path.join(dest, "plugin", "bin");
+  if (!fs.existsSync(slugModule) || !fs.existsSync(binDir)) return;
+  fs.writeFileSync(path.join(binDir, "app-slug.json"), `${JSON.stringify({ appSlug: require(slugModule).APP_SLUG }, null, 2)}\n`);
 }
 
 module.exports = { assemble, FRAMEWORK_DIRS };

@@ -106,7 +106,7 @@ function newLogPath(home = os.homedir()) {
 /** Where install.js always installs to; only a copy running from here can
  * update itself (a dev checkout run with `npm start` can't). */
 function stableInstallDir() {
-  return path.join(os.homedir(), "ai-dev-companion");
+  return path.join(os.homedir(), require("./app-slug.js").APP_SLUG);
 }
 
 /** "0.10.2" > "0.9.9". Missing parts count as 0; anything after "-" or "+"

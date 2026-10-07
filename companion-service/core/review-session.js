@@ -23,7 +23,7 @@ const path = require("path");
 const { execFile } = require("child_process");
 const { isValidTerminalLocation } = require("./terminal-focus.js");
 
-const STATE_DIR_NAME = "ai-dev-companion-reviews";
+const STATE_DIR_NAME = `${require("./app-slug.js").APP_SLUG}-reviews`;
 const STALE_MS = 24 * 60 * 60 * 1000;
 /** How long the terminal gets to start sourcing the script before a
  * review with no shell record counts as never having started. */

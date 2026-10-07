@@ -12,7 +12,9 @@ const os = require("os");
 const path = require("path");
 const { execFileSync } = require("child_process");
 
-const STATE_DIR_NAME = ".ai-dev-companion";
+const { APP_SLUG } = require("./app-slug.js");
+
+const STATE_DIR_NAME = `.${APP_SLUG}`;
 const LEGACY_STATE_DIR_NAME = ".bitbucket-ai-companion";
 
 function stateDir(home = os.homedir()) {

@@ -4,6 +4,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const paths = require("./paths.js");
+const { APP_SLUG } = require("./app-slug.js");
 
 /** A fresh temp `home` for one test, cleaned up by the caller. */
 function tempHome() {
@@ -22,9 +23,9 @@ function makeFakeWorktree(home, dirName, repo, id) {
 }
 
 test("stateDir and legacyStateDir join the state dir name onto home", () => {
-  assert.equal(paths.stateDir("/h"), path.join("/h", ".ai-dev-companion"));
+  assert.equal(paths.stateDir("/h"), path.join("/h", `.${APP_SLUG}`));
   assert.equal(paths.legacyStateDir("/h"), path.join("/h", ".bitbucket-ai-companion"));
-  assert.equal(paths.STATE_DIR_NAME, ".ai-dev-companion");
+  assert.equal(paths.STATE_DIR_NAME, `.${APP_SLUG}`);
   assert.equal(paths.LEGACY_STATE_DIR_NAME, ".bitbucket-ai-companion");
 });
 
