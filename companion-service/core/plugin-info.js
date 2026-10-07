@@ -3,7 +3,9 @@
 // prints, and — for doctor — whether the plugin is installed and enabled,
 // read from Claude Code's own files. Pure: callers pass the file texts in.
 const PLUGIN_NAME = "ai-companion";
-const MARKETPLACE_NAME = "ai-dev-companion";
+// The marketplace is the repo that holds .claude-plugin/marketplace.json, so a distribution names it
+// in its profile (branding.marketplaceName); the framework's own repo is ai-dev-companion.
+const MARKETPLACE_NAME = require("../environment.js").branding.marketplaceName || "ai-dev-companion";
 const PLUGIN_ID = `${PLUGIN_NAME}@${MARKETPLACE_NAME}`;
 
 /** What `node install.js --plugin` prints: nothing is installed, fetched or written. */
