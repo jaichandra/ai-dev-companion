@@ -1,6 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const path = require("path");
+const { PRODUCT_NAME } = require("../../core/product-name.js");
 const {
   REPLY_TEXT_MAX,
   validatePayload,
@@ -296,20 +297,20 @@ test("parseAddressReport drops unknown ids, invalid actions and duplicates; norm
 // ---- buildReplyText / defaultReplies ----
 
 test("buildReplyText uses the exact wording per action and ends with the attribution", () => {
-  assert.equal(buildReplyText({ action: "fixed", note: "renamed it" }), "Addressed: renamed it\n\n_(via AI Dev Companion)_");
-  assert.equal(buildReplyText({ action: "declined", note: "on purpose" }), "Not changed: on purpose\n\n_(via AI Dev Companion)_");
+  assert.equal(buildReplyText({ action: "fixed", note: "renamed it" }), `Addressed: renamed it\n\n_(via ${PRODUCT_NAME})_`);
+  assert.equal(buildReplyText({ action: "declined", note: "on purpose" }), `Not changed: on purpose\n\n_(via ${PRODUCT_NAME})_`);
   assert.equal(
     buildReplyText({ action: "needs-discussion", note: "which one?" }),
-    "Question: which one?\n\n_(via AI Dev Companion)_",
+    `Question: which one?\n\n_(via ${PRODUCT_NAME})_`,
   );
   for (const action of ["fixed", "declined", "needs-discussion"]) {
-    assert.ok(buildReplyText({ action, note: "x" }).endsWith("_(via AI Dev Companion)_"));
+    assert.ok(buildReplyText({ action, note: "x" }).endsWith(`_(via ${PRODUCT_NAME})_`));
   }
 });
 
 test("defaultReplies builds one {commentId, action, text} per report entry, [] for no report", () => {
   assert.deepEqual(defaultReplies([{ commentId: 1, action: "fixed", note: "n" }]), [
-    { commentId: 1, action: "fixed", text: "Addressed: n\n\n_(via AI Dev Companion)_" },
+    { commentId: 1, action: "fixed", text: `Addressed: n\n\n_(via ${PRODUCT_NAME})_` },
   ]);
   assert.deepEqual(defaultReplies(null), []);
 });

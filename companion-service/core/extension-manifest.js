@@ -6,7 +6,7 @@
 // The checked-in chrome-extension/manifest.json is the output for the default
 // profile and config (a test keeps the two equal); setup.js rewrites it in the copy
 // it runs from, so an install or update always ends with the right hosts. Only the
-// host lists and the script list are generated: the name, version, permissions and
+// host lists, the script list and the name (the profile's product name) are generated: the version, permissions and
 // background worker are read back from the existing file, so a version bump stays
 // a one-place edit. Plain JS with no dependencies beyond the profile and packs
 // (setup.js and doctor.js require it without a build).
@@ -14,6 +14,7 @@ const fs = require("fs");
 const path = require("path");
 const environment = require("../environment.js");
 const packs = require("./packs.js");
+const { PRODUCT_NAME } = require("./product-name.js");
 
 /** Scripts every install loads, in order, before any feature file: they share one
  * global scope, and the registry must exist before the features register. */
@@ -109,7 +110,7 @@ function contentScripts() {
 
 /** `base` (the existing manifest) with the generated fields filled in. */
 function buildManifest(base, config) {
-  const manifest = { ...base, host_permissions: [...hostPatterns(config), LOCAL_HOST] };
+  const manifest = { ...base, name: PRODUCT_NAME, host_permissions: [...hostPatterns(config), LOCAL_HOST] };
   const [first = {}, ...rest] = base.content_scripts || [];
   manifest.content_scripts = [{ ...first, matches: matchPatterns(config), js: contentScripts() }, ...rest];
   return manifest;

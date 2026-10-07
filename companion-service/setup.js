@@ -16,6 +16,7 @@
 //   node setup.js                 full interactive run
 //   node setup.js --no-service    skip building/starting the service
 const fs = require("fs");
+const { PRODUCT_NAME } = require("./core/product-name.js");
 const os = require("os");
 const path = require("path");
 const readline = require("readline");
@@ -561,7 +562,7 @@ async function connectChrome(rl, config, serviceUp) {
       "     (It's on your clipboard — in the folder dialog press Cmd+Shift+G, paste, press Enter.)",
     );
   }
-  console.log("\nAlready loaded it before? Click the ↻ reload icon on AI Dev Companion there,");
+  console.log(`\nAlready loaded it before? Click the ↻ reload icon on ${PRODUCT_NAME} there,`);
   console.log("then refresh any open Bitbucket/Jira/Jenkins tabs.\n");
 
   if (IS_MAC) {
@@ -620,7 +621,7 @@ function nonInteractiveConfig(existing, discover = discoverRepos) {
  * the service itself. Never opens a readline — stdin may not be a terminal.
  */
 async function runNonInteractive(skipService) {
-  console.log("== AI Dev Companion setup (keeping your settings) ==\n");
+  console.log(`== ${PRODUCT_NAME} setup (keeping your settings) ==\n`);
   const config = nonInteractiveConfig(loadExistingConfig(CONFIG_PATH));
   if (!config) {
     console.log(`No existing settings in ${tildify(CONFIG_PATH)} — run setup without --yes first.`);
@@ -679,7 +680,7 @@ async function main() {
     }
   });
 
-  console.log("== AI Dev Companion setup ==\n");
+  console.log(`== ${PRODUCT_NAME} setup ==\n`);
   console.log("This will: choose features, check the tools they need, then start the companion");
   console.log("service and connect the Chrome extension to it.");
   console.log("Press Enter at any question to accept the [default] shown.");

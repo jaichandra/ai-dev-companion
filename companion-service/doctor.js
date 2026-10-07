@@ -12,6 +12,7 @@ const serviceControl = require("./core/service-control.js");
 const claudeArgs = require("./core/claude-args.js");
 const paths = require("./core/paths.js");
 const environment = require("./environment.js");
+const { PRODUCT_NAME } = require("./core/product-name.js");
 const credentialStoreModule = require("./core/credential-store.js");
 const mcpRegistration = require("./core/mcp-registration.js");
 const packs = require("./core/packs.js");
@@ -582,7 +583,7 @@ async function main() {
     return;
   }
 
-  console.log("== AI Dev Companion doctor ==\n");
+  console.log(`== ${PRODUCT_NAME} doctor ==\n`);
   const rerunSetup = `cd ${__dirname} && npm run setup`;
 
   const node = prereqs.checkNodeVersion();

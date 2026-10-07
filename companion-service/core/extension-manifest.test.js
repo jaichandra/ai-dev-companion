@@ -29,11 +29,11 @@ test("a base URL that isn't http(s) falls out instead of reaching the manifest",
   assert.ok(hosts.every((h) => /^https?:\/\//.test(h)));
 });
 
-test("only the generated fields change: name, version, permissions and the worker are kept", () => {
+test("only the generated fields change: the name comes from the profile; version, permissions and the worker are kept", () => {
   const base = { ...committed, version: "9.9.9", name: "Renamed" };
   const built = manifestTool.buildManifest(base, { jira: { baseUrl: "https://x.example.com" } });
   assert.equal(built.version, "9.9.9");
-  assert.equal(built.name, "Renamed");
+  assert.equal(built.name, require("./product-name.js").PRODUCT_NAME);
   assert.deepEqual(built.permissions, committed.permissions);
   assert.deepEqual(built.background, committed.background);
   assert.equal(built.content_scripts[0].run_at, "document_idle");
