@@ -1,0 +1,39 @@
+{
+  "number": 45,
+  "state": "closed",
+  "merged": true,
+  "merged_at": "2026-09-01T10:00:00Z",
+  "title": "Done",
+  "html_url": "https://github.com/Octo/hello/pull/45",
+  "user": {
+    "login": "Hubot"
+  },
+  "mergeable": null,
+  "mergeable_state": "unknown",
+  "head": {
+    "ref": "done",
+    "sha": "d1d2d3d4e5f60718293a4b5c6d7e8f9012345678",
+    "repo": {
+      "id": 101,
+      "name": "hello",
+      "full_name": "Octo/hello",
+      "owner": {
+        "login": "Octo"
+      },
+      "default_branch": "main"
+    }
+  },
+  "base": {
+    "ref": "main",
+    "sha": "0f1e2d3c4b5a69788796a5b4c3d2e1f001122334",
+    "repo": {
+      "id": 101,
+      "name": "hello",
+      "full_name": "Octo/hello",
+      "owner": {
+        "login": "Octo"
+      },
+      "default_branch": "main"
+    }
+  }
+}

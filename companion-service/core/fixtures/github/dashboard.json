@@ -1,0 +1,137 @@
+{
+  "data": {
+    "search": {
+      "nodes": [
+        {
+          "number": 7,
+          "title": "Add retries",
+          "url": "https://github.com/Octo/hello/pull/7",
+          "updatedAt": "2026-09-30T12:00:00Z",
+          "isDraft": false,
+          "headRefName": "feat/retries",
+          "baseRefName": "main",
+          "headRefOid": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "baseRefOid": "ffffffffffffffffffffffffffffffffffffffff",
+          "repository": {
+            "name": "hello",
+            "owner": {
+              "login": "Octo"
+            }
+          },
+          "headRepository": {
+            "name": "hello",
+            "owner": {
+              "login": "Octo"
+            }
+          },
+          "author": {
+            "login": "Hubot"
+          },
+          "latestReviews": {
+            "nodes": [
+              {
+                "state": "APPROVED",
+                "author": {
+                  "login": "Reviewer-One"
+                }
+              },
+              {
+                "state": "CHANGES_REQUESTED",
+                "author": {
+                  "login": "Reviewer-Two"
+                }
+              }
+            ]
+          },
+          "reviewRequests": {
+            "nodes": [
+              {
+                "requestedReviewer": {
+                  "login": "Reviewer-Three"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "number": 8,
+          "title": "From a fork",
+          "url": "https://github.com/Octo/hello/pull/8",
+          "updatedAt": "2026-09-30T12:00:00Z",
+          "isDraft": false,
+          "headRefName": "patch-2",
+          "baseRefName": "main",
+          "headRefOid": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "baseRefOid": "ffffffffffffffffffffffffffffffffffffffff",
+          "repository": {
+            "name": "hello",
+            "owner": {
+              "login": "Octo"
+            }
+          },
+          "headRepository": {
+            "name": "hello",
+            "owner": {
+              "login": "someone"
+            }
+          },
+          "author": {
+            "login": "Hubot"
+          },
+          "latestReviews": {
+            "nodes": []
+          },
+          "reviewRequests": {
+            "nodes": []
+          }
+        },
+        {},
+        {
+          "number": 9,
+          "title": "No repository"
+        },
+        {
+          "number": 10,
+          "title": "Team review request",
+          "url": "https://github.com/Octo/hello/pull/10",
+          "updatedAt": "2026-09-30T12:00:00Z",
+          "isDraft": false,
+          "headRefName": "t",
+          "baseRefName": "main",
+          "headRefOid": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "baseRefOid": "ffffffffffffffffffffffffffffffffffffffff",
+          "repository": {
+            "name": "hello",
+            "owner": {
+              "login": "Octo"
+            }
+          },
+          "headRepository": {
+            "name": "hello",
+            "owner": {
+              "login": "Octo"
+            }
+          },
+          "author": {
+            "login": "Hubot"
+          },
+          "latestReviews": {
+            "nodes": []
+          },
+          "reviewRequests": {
+            "nodes": [
+              {
+                "requestedReviewer": {}
+              },
+              {
+                "requestedReviewer": {
+                  "login": "Reviewer-One"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

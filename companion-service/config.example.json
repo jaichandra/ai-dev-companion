@@ -1,0 +1,17 @@
+{
+  "port": 8787,
+  "sharedSecret": "REPLACE_WITH_RESULT_OF_NPM_RUN_SETUP",
+  "enabledFeatures": ["resolve-conflict", "create-jira-subtasks", "review-in-editor", "pre-deployment-stats", "analyze-issue"],
+  "knownFeatures": ["resolve-conflict", "create-jira-subtasks", "review-in-editor", "pre-deployment-stats", "analyze-issue"],
+  "repos": {},
+  "reviewEditor": "claude-code",
+  "jira": {
+    "baseUrl": "https://jira.example.com",
+    "apiToken": ""
+  },
+  "jenkins": {
+    "baseUrl": "https://jenkins.example.com",
+    "username": "",
+    "apiToken": ""
+  }
+}

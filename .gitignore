@@ -1,0 +1,11 @@
+node_modules/
+companion-service/dist/
+companion-service/config.json
+companion-service/analysis-cache/
+companion-service/summary-cache/
+companion-service/credentials.enc
+companion-service/install-source.json
+companion-service/*.log
+chrome-extension/companion-config.js
+.assembled/
+.DS_Store

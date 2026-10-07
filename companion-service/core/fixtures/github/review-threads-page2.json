@@ -1,0 +1,68 @@
+{
+  "data": {
+    "repository": {
+      "pullRequest": {
+        "reviewThreads": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": "CURSOR2"
+          },
+          "nodes": [
+            {
+              "isResolved": false,
+              "isOutdated": false,
+              "path": "src/login.js",
+              "line": 10,
+              "originalLine": 10,
+              "diffSide": "LEFT",
+              "comments": {
+                "nodes": [
+                  {
+                    "databaseId": 1005,
+                    "body": "Why was this removed?",
+                    "createdAt": "2026-09-29T11:00:00Z",
+                    "author": {
+                      "login": "Reviewer-Two"
+                    },
+                    "replyTo": null
+                  }
+                ]
+              }
+            },
+            {
+              "isResolved": false,
+              "isOutdated": false,
+              "path": "a.js",
+              "line": 1,
+              "diffSide": "RIGHT",
+              "comments": {
+                "nodes": []
+              }
+            },
+            {
+              "isResolved": false,
+              "isOutdated": false,
+              "path": "src/login.js",
+              "line": 42,
+              "originalLine": 40,
+              "diffSide": "RIGHT",
+              "comments": {
+                "nodes": [
+                  {
+                    "databaseId": 1001,
+                    "body": "Please handle the empty token.",
+                    "createdAt": "2026-09-29T10:00:00Z",
+                    "author": {
+                      "login": "Reviewer-One"
+                    },
+                    "replyTo": null
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

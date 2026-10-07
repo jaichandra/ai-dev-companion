@@ -1,0 +1,189 @@
+{
+  "values": [
+    {
+      "id": 507,
+      "createdDate": 1706000600000,
+      "user": { "name": "ffisher", "slug": "ffisher", "displayName": "Frank Fisher" },
+      "action": "COMMENTED",
+      "commentAction": "ADDED",
+      "comment": {
+        "id": 6,
+        "version": 1,
+        "text": "This whole block was deleted — should we keep the helper around?",
+        "author": {
+          "name": "ffisher",
+          "emailAddress": "ffisher@example.com",
+          "id": 206,
+          "displayName": "Frank Fisher",
+          "active": true,
+          "slug": "ffisher",
+          "type": "NORMAL"
+        },
+        "createdDate": 1706000600000,
+        "state": "OPEN",
+        "severity": "NORMAL",
+        "threadResolved": false,
+        "comments": []
+      },
+      "commentAnchor": {
+        "fromHash": "0f1e2d3c4b5a69788796a5b4c3d2e1f0a9b8c7d6",
+        "toHash": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+        "path": "src/main/sample-app/widget.js",
+        "srcPath": "src/main/sample-app/widget.js",
+        "line": 99,
+        "lineType": "REMOVED",
+        "fileType": "FROM",
+        "diffType": "EFFECTIVE",
+        "orphaned": false
+      }
+    },
+    {
+      "id": 508,
+      "createdDate": 1706000700000,
+      "user": { "name": "ggray", "slug": "ggray", "displayName": "Grace Gray" },
+      "action": "COMMENTED",
+      "commentAction": "ADDED",
+      "comment": {
+        "id": 7,
+        "version": 1,
+        "text": "Was this addressed in the follow-up commit?",
+        "author": {
+          "name": "ggray",
+          "emailAddress": "ggray@example.com",
+          "id": 207,
+          "displayName": "Grace Gray",
+          "active": true,
+          "slug": "ggray",
+          "type": "NORMAL"
+        },
+        "createdDate": 1706000700000,
+        "state": "OPEN",
+        "severity": "NORMAL",
+        "threadResolved": false,
+        "comments": []
+      },
+      "commentAnchor": {
+        "fromHash": "0f1e2d3c4b5a69788796a5b4c3d2e1f0a9b8c7d6",
+        "toHash": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+        "path": "src/main/sample-app/widget.js",
+        "srcPath": "src/main/sample-app/widget.js",
+        "line": 5,
+        "lineType": "CONTEXT",
+        "fileType": "TO",
+        "diffType": "COMMIT",
+        "orphaned": false
+      }
+    },
+    {
+      "id": 509,
+      "createdDate": 1706000800000,
+      "user": { "name": "asmith", "slug": "asmith", "displayName": "Alice Smith" },
+      "action": "COMMENTED",
+      "commentAction": "EDITED",
+      "comment": {
+        "id": 1,
+        "version": 2,
+        "text": "Please rename this variable for clarity — done, thanks!",
+        "author": {
+          "name": "asmith",
+          "emailAddress": "asmith@example.com",
+          "id": 201,
+          "displayName": "Alice Smith",
+          "active": true,
+          "slug": "asmith",
+          "type": "NORMAL"
+        },
+        "createdDate": 1706000100000,
+        "state": "OPEN",
+        "severity": "NORMAL",
+        "threadResolved": false,
+        "comments": []
+      },
+      "commentAnchor": {
+        "fromHash": "0f1e2d3c4b5a69788796a5b4c3d2e1f0a9b8c7d6",
+        "toHash": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+        "path": "src/main/sample-app/widget.js",
+        "srcPath": "src/main/sample-app/widget.js",
+        "line": 42,
+        "lineType": "ADDED",
+        "fileType": "TO",
+        "diffType": "EFFECTIVE",
+        "orphaned": false
+      }
+    },
+    {
+      "id": 510,
+      "createdDate": 1706000900000,
+      "user": { "name": "hkumar", "slug": "hkumar", "displayName": "Henry Kumar" },
+      "action": "COMMENTED",
+      "commentAction": "ADDED",
+      "comment": {
+        "id": 9,
+        "version": 1,
+        "text": "Mystery status field from a future Bitbucket release.",
+        "author": {
+          "name": "hkumar",
+          "emailAddress": "hkumar@example.com",
+          "id": 208,
+          "displayName": "Henry Kumar",
+          "active": true,
+          "slug": "hkumar",
+          "type": "NORMAL"
+        },
+        "createdDate": 1706001000000,
+        "state": "SUPERSEDED",
+        "severity": "CRITICAL",
+        "threadResolved": false,
+        "comments": []
+      },
+      "commentAnchor": {
+        "fromHash": "0f1e2d3c4b5a69788796a5b4c3d2e1f0a9b8c7d6",
+        "toHash": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+        "path": "src/main/sample-app/widget.js",
+        "srcPath": "src/main/sample-app/widget.js",
+        "line": 1,
+        "lineType": "CONTEXT",
+        "fileType": "TO",
+        "diffType": "EFFECTIVE",
+        "orphaned": false
+      }
+    },
+    {
+      "id": 511,
+      "createdDate": 1706001100000,
+      "user": { "name": "ijones", "slug": "ijones", "displayName": "Ian Jones" },
+      "action": "COMMENTED",
+      "commentAction": "ADDED",
+      "comment": {
+        "id": 10,
+        "version": 1,
+        "text": "General PR comment with no line anchor.",
+        "author": {
+          "name": "ijones",
+          "emailAddress": "ijones@example.com",
+          "id": 209,
+          "displayName": "Ian Jones",
+          "active": true,
+          "slug": "ijones",
+          "type": "NORMAL"
+        },
+        "createdDate": 1706001100000,
+        "state": "OPEN",
+        "severity": "NORMAL",
+        "threadResolved": false,
+        "comments": []
+      }
+    },
+    {
+      "id": 512,
+      "createdDate": 1706001200000,
+      "user": { "name": "jsmith", "slug": "jsmith", "displayName": "Jane Smith" },
+      "action": "APPROVED"
+    }
+  ],
+  "size": 6,
+  "isLastPage": true,
+  "start": 6,
+  "limit": 6,
+  "nextPageStart": null
+}

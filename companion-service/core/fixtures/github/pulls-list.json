@@ -1,0 +1,79 @@
+[
+  {
+    "number": 42,
+    "state": "open",
+    "title": "Fix the flaky login test",
+    "html_url": "https://github.com/Octo/hello/pull/42",
+    "updated_at": "2026-09-30T12:34:56Z",
+    "head": {
+      "ref": "fix/login-test",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "repo": {
+        "id": 1,
+        "name": "hello",
+        "full_name": "Octo/hello",
+        "owner": {
+          "login": "Octo"
+        },
+        "default_branch": "main"
+      }
+    },
+    "base": {
+      "ref": "main",
+      "sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "repo": {
+        "id": 1,
+        "name": "hello",
+        "full_name": "Octo/hello",
+        "owner": {
+          "login": "Octo"
+        },
+        "default_branch": "main"
+      }
+    },
+    "user": {
+      "login": "Hubot"
+    }
+  },
+  {
+    "title": "no number"
+  },
+  {
+    "number": 40,
+    "state": "closed",
+    "merged": true,
+    "merged_at": "2026-08-01T00:00:00Z",
+    "title": "Older",
+    "html_url": "https://github.com/Octo/hello/pull/40",
+    "updated_at": "2026-08-01T00:00:00Z",
+    "head": {
+      "ref": "fix/login-test",
+      "sha": "cccccccccccccccccccccccccccccccccccccccc",
+      "repo": {
+        "id": 1,
+        "name": "hello",
+        "full_name": "Octo/hello",
+        "owner": {
+          "login": "Octo"
+        },
+        "default_branch": "main"
+      }
+    },
+    "base": {
+      "ref": "main",
+      "sha": "dddddddddddddddddddddddddddddddddddddddd",
+      "repo": {
+        "id": 1,
+        "name": "hello",
+        "full_name": "Octo/hello",
+        "owner": {
+          "login": "Octo"
+        },
+        "default_branch": "main"
+      }
+    },
+    "user": {
+      "login": "Hubot"
+    }
+  }
+]
