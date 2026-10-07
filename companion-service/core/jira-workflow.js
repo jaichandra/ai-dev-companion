@@ -81,7 +81,7 @@ function remoteLinkBody({ url, title }) {
   if (typeof url !== "string" || !/^https:\/\//.test(url)) throw new Error("A remote link needs an https URL.");
   const text = typeof title === "string" && title.trim() ? title.trim() : url;
   return {
-    globalId: `ai-dev-companion:pr:${url}`,
+    globalId: `${require("./app-slug.js").APP_SLUG}:pr:${url}`,
     application: { type: "com.atlassian.bitbucket", name: "Bitbucket" },
     relationship: "Pull request",
     object: { url, title: text.slice(0, 255) },

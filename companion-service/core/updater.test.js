@@ -5,6 +5,7 @@ const os = require("os");
 const path = require("path");
 const { execFileSync } = require("child_process");
 const updater = require("./updater.js");
+const { APP_SLUG } = require("./app-slug.js");
 
 const REPO_ROOT = path.join(__dirname, "..", "..");
 
@@ -165,7 +166,7 @@ test("readStatus reports a 'running' update whose runner is gone as failed", () 
 
 test("statusPath and logPath prefer the new state dir's file when it already exists there", () => {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), "updater-paths-"));
-  const newDir = path.join(home, ".ai-dev-companion");
+  const newDir = path.join(home, `.${APP_SLUG}`);
   fs.mkdirSync(newDir, { recursive: true });
   fs.writeFileSync(path.join(newDir, "update-status.json"), "{}");
   fs.writeFileSync(path.join(newDir, "update.log"), "");
@@ -190,8 +191,8 @@ test("statusPath and logPath fall back to the legacy dir's file when only that o
 test("statusPath and logPath default to the new state dir when neither file exists yet", () => {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), "updater-paths-"));
 
-  assert.equal(updater.statusPath(home), path.join(home, ".ai-dev-companion", "update-status.json"));
-  assert.equal(updater.logPath(home), path.join(home, ".ai-dev-companion", "update.log"));
+  assert.equal(updater.statusPath(home), path.join(home, `.${APP_SLUG}`, "update-status.json"));
+  assert.equal(updater.logPath(home), path.join(home, `.${APP_SLUG}`, "update.log"));
   fs.rmSync(home, { recursive: true, force: true });
 });
 
@@ -202,8 +203,8 @@ test("newStatusPath and newLogPath always point at the new state dir, even when 
   fs.writeFileSync(path.join(legacyDir, "update-status.json"), "{}");
   fs.writeFileSync(path.join(legacyDir, "update.log"), "");
 
-  assert.equal(updater.newStatusPath(home), path.join(home, ".ai-dev-companion", "update-status.json"));
-  assert.equal(updater.newLogPath(home), path.join(home, ".ai-dev-companion", "update.log"));
+  assert.equal(updater.newStatusPath(home), path.join(home, `.${APP_SLUG}`, "update-status.json"));
+  assert.equal(updater.newLogPath(home), path.join(home, `.${APP_SLUG}`, "update.log"));
   fs.rmSync(home, { recursive: true, force: true });
 });
 
@@ -216,7 +217,7 @@ test("writeStatus's default file is newStatusPath, not the sticky legacy-fallbac
   os.homedir = () => home;
   try {
     updater.writeStatus({ state: "done" });
-    assert.ok(fs.existsSync(path.join(home, ".ai-dev-companion", "update-status.json")));
+    assert.ok(fs.existsSync(path.join(home, `.${APP_SLUG}`, "update-status.json")));
     assert.equal(fs.readFileSync(path.join(legacyDir, "update-status.json"), "utf8"), "{}");
   } finally {
     os.homedir = originalHomedir;

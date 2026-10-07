@@ -1,6 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const w = require("./jira-workflow.js");
+const { APP_SLUG } = require("./app-slug.js");
 
 test("normalizeIssueBasics reads key, summary, type and status defensively", () => {
   assert.deepEqual(
@@ -40,7 +41,7 @@ test("pickTransition matches the name first, then the target status, ignoring ca
 
 test("remoteLinkBody builds an idempotent link and refuses non-https URLs", () => {
   const body = w.remoteLinkBody({ url: "https://bb.example/projects/ACME/repos/sample-app/pull-requests/12", title: "PR #12: fix" });
-  assert.equal(body.globalId, "ai-dev-companion:pr:https://bb.example/projects/ACME/repos/sample-app/pull-requests/12");
+  assert.equal(body.globalId, `${APP_SLUG}:pr:https://bb.example/projects/ACME/repos/sample-app/pull-requests/12`);
   assert.deepEqual(body.object, { url: "https://bb.example/projects/ACME/repos/sample-app/pull-requests/12", title: "PR #12: fix" });
   assert.equal(w.remoteLinkBody({ url: "https://x/1", title: "t".repeat(400) }).object.title.length, 255);
   assert.throws(() => w.remoteLinkBody({ url: "javascript:alert(1)", title: "x" }));

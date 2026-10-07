@@ -10,7 +10,14 @@ const os = require("os");
 const path = require("path");
 const { spawn } = require("child_process");
 
-const bin = path.join(os.homedir(), "ai-dev-companion", "companion-service", "bin", "companion.js");
+// The install folder is ~/<app slug>; assembling writes the slug next to this file (the framework alone has the default).
+let appSlug = "ai-dev-companion";
+try {
+  appSlug = JSON.parse(fs.readFileSync(path.join(__dirname, "app-slug.json"), "utf8")).appSlug || appSlug;
+} catch {
+  // no stamped slug: the default
+}
+const bin = path.join(os.homedir(), appSlug, "companion-service", "bin", "companion.js");
 if (!fs.existsSync(bin)) {
   process.stderr.write(`ai-companion: the companion service isn't installed (${bin} is missing). Install it with \`node install.js\`.\n`);
   process.exit(1);
