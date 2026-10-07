@@ -73,7 +73,7 @@ test("without the companion installed, the launcher says so and exits 1, and the
 test("pluginInstallText prints the /plugin lines for the installed copy (and the shared repo), and how to avoid duplicates", () => {
   const text = info.pluginInstallText({ stableDir: "/Users/me/ai-dev-companion", updateUrl: "https://bb.example/scm/x/ai-dev-companion.git" });
   assert.match(text, /^  \/plugin marketplace add \/Users\/me\/ai-dev-companion$/m);
-  assert.match(text, /^  \/plugin install ai-companion@ai-dev-companion$/m);
+  assert.ok(text.split("\n").includes(`  /plugin install ${info.PLUGIN_ID}`));
   assert.match(text, /^  \/plugin marketplace add https:\/\/bb\.example\/scm\/x\/ai-dev-companion\.git$/m);
   const pinned = info.pluginInstallText({ stableDir: "/d", updateUrl: "https://bb.example/scm/x/a.git", updateRef: "release" });
   assert.match(pinned, /^  \/plugin marketplace add https:\/\/bb\.example\/scm\/x\/a\.git#release$/m);
@@ -82,11 +82,11 @@ test("pluginInstallText prints the /plugin lines for the installed copy (and the
 });
 
 test("pluginStatus and mcpPathSummary report which way Claude Code reaches the companion", () => {
-  const installedPluginsText = JSON.stringify({ version: 2, plugins: { "ai-companion@ai-dev-companion": [{}], "other@x": [{}] } });
-  const on = info.pluginStatus({ installedPluginsText, settingsText: JSON.stringify({ enabledPlugins: { "ai-companion@ai-dev-companion": true } }) });
-  assert.deepEqual(on, { installed: true, enabled: true, ids: ["ai-companion@ai-dev-companion"] });
+  const installedPluginsText = JSON.stringify({ version: 2, plugins: { [info.PLUGIN_ID]: [{}], "other@x": [{}] } });
+  const on = info.pluginStatus({ installedPluginsText, settingsText: JSON.stringify({ enabledPlugins: { [info.PLUGIN_ID]: true } }) });
+  assert.deepEqual(on, { installed: true, enabled: true, ids: [info.PLUGIN_ID] });
   const off = info.pluginStatus({ installedPluginsText, settingsText: "{}" });
-  assert.deepEqual(off, { installed: true, enabled: false, ids: ["ai-companion@ai-dev-companion"] });
+  assert.deepEqual(off, { installed: true, enabled: false, ids: [info.PLUGIN_ID] });
   assert.deepEqual(info.pluginStatus({ installedPluginsText: "not json", settingsText: null }), { installed: false, enabled: false, ids: [] });
   assert.equal(info.mcpPathSummary({ claudeState: "ok", plugin: on }).level, "WARN");
   assert.match(info.mcpPathSummary({ claudeState: "ok", plugin: on }).fix, /claude mcp remove/);

@@ -1623,7 +1623,7 @@ default there (`similar.enabled`).
 
 Phase 8. An optional Claude Code plugin, `ai-companion`, in `plugin/`, listed
 by this repo's own marketplace file `.claude-plugin/marketplace.json`
-(marketplace `ai-dev-companion`, one plugin, `source: "./plugin"`); no
+(marketplace `ai-dev-companion` unless the profile's `branding.marketplaceName` says otherwise, one plugin, `source: "./plugin"`); no
 separate marketplace repository exists. `/plugin marketplace add
 ~/ai-dev-companion` works from the installed copy (`copyTree` copies
 `plugin/` and `.claude-plugin/`), and `/plugin marketplace add <updateSource

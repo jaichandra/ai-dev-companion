@@ -38,7 +38,8 @@ module.exports = defineEnvironment({
   },
 
   /** What the Settings panel calls things; with no `llmProxy` its page is hidden, with no
-   * `supportEmail` the Support row is. */
+   * `supportEmail` the Support row is. `marketplaceName` is the name of the Claude Code plugin
+   * marketplace the distribution's repo publishes (default `ai-dev-companion`). */
   branding: {},
 
   /** The pack files (relative to this folder) whose features this distribution offers. */
