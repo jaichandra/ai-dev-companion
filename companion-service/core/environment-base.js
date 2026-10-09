@@ -14,15 +14,29 @@
 // Plain JS and dependency-free: setup.js, doctor.js and the registry require it without a build.
 
 const SITE_KINDS = ["git", "issues", "ci"];
+// The --permission-mode values a Claude Code session can be started (and resumed) with.
+const PERMISSION_MODES = ["plan", "auto", "default"];
 
 function fail(message) {
   throw new Error(`Invalid environment profile: ${message}`);
+}
+
+/** Checks a profile's optional `claude` section: `permissionMode`, and `permissionModes` keyed by feature id. */
+function validateClaudeSection(claude) {
+  if (claude === undefined) return;
+  if (!claude || typeof claude !== "object") fail("claude must be an object");
+  const check = (what, v) => {
+    if (!PERMISSION_MODES.includes(v)) fail(`claude.${what} must be one of ${PERMISSION_MODES.join(", ")}, got ${JSON.stringify(v)}`);
+  };
+  if (claude.permissionMode !== undefined) check("permissionMode", claude.permissionMode);
+  for (const [id, mode] of Object.entries(claude.permissionModes || {})) check(`permissionModes.${id}`, mode);
 }
 
 /** Checks `profile` and returns it with the lookup helpers added. */
 function defineEnvironment(profile) {
   if (!profile || typeof profile !== "object") fail("expected an object");
   const { sites, packs } = profile;
+  validateClaudeSection(profile.claude);
   if (!Array.isArray(sites) || sites.length === 0) fail("sites must be a non-empty list");
   const seen = new Set();
   for (const site of sites) {
@@ -58,4 +72,4 @@ function defineEnvironment(profile) {
   };
 }
 
-module.exports = { defineEnvironment, SITE_KINDS };
+module.exports = { defineEnvironment, validateClaudeSection, SITE_KINDS, PERMISSION_MODES };

@@ -92,7 +92,7 @@ function chooseStartFixRepo({ issue, repos, componentRepoMap, hintRepoKeys }) {
   return { proposal, proposalReason, options, ask };
 }
 
-/** The opening prompt of the plan-mode session. The analysis came from an
+/** The opening prompt of the Start fix session. The analysis came from an
  * earlier Claude run over ticket text anyone can write, so it is fenced
  * and labelled as untrusted notes, never as instructions. */
 function buildStartFixPrompt({ issueKey, summary, branch, base, analysisMarkdown }) {
@@ -100,7 +100,7 @@ function buildStartFixPrompt({ issueKey, summary, branch, base, analysisMarkdown
   return [
     `Let's fix ${issueKey}${summary ? ` (ticket summary, as a quoted string: ${JSON.stringify(String(summary).replace(CONTROL_RE, "").replace(/\s+/g, " ").replace(/```/g, "'''").trim().slice(0, 200))})` : ""}.`,
     `You are in the ticket's own git worktree, on branch ${branch} (from origin/${base}).`,
-    "Start in plan mode: read the code, then propose a plan for the fix before changing anything.",
+    "Start by reading the code, then propose a plan for the fix before changing anything.",
     "When the fix is done, commit it on this branch. Don't push — the companion opens the pull request.",
     "",
     notes

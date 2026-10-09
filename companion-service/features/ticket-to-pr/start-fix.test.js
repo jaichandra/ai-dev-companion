@@ -57,7 +57,7 @@ function fakeIo(over = {}) {
   };
 }
 
-test("Start fix makes <repo>.worktrees/<KEY> on a branch named from the ticket and opens plan-mode Claude with the analysis", async () => {
+test("Start fix makes <repo>.worktrees/<KEY> on a branch named from the ticket and opens Claude (auto mode) with the analysis", async () => {
   const { root, clone } = makeClone();
   try {
     const f = fakeIo();
@@ -73,7 +73,7 @@ test("Start fix makes <repo>.worktrees/<KEY> on a branch named from the ticket a
     assert.equal(git(dir, "rev-parse", "--abbrev-ref", "HEAD"), "proj-7-login-fails-on-safari");
     assert.equal(f.terminals.length, 1);
     const [flag, id, modeFlag, mode, prompt, ...rest] = f.terminals[0].args;
-    assert.deepEqual([flag, modeFlag, mode, rest.length], ["--session-id", "--permission-mode", "plan", 0]);
+    assert.deepEqual([flag, modeFlag, mode, rest.length], ["--session-id", "--permission-mode", "auto", 0]);
     assert.equal(id, job.data.claudeSession.id);
     assert.equal(job.data.claudeSession.cwd, dir);
     assert.match(prompt, /Missing null check/);

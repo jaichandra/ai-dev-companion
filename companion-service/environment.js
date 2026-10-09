@@ -44,6 +44,11 @@ module.exports = defineEnvironment({
    * marketplace the distribution's repo publishes (default `ai-dev-companion`). */
   branding: {},
 
+  /** The Claude Code `--permission-mode` for sessions the features start: "auto" (default), "plan" or "default".
+   * `permissionMode` sets it for all of them; `permissionModes` overrides it per feature id, e.g.
+   * `{ "review-in-editor": "plan" }` to keep Review PR read-only. */
+  claude: {},
+
   /** The pack files (relative to this folder) whose features this distribution offers. */
   packs: ["./packs/builtin.js"],
 });

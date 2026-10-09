@@ -139,7 +139,7 @@ function buildTerminalTitle({ prId, sourceBranch, targetBranch }) {
 // How each terminal-based review announces itself, and which IDE (if any)
 // its header links to.
 const TERMINAL_AGENTS = {
-  "claude-code": { agent: "Claude Code (plan mode, read-only)" },
+  "claude-code": { agent: "Claude Code" },
 };
 
 const EDITORS = {
