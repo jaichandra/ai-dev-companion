@@ -32,6 +32,7 @@ import { HeaderSegment, TerminalOptions, openClaudeCodeInTerminal } from "../../
 import { createReviewMover } from "./review-mover";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
+const { permissionModeFor } = require("../../core/permission-mode.js") as { permissionModeFor(featureId: string): "plan" | "auto" | "default" };
 const ticketGit = require("../../core/ticket-git.js") as {
   ensureTicketWorktree(repoPath: string, o: { issueKey: string; branch: string; base: string }): Promise<{ dir: string; branch: string; created: boolean }>;
   defaultBranchFromGit(repoPath: string): Promise<string>;
@@ -323,7 +324,7 @@ async function runStartFix(
         })
       : null;
     const prompt = plan.buildStartFixPrompt({ issueKey, summary, branch: wt.branch, base, analysisMarkdown });
-    const session: ClaudeSession = { id: randomUUID(), cwd: wt.dir, permissionMode: "plan" };
+    const session: ClaudeSession = { id: randomUUID(), cwd: wt.dir, permissionMode: permissionModeFor("ticket-to-pr") };
     jobStore.patchData(jobId, { claudeSession: session });
     const header: HeaderSegment[][] = [
       [{ text: "Ticket to PR", style: "title" }, { text: `  ${issueKey}`, style: "heading" }],
@@ -333,7 +334,7 @@ async function runStartFix(
       [],
     ];
     // Every argv word is quoted by core/terminal.ts; the prompt is one word.
-    await io.openTerminal(wt.dir, ["--session-id", session.id, "--permission-mode", "plan", prompt], header, {
+    await io.openTerminal(wt.dir, ["--session-id", session.id, "--permission-mode", session.permissionMode, prompt], header, {
       title: `${issueKey} fix`,
     });
   }

@@ -9,7 +9,7 @@ module.exports = {
     summary: "Start a fix branch from a ticket, then open the PR",
     label: "Ticket to PR",
     description:
-      "Start fix: a worktree and branch for a Jira ticket, with Claude Code in plan mode on its analysis. Create PR: push, open the PR with default reviewers, link it on the ticket and move it to review.",
+      "Start fix: a worktree and branch for a Jira ticket, with Claude Code on its analysis. Create PR: push, open the PR with default reviewers, link it on the ticket and move it to review.",
     requiredChecks: ["git", "claudeCli", "claudeAuth"],
     needsRepos: true,
     async promptSetup() {

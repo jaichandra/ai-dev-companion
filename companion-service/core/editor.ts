@@ -9,6 +9,7 @@ const prereqs = require("./prereqs.js") as {
 };
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
+const { permissionModeFor } = require("./permission-mode.js") as { permissionModeFor(featureId: string): "plan" | "auto" | "default" };
 const { buildCursorPromptUrl } = require("./cursor-deeplink.js") as {
   buildCursorPromptUrl(dir: string, prompt: string): string;
 };
@@ -72,8 +73,8 @@ export interface ReviewLaunch {
 }
 
 /**
- * Starts an AI review of `dir` on `prompt`, in a read-only mode for every
- * editor, since the checkout is someone else's unreviewed code. `header` is
+ * Starts an AI review of `dir` on `prompt` (Claude Code uses the profile's permission mode, auto by default).
+ * `header` is
  * printed at the top of the terminal for the terminal-based reviews, and
  * `options` titles its terminal tab and names its status file.
  *
@@ -93,11 +94,11 @@ export async function openForReview(
   options: TerminalOptions = {},
 ): Promise<ReviewLaunch> {
   if (editor === "claude-code") {
-    const terminal = await openClaudeCodeInTerminal(dir, ["--permission-mode", "plan", prompt], header, options);
+    const terminal = await openClaudeCodeInTerminal(dir, ["--permission-mode", permissionModeFor("review-in-editor"), prompt], header, options);
     return {
       openedEditor: false,
       reviewStarted: true,
-      reviewNote: "Claude Code is reviewing it in plan mode (read-only) in a new terminal window.",
+      reviewNote: "Claude Code is reviewing it in a new terminal window.",
       terminal,
     };
   }

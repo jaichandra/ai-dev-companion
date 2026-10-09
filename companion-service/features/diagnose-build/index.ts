@@ -15,6 +15,7 @@ import { openClaudeCodeInTerminal } from "../../core/terminal";
 import type { HeaderSegment } from "../../core/terminal";
 
 /* eslint-disable @typescript-eslint/no-var-requires */
+const { permissionModeFor } = require("../../core/permission-mode.js") as { permissionModeFor(featureId: string): "plan" | "auto" | "default" };
 const paths = require("../../core/paths.js") as { stateDir(home?: string): string };
 const packs = require("../../core/packs.js") as {
   diagnoseCommand(): { args(buildUrl: string): string[]; summary(build: { jobName: string; number: number }): string } | null;
@@ -83,7 +84,7 @@ export function createDiagnoseBuildFeature(config: Config): Feature {
         const flakyLines = await flakyLinesFor(config, ctx.auth, build);
         const args = richer
           ? richer.args(build.buildUrl)
-          : ["--permission-mode", "plan", diagnosePrompt.buildBasicPrompt({ ...build, flakyLines })];
+          : ["--permission-mode", permissionModeFor("diagnose-build"), diagnosePrompt.buildBasicPrompt({ ...build, flakyLines })];
 
         const safeName = build.jobName.replace(/[^A-Za-z0-9._-]+/g, "_");
         const cwd = path.join(paths.stateDir(), "sessions", `diagnose-${safeName}-${build.number}`);
@@ -101,7 +102,7 @@ export function createDiagnoseBuildFeature(config: Config): Feature {
 
         const summary = richer
           ? richer.summary(build)
-          : `Opened Claude Code to diagnose ${build.jobName} #${build.number} (a plain diagnosis in read-only plan mode).`;
+          : `Opened Claude Code to diagnose ${build.jobName} #${build.number} (a plain diagnosis).`;
         jobStore.update(job.id, { status: "approved", result: { summary, files: [] } });
       } catch (err) {
         jobStore.update(job.id, { status: "failed", error: (err as Error)?.message || String(err) });

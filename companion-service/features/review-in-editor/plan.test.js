@@ -139,7 +139,7 @@ test("buildTerminalHeader shows the PR, branch, worktree and PR link", () => {
   assert.ok(text.some((l) => /^ {2}Branch +feature\/x -> master$/.test(l)));
   assert.ok(text.some((l) => /^ {2}Worktree +\/Users\/me\/sample-app\.worktrees\/pr-review$/.test(l)));
   assert.ok(text.some((l) => l === `  ${"PR".padEnd(16)}${PR_URL}`));
-  assert.ok(text.some((l) => /^Starting Claude Code \(plan mode, read-only\)/.test(l)));
+  assert.ok(text.some((l) => /^Starting Claude Code/.test(l)));
 });
 
 test("buildTerminalHeader styles each part so the terminal can color it", () => {
@@ -169,7 +169,7 @@ test("buildTerminalHeader for Claude Code has no IDE link", () => {
   const lines = buildTerminalHeader({ editor: "claude-code", dir: "/wt", sourceBranch: "x", targetBranch: "master" });
   const text = plainLines(lines);
   assert.ok(text.every((l) => !/Open in/.test(l)));
-  assert.ok(text.some((l) => /^Starting Claude Code \(plan mode, read-only\)/.test(l)));
+  assert.ok(text.some((l) => /^Starting Claude Code/.test(l)));
 });
 
 test("buildTerminalHeader keeps every segment single-line and copes with missing PR details", () => {
@@ -356,7 +356,7 @@ test("buildReviewResult has no IDE link for Claude Code, and no agent or skill w
   const payload = { sourceBranch: "x" };
   const claude = buildReviewResult({ payload, dir: "/wt", editor: "claude-code", reviewStarted: true, usedSkill: false });
   assert.equal(claude.openUrl, undefined);
-  assert.equal(claude.agentLabel, "Claude Code (plan mode, read-only)");
+  assert.equal(claude.agentLabel, "Claude Code");
   assert.deepEqual(claude.stashedFiles, []);
 
   const failed = buildReviewResult({ payload, dir: "/wt", editor: "vscode", reviewStarted: false, usedSkill: true });
