@@ -31,6 +31,8 @@ const paths = require("./core/paths.js");
 const mcpRegistration = require("./core/mcp-registration.js");
 const extensionManifest = require("./core/extension-manifest.js");
 const externalTokens = require("./core/external-tokens.js").createExternalTokens();
+const siteUrls = require("./core/site-urls.js");
+const environment = require("./environment.js");
 
 const IS_MAC = process.platform === "darwin";
 
@@ -725,6 +727,9 @@ async function main() {
   selectedIds = await resolvePrerequisites(rl, selectedIds);
 
   heading("3. Feature settings");
+  // Before the features' own questions, which would otherwise record the profile's placeholder address.
+  const siteConfig = await siteUrls.promptSiteUrls(environment, existing, { ask: (q, d) => ask(rl, q, d) });
+  Object.assign(existing, siteConfig);
   const featureConfig = await collectFeatureConfigs(rl, selectedIds, previouslyEnabledIds, existing);
   if (selectedIds.length === 0) console.log("  (no features selected)");
 
