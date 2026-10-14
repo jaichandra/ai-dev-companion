@@ -62,7 +62,7 @@ function checkClaudeCli() {
 // child process here would wedge the whole event loop behind it. SIGKILL,
 // not the default SIGTERM, because `claude` may be ignoring signals in
 // whatever state it's stuck in.
-const CLAUDE_AUTH_TIMEOUT_MS = 5000;
+const CLAUDE_AUTH_TIMEOUT_MS = 20000;
 
 /** `timeoutMs` is injectable (defaults to CLAUDE_AUTH_TIMEOUT_MS) purely so
  * prereqs.test.js can exercise the timeout path in well under 5s, without
