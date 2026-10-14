@@ -110,6 +110,15 @@ test("sessionCwdAllowed: a mapped repo clone or a directory under the sessions r
   assert.equal(sessionCwdAllowed("/home/me/gitviews/sample-app/sub", opts), false);
 });
 
+test("sessionCwdAllowed: a per-job worktree is <worktreesRoot>/<repo>/<id>, exactly", () => {
+  const opts = { repoPaths: [], sessionsRoot: "/state/sessions", worktreesRoot: "/state/worktrees" };
+  assert.equal(sessionCwdAllowed("/state/worktrees/sample-app/job-1", opts), true);
+  assert.equal(sessionCwdAllowed("/state/worktrees/sample-app", opts), false);
+  assert.equal(sessionCwdAllowed("/state/worktrees/sample-app/job-1/sub", opts), false);
+  assert.equal(sessionCwdAllowed("/state/worktrees/../evil/x", opts), false);
+  assert.equal(sessionCwdAllowed("/state/worktrees/sample-app/job-1", { ...opts, worktreesRoot: undefined }), false);
+});
+
 test("removePrunedWorktree removes through git, falls back to a plain delete when git metadata is compromised, and refuses paths outside the root", async () => {
   const worktreeRoot = "/state/worktrees";
   const calls = [];

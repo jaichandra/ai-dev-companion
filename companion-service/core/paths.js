@@ -77,26 +77,38 @@ function isLiveDirectory(p) {
   }
 }
 
-/** Every git worktree checkout under `<dir>/worktrees/<repo>/<id>/` (the
- * layout core/worktree.ts's addWorktree creates) — identified by a `.git`
- * *file* there (a real clone has a `.git` directory; a worktree's is a
- * one-line file pointing back at the main repo). Never throws on a broken
- * entry (see isLiveDirectory) — it's skipped, not fatal to the rest of the
- * scan. */
+/** The checkout folders directly inside `parent` that are git worktrees
+ * (a `.git` *file*, not a clone's directory). Skips broken entries. */
+function worktreeChildren(parent) {
+  const found = [];
+  if (!isLiveDirectory(parent)) return found;
+  for (const id of fs.readdirSync(parent)) {
+    const worktreeDir = path.join(parent, id);
+    if (!isLiveDirectory(worktreeDir)) continue;
+    const gitFile = path.join(worktreeDir, ".git");
+    if (fs.existsSync(gitFile) && fs.statSync(gitFile).isFile()) found.push(worktreeDir);
+  }
+  return found;
+}
+
+/** Every git worktree checkout the service keeps under `dir`: the
+ * disposable per-job ones at `<dir>/worktrees/<repo>/<id>/` (core/worktree.ts's
+ * addWorktree) and the persistent ones at `<dir>/<repo>.worktrees/<name>/`
+ * (repoWorktreesRoot: pr-review, <KEY>). Identified by a `.git` *file* there
+ * (a real clone has a `.git` directory; a worktree's is a one-line file
+ * pointing back at the main repo). Never throws on a broken entry (see
+ * isLiveDirectory) — it's skipped, not fatal to the rest of the scan. */
 function findWorktreeDirs(dir) {
   const found = [];
   const worktreesRoot = path.join(dir, "worktrees");
-  if (!fs.existsSync(worktreesRoot)) return found;
-  for (const repo of fs.readdirSync(worktreesRoot)) {
-    const repoDir = path.join(worktreesRoot, repo);
-    if (!isLiveDirectory(repoDir)) continue;
-    for (const id of fs.readdirSync(repoDir)) {
-      const worktreeDir = path.join(repoDir, id);
-      if (!isLiveDirectory(worktreeDir)) continue;
-      const gitFile = path.join(worktreeDir, ".git");
-      if (fs.existsSync(gitFile) && fs.statSync(gitFile).isFile()) {
-        found.push(worktreeDir);
-      }
+  if (fs.existsSync(worktreesRoot)) {
+    for (const repo of fs.readdirSync(worktreesRoot)) {
+      found.push(...worktreeChildren(path.join(worktreesRoot, repo)));
+    }
+  }
+  if (isLiveDirectory(dir)) {
+    for (const name of fs.readdirSync(dir)) {
+      if (name.endsWith(".worktrees")) found.push(...worktreeChildren(path.join(dir, name)));
     }
   }
   return found;

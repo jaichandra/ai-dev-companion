@@ -96,6 +96,21 @@ test("migrateStateDir repairs every moved worktree with the injected git runner"
   fs.rmSync(home, { recursive: true, force: true });
 });
 
+test("migrateStateDir also repairs the persistent <repo>.worktrees/<name> worktrees", () => {
+  const home = tempHome();
+  const legacyDir = path.join(home, ".bitbucket-ai-companion", "some-repo.worktrees", "PROJ-1");
+  fs.mkdirSync(legacyDir, { recursive: true });
+  fs.writeFileSync(path.join(legacyDir, ".git"), "gitdir: /somewhere/else\n");
+  const calls = [];
+
+  const result = paths.migrateStateDir({ home, git: (args, cwd) => calls.push({ args, cwd }) });
+
+  const moved = path.join(paths.stateDir(home), "some-repo.worktrees", "PROJ-1");
+  assert.deepEqual(calls, [{ args: ["worktree", "repair", moved], cwd: moved }]);
+  assert.deepEqual(result.repaired, [moved]);
+  fs.rmSync(home, { recursive: true, force: true });
+});
+
 test("migrateStateDir writes a MOVED marker pointing at the new location", () => {
   const home = tempHome();
   fs.mkdirSync(paths.legacyStateDir(home), { recursive: true });
