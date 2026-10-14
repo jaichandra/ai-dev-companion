@@ -9,6 +9,7 @@ import * as path from "path";
 import type { Config } from "../config";
 import type { ClaudeSession } from "./jobs";
 import { HeaderSegment, openClaudeCodeInTerminal } from "./terminal";
+import { WORKTREE_ROOT } from "./worktree";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const resume = require("./resume.js") as {
@@ -19,7 +20,10 @@ const resume = require("./resume.js") as {
 };
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const sessionCwd = require("./session-cwd.js") as {
-  sessionCwdAllowed(cwd: string, opts: { repoPaths: string[]; sessionsRoot: string; checkoutsRoot: string }): boolean;
+  sessionCwdAllowed(
+    cwd: string,
+    opts: { repoPaths: string[]; sessionsRoot: string; checkoutsRoot: string; worktreesRoot: string },
+  ): boolean;
 };
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const paths = require("./paths.js") as { stateDir(): string };
@@ -46,6 +50,7 @@ export async function resumeSessionInTerminal(
       repoPaths: Object.values(config.repos || {}),
       sessionsRoot: path.join(paths.stateDir(), "sessions"),
       checkoutsRoot: path.join(paths.stateDir(), "repos"),
+      worktreesRoot: WORKTREE_ROOT,
     });
   if (!allowed) return { ok: false, reason: "invalid" };
   // Only the transcript lookup needs the realpath'd cwd (Claude Code keys
