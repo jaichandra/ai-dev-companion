@@ -5,6 +5,8 @@ const os = require("os");
 const path = require("path");
 const rec = require("./history-record.js");
 const { openHistory } = require("./history-db.js");
+const { useGitProvider } = require("./with-git-provider.js");
+useGitProvider("bitbucket-dc"); // this file is about Bitbucket's URL shapes; the placeholder profile is GitHub
 
 const T0 = 1_000_000;
 const job = (over = {}) => ({

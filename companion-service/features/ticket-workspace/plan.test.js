@@ -1,6 +1,8 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const plan = require("./plan.js");
+const { useGitProvider } = require("../../core/with-git-provider.js");
+useGitProvider("bitbucket-dc"); // this file is about Bitbucket's URL shapes; the placeholder profile is GitHub
 
 const BB = "https://bb.example";
 const WT = "/Users/me/gitviews/sample-app.worktrees/PROJ-7";

@@ -14,11 +14,10 @@ const { AuthSetupError, HttpStatusError } = require("../dist/core/atlassian.js")
 
 const fx = (name) => JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "github", name), "utf8"));
 const TOKEN = "ghp_testtoken";
-// The provider serves whichever site the profile gives it (its settings and token live under that site's id).
-// The framework's placeholder profile has Jira, Jenkins and Bitbucket sites only, so these tests serve GitHub
-// through the "bitbucket" one; the example profile (a real "github" site) is exercised by its own test.
-const SITE = "bitbucket";
-const config = (extra = {}) => ({ bitbucket: { baseUrl: "https://github.com" }, ...extra });
+// The provider serves whichever site the profile gives it (its settings and token live under that site's id):
+// here the placeholder profile's own "github" site.
+const SITE = "github";
+const config = (extra = {}) => ({ github: { baseUrl: "https://github.com" }, ...extra });
 const json = (body, status = 200, headers = {}) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...headers } });
 
 /** Runs `fn` with fetch answering from `handler(url, init)`; returns what was requested. */
@@ -37,11 +36,11 @@ async function withFetch(handler, fn) {
   }
 }
 const withToken = (fn) => async () => {
-  credentials.setToken("bitbucket.apiToken", TOKEN);
+  credentials.setToken("github.apiToken", TOKEN);
   try {
     await fn();
   } finally {
-    credentials.setToken("bitbucket.apiToken", null);
+    credentials.setToken("github.apiToken", null);
   }
 };
 
@@ -58,7 +57,7 @@ test("github.com: web address, REST and GraphQL on api.github.com, a token-only 
 }));
 
 test("an Enterprise host from config.json, given without a scheme or with a trailing slash", () => {
-  const site = github.githubSite(config({ bitbucket: { baseUrl: "ghe.example.com/" } }), SITE);
+  const site = github.githubSite(config({ github: { baseUrl: "ghe.example.com/" } }), SITE);
   assert.equal(site.web, "https://ghe.example.com");
   assert.equal(site.rest.baseUrl, "https://ghe.example.com/api/v3");
   assert.equal(site.graphql.baseUrl, "https://ghe.example.com/api/graphql");
@@ -94,7 +93,7 @@ test("with no token saved the call says to create one, and makes no request", as
 test("a 401 means the token was rejected", withToken(async () => {
   const site = github.githubSite(config(), SITE);
   await withFetch(() => json({ message: "Bad credentials" }, 401), async () => {
-    await assert.rejects(() => github.whoAmI(site, {}), (err) => err instanceof AuthSetupError && /rejected the saved API token \(bitbucket\.apiToken\)/.test(err.message));
+    await assert.rejects(() => github.whoAmI(site, {}), (err) => err instanceof AuthSetupError && /rejected the saved API token \(github\.apiToken\)/.test(err.message));
   });
 }));
 
@@ -167,7 +166,7 @@ test("a GraphQL error (a repository that isn't there) is an error, not an empty 
 }));
 
 test("an Enterprise host's GraphQL is under /api/graphql", withToken(async () => {
-  const site = github.githubSite(config({ bitbucket: { baseUrl: "https://ghe.example.com" } }), SITE);
+  const site = github.githubSite(config({ github: { baseUrl: "https://ghe.example.com" } }), SITE);
   const { requests } = await withFetch(() => json(fx("review-threads-page2.json")), () => github.listActivities(site, {}, "o", "r", 1));
   assert.equal(requests[0].url, "https://ghe.example.com/api/graphql");
 }));
@@ -315,6 +314,6 @@ test("without a token the provider says so", () => {
 });
 
 test("an Enterprise provider's PR addresses use its own host", () => {
-  const p = providers.githubProvider(config({ bitbucket: { baseUrl: "https://ghe.example.com" } }), SITE);
+  const p = providers.githubProvider(config({ github: { baseUrl: "https://ghe.example.com" } }), SITE);
   assert.equal(p.prUrl("o", "r", 3), "https://ghe.example.com/o/r/pull/3");
 });

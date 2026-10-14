@@ -21,6 +21,7 @@ const { allFeatureIds, defaultEnabledFeatureIds } = require("./core/feature-regi
 const { createCredentialStore } = require("./core/credential-store.js");
 const { ensureMcpToken } = require("./core/mcp-registration.js");
 const { writeConfigFile } = require("./core/settings.js");
+const { withGitProvider } = require("./core/with-git-provider.js");
 
 /** Real (but network-free) git repo: `git init` + a fake origin remote —
  * same shape core/prereqs.test.js uses, needed here because
@@ -137,13 +138,15 @@ test("discoverRepos adds every discovered clone keyed from its origin, without a
   fs.mkdirSync(path.join(root, "not-a-repo"));
 
   const existing = { "OTHER/repo": "/some/path" };
-  const { repos, added } = discoverRepos(existing, [root]);
+  const { repos, added } = withGitProvider("bitbucket-dc", () => discoverRepos(existing, [root]));
   assert.deepEqual(repos, {
     "OTHER/repo": "/some/path",
     "ACME/sample-service": path.join(root, "billing"),
     "ACME/sample-app": path.join(root, "sample-app"),
   });
   assert.deepEqual(added, ["ACME/sample-app", "ACME/sample-service"]);
+  // On the placeholder profile (GitHub) the clones are keyed by GitHub's rules (the ssh one parses too).
+  assert.deepEqual(discoverRepos(existing, [root]).added, ["acme/sample-service", "some/mirror"]);
   assert.deepEqual(existing, { "OTHER/repo": "/some/path" }, "doesn't mutate its input");
 
   fs.rmSync(root, { recursive: true, force: true });
@@ -220,6 +223,14 @@ test("collectFeatureConfigs never touches rl when nothing is selected", async ()
   const rl = scriptedRl([]); // throws if asked anything at all
   const result = await collectFeatureConfigs(rl, [], [], {});
   assert.deepEqual(result, {});
+});
+
+test("address-review-comments records the profile's git host under its own site id, never a 'bitbucket' key on a GitHub profile", async () => {
+  const rl = scriptedRl([]);
+  const fresh = await collectFeatureConfigs(rl, ["address-review-comments"], [], {});
+  assert.deepEqual(fresh, { github: { baseUrl: "https://github.com" } });
+  const kept = await collectFeatureConfigs(rl, ["address-review-comments"], [], { github: { baseUrl: "https://ghe.acme.io", apiToken: "" } });
+  assert.deepEqual(kept, { github: { baseUrl: "https://ghe.acme.io", apiToken: "" } });
 });
 
 test("collectFeatureConfigs never asks about a feature with no promptSetup (resolve-conflict)", async () => {

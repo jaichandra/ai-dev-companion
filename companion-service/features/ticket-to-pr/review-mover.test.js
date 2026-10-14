@@ -1,6 +1,8 @@
 // The review mover against the build (npm run build first), with Bitbucket and
 // Jira injected: no network, no credentials, HOME pointed at a temp dir.
 const test = require("node:test");
+// This file is about a Bitbucket profile; the placeholder profile's git host is GitHub.
+require("../../core/with-git-provider.js").useBitbucketProfile();
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");

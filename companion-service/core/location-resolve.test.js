@@ -95,12 +95,12 @@ test("an absolute path that only looks like a repo root prefix does not match it
   assert.equal(resolveLocation(loc("/r/app/other/src/a.ts"), [repo]).rel, "other/src/a.ts");
 });
 
-test("repoKeyFromPageUrl finds the configured repo of a Bitbucket page, case-insensitively", () => {
+test("repoKeyFromPageUrl finds the configured repo of a pull request page, case-insensitively", () => {
   const keys = ["ACME/sample-app", "ACME/sample-service"];
-  assert.equal(repoKeyFromPageUrl("https://bb.example/projects/ACME/repos/sample-app/pull-requests/12/diff", keys), "ACME/sample-app");
-  assert.equal(repoKeyFromPageUrl("https://bb.example/projects/acme/repos/Sample-Service/browse?at=x", keys), "ACME/sample-service");
-  assert.equal(repoKeyFromPageUrl("https://bb.example/projects/OTHER/repos/x/browse", keys), undefined);
+  assert.equal(repoKeyFromPageUrl("https://github.com/ACME/sample-app/pull/12/files", keys), "ACME/sample-app");
+  assert.equal(repoKeyFromPageUrl("https://github.com/acme/Sample-Service/tree/main", keys), "ACME/sample-service");
+  assert.equal(repoKeyFromPageUrl("https://github.com/OTHER/x/tree/main", keys), undefined);
   assert.equal(repoKeyFromPageUrl("https://jenkins.example/job/x/5/", keys), undefined);
-  assert.equal(repoKeyFromPageUrl("https://bb.example/projects/%E0%A4%A/repos/x", keys), undefined);
+  assert.equal(repoKeyFromPageUrl("https://github.com/%E0%A4%A/x", keys), undefined);
   assert.equal(repoKeyFromPageUrl(undefined, keys), undefined);
 });
