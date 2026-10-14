@@ -2,7 +2,8 @@
 // descriptor, how to load its implementation, and the MCP tools, scope-key rule, persistence and
 // history behaviour that used to be spread over the registry, server.ts, mcp-tools.js, scope-key.js,
 // job-files.js and history-record.js. Listed in a pack (packs/*.js); see core/packs.js.
-const { DEFAULT_BITBUCKET_BASE_URL, platformTokenSource, logAuthNote } = require("../../core/setup-helpers.js");
+const { platformTokenSource, logAuthNote } = require("../../core/setup-helpers.js");
+const environment = require("../../environment.js");
 
 module.exports = {
   descriptor: {
@@ -14,9 +15,11 @@ module.exports = {
     requiredChecks: ["git", "claudeCli", "claudeAuth"],
     needsRepos: true,
     async promptSetup(rl, helpers, existingConfig) {
-      const baseUrl = existingConfig.bitbucket?.baseUrl || DEFAULT_BITBUCKET_BASE_URL;
-      logAuthNote(helpers, "Bitbucket", platformTokenSource(helpers, "bitbucket", baseUrl));
-      return { bitbucket: { ...existingConfig.bitbucket, baseUrl } };
+      // The profile's git host, whichever it is (its site id is the config key): Bitbucket or GitHub.
+      const git = environment.sites.find((s) => s.kind === "git");
+      const baseUrl = existingConfig[git.id]?.baseUrl || git.baseUrl;
+      logAuthNote(helpers, git.label, platformTokenSource(helpers, git.id, baseUrl));
+      return { [git.id]: { ...existingConfig[git.id], baseUrl } };
     },
   },
   factory: () => require("./index").createAddressReviewCommentsFeature,

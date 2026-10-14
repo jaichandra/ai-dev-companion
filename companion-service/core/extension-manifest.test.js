@@ -16,11 +16,11 @@ const committed = JSON.parse(fs.readFileSync(path.join(EXTENSION_DIR, "manifest.
 
 
 test("a base URL saved in config.json replaces the profile's host, and a shared host is listed once", () => {
-  const config = { jira: { baseUrl: "https://tracker.mycompany.test/some/path" }, bitbucket: { baseUrl: "https://tracker.mycompany.test" } };
+  const config = { jira: { baseUrl: "https://tracker.mycompany.test/some/path" }, jenkins: { baseUrl: "https://tracker.mycompany.test" } };
   const hosts = manifestTool.hostPatterns(config);
   assert.ok(hosts.includes("https://tracker.mycompany.test/*"));
   assert.equal(hosts.filter((h) => h === "https://tracker.mycompany.test/*").length, 1);
-  assert.ok(!hosts.some((h) => h.includes("jira.example") || h.includes("bitbucket.example")), "the profile's defaults are replaced, not added");
+  assert.ok(!hosts.some((h) => h.includes("jira.example") || h.includes("github.com")), "the profile's defaults are replaced, not added");
   assert.deepEqual(manifestTool.buildManifest(committed, config).host_permissions.slice(-1), ["http://127.0.0.1/*"]);
 });
 
@@ -42,13 +42,16 @@ test("only the generated fields change: the name comes from the profile; version
 
 test("the right-click 'Open in editor' menu is for the git host and CI server, not the issue tracker", () => {
   const matches = manifestTool.contextMenuMatches({});
-  assert.deepEqual(matches, [environment.sites.find((s) => s.kind === "git"), environment.sites.find((s) => s.kind === "ci")].map((s) => `${new URL(s.baseUrl).origin}/*`).sort((a, b) => matches.indexOf(a) - matches.indexOf(b)));
+  const expected = [environment.sites.find((s) => s.kind === "git"), environment.sites.find((s) => s.kind === "ci")].flatMap((s) =>
+    (s.pageMatches || ["{origin}/*"]).map((pattern) => pattern.replace("{origin}", new URL(s.baseUrl).origin)),
+  );
+  assert.deepEqual([...matches].sort(), [...expected].sort());
   assert.ok(!matches.some((m) => m.includes("jira")));
 });
 
 test("originsByKind gives the origin of the git, issues and ci site, honouring config", () => {
   assert.deepEqual(Object.keys(manifestTool.originsByKind({})).sort(), ["ci", "git", "issues"]);
-  assert.equal(manifestTool.originsByKind({ bitbucket: { baseUrl: "https://git.example.com/x" } }).git, "https://git.example.com");
+  assert.equal(manifestTool.originsByKind({ github: { baseUrl: "https://git.example.com/x" } }).git, "https://git.example.com");
 });
 
 test("checkManifest names what is wrong with a stale manifest", () => {

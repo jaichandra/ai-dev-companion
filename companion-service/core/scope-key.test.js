@@ -1,18 +1,27 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { scopeKeyFor, isValidScopeKey, lookupJob } = require("./scope-key.js");
+const { withGitProvider } = require("./with-git-provider.js");
 
 // ---- scopeKeyFor ----
 
 test("scopeKeyFor: resolve-conflict builds a bitbucket key, uppercasing the project and lowercasing the repo", () => {
-  assert.equal(scopeKeyFor("resolve-conflict", { project: "ci", repo: "Sample-App", prId: 12 }), "bitbucket:CI/sample-app#12");
+  withGitProvider("bitbucket-dc", () => {
+    assert.equal(scopeKeyFor("resolve-conflict", { project: "ci", repo: "Sample-App", prId: 12 }), "bitbucket:CI/sample-app#12");
+  });
+});
+
+test("scopeKeyFor: on the placeholder profile (GitHub) both owner and repo are lowercased", () => {
+  assert.equal(scopeKeyFor("resolve-conflict", { project: "Octo", repo: "Hello", prId: 12 }), "github:octo/hello#12");
 });
 
 test("scopeKeyFor: address-review-comments builds the same bitbucket key shape", () => {
-  assert.equal(
-    scopeKeyFor("address-review-comments", { project: "ACME", repo: "sample-app", prId: 7 }),
-    "bitbucket:ACME/sample-app#7",
-  );
+  withGitProvider("bitbucket-dc", () => {
+    assert.equal(
+      scopeKeyFor("address-review-comments", { project: "ACME", repo: "sample-app", prId: 7 }),
+      "bitbucket:ACME/sample-app#7",
+    );
+  });
 });
 
 test("scopeKeyFor: analyze-issue builds a jira key, uppercasing the issue key", () => {
@@ -35,7 +44,7 @@ test("scopeKeyFor: an unknown feature id gives null", () => {
 });
 
 test("scopeKeyFor: a prId given as a digit string works", () => {
-  assert.equal(scopeKeyFor("resolve-conflict", { project: "CI", repo: "sample-app", prId: "12" }), "bitbucket:CI/sample-app#12");
+  assert.equal(scopeKeyFor("resolve-conflict", { project: "CI", repo: "sample-app", prId: "12" }), "github:ci/sample-app#12");
 });
 
 for (const badPrId of [0, -1, "12a", 1.5]) {
@@ -159,8 +168,11 @@ test("a GitHub PR's key is accepted, with the same safety checks as Bitbucket's"
 });
 
 test("a pull request feature's scope key follows the profile's git host, and 'bitbucket-pr' still means the same", () => {
-  assert.equal(scopeKeyFor("resolve-conflict", { project: "acme", repo: "Sample-App", prId: 7 }), "bitbucket:ACME/sample-app#7");
-  assert.equal(scopeKeyFor("address-review-comments", { project: "acme", repo: "Sample-App", prId: "7" }), "bitbucket:ACME/sample-app#7");
+  assert.equal(scopeKeyFor("resolve-conflict", { project: "acme", repo: "Sample-App", prId: 7 }), "github:acme/sample-app#7");
+  assert.equal(scopeKeyFor("address-review-comments", { project: "acme", repo: "Sample-App", prId: "7" }), "github:acme/sample-app#7");
+  withGitProvider("bitbucket-dc", () => {
+    assert.equal(scopeKeyFor("resolve-conflict", { project: "acme", repo: "Sample-App", prId: 7 }), "bitbucket:ACME/sample-app#7");
+  });
   assert.equal(scopeKeyFor("resolve-conflict", { project: "../x", repo: "r", prId: 7 }), null);
   assert.equal(scopeKeyFor("resolve-conflict", { project: "o", repo: "r", prId: 0 }), null);
 });

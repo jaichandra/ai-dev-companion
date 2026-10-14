@@ -5,6 +5,8 @@ const { PRODUCT_NAME } = require("../../core/product-name.js");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
+const { useGitProvider } = require("../../core/with-git-provider.js");
+useGitProvider("bitbucket-dc"); // this file is about Bitbucket's URL shapes; the placeholder profile is GitHub
 const {
   extractUrls,
   candidateReposFromTicket,

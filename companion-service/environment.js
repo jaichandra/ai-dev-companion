@@ -8,9 +8,11 @@ module.exports = defineEnvironment({
    * (`<id>.apiToken`). `kind` says what the system is for; `provider` names the client
    * implementation (core/providers.ts). */
   sites: [
+    // github.com, or your GitHub Enterprise address (setup and Settings can override it). GitHub's browser login doesn't
+    // authenticate its API, so the site is token-only and the extension runs only on pull request pages.
+    { id: "github", kind: "git", provider: "github", label: "GitHub", baseUrl: "https://github.com", tokenOnly: true, pageMatches: ["{origin}/*/*/pull/*"] },
     { id: "jira", kind: "issues", provider: "jira-dc", label: "Jira", baseUrl: "https://jira.example.com" },
     { id: "jenkins", kind: "ci", provider: "jenkins", label: "Jenkins", withUsername: true, baseUrl: "https://jenkins.example.com" },
-    { id: "bitbucket", kind: "git", provider: "bitbucket-dc", label: "Bitbucket", baseUrl: "https://bitbucket.example.com" },
   ],
 
   /** Where `companion update` follows. Installs track `ref`. */

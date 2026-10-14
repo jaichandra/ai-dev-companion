@@ -6,6 +6,7 @@ const path = require("path");
 const net = require("net");
 const { execFileSync } = require("child_process");
 const prereqs = require("./prereqs.js");
+const { withGitProvider } = require("./with-git-provider.js");
 
 /** Real (but network-free) git repo: `git init` + a fake origin remote. */
 function makeFakeClone(dir, originUrl) {
@@ -202,8 +203,10 @@ test("discoverLocalClones finds Bitbucket clones one level deep, skipping worktr
   fs.mkdirSync(path.join(root, "linked"));
   fs.writeFileSync(path.join(root, "linked", ".git"), "gitdir: /elsewhere\n");
 
-  const found = prereqs.discoverLocalClones([root, path.join(root, "does-not-exist")]);
+  const found = withGitProvider("bitbucket-dc", () => prereqs.discoverLocalClones([root, path.join(root, "does-not-exist")]));
   assert.deepEqual(found, [{ key: "ACME/sample-app", path: path.join(root, "sample-app") }]);
+  // On the placeholder profile (GitHub) the GitHub clone is the one found.
+  assert.deepEqual(prereqs.discoverLocalClones([root]), [{ key: "someone/tools", path: path.join(root, "tools") }]);
 
   fs.rmSync(root, { recursive: true, force: true });
 });
@@ -240,7 +243,7 @@ test("isSafeRepoSegment accepts project and repo names (a leading dot too: GitHu
 
 test("deriveCloneUrl reuses the transport of an existing clone's origin", () => {
   const derive = (origin) =>
-    prereqs.deriveCloneUrl({ existingOrigins: [origin], project: "ACME", repo: "sample-service" });
+    withGitProvider("bitbucket-dc", () => prereqs.deriveCloneUrl({ existingOrigins: [origin], project: "ACME", repo: "sample-service" }));
   assert.equal(
     derive("https://bitbucket.example.com/scm/acme/sample-app.git"),
     "https://bitbucket.example.com/scm/acme/sample-service.git",
@@ -253,13 +256,19 @@ test("deriveCloneUrl reuses the transport of an existing clone's origin", () => 
 
 test("deriveCloneUrl skips non-Bitbucket origins and falls back to the page origin", () => {
   assert.equal(
-    prereqs.deriveCloneUrl({
-      existingOrigins: ["https://github.com/some/mirror.git"],
-      pageOrigin: "https://bitbucket.example.com/",
-      project: "ACME",
-      repo: "sample-app",
-    }),
+    withGitProvider("bitbucket-dc", () =>
+      prereqs.deriveCloneUrl({
+        existingOrigins: ["https://github.com/some/mirror.git"],
+        pageOrigin: "https://bitbucket.example.com/",
+        project: "ACME",
+        repo: "sample-app",
+      }),
+    ),
     "https://bitbucket.example.com/scm/acme/sample-app.git",
+  );
+  assert.equal(
+    prereqs.deriveCloneUrl({ existingOrigins: ["git@github.com:some/mirror.git"], project: "Octo", repo: "hello" }),
+    "git@github.com:Octo/hello.git",
   );
   assert.equal(prereqs.deriveCloneUrl({ existingOrigins: [], project: "ACME", repo: "sample-app" }), null);
 });
@@ -333,6 +342,7 @@ test("each provider's rules: where a fresh clone comes from", () => {
   assert.equal(rules.github.pageCloneUrl("https://ghe.example.com", "o", ".github"), "https://ghe.example.com/o/.github.git");
 });
 
-test("the rules in force are the profile's git provider's (the placeholder profile's is Bitbucket)", () => {
-  assert.equal(prereqs.gitRemoteRules(), prereqs.GIT_REMOTE_RULES["bitbucket-dc"]);
+test("the rules in force are the profile's git provider's (the placeholder profile's is GitHub)", () => {
+  assert.equal(prereqs.gitRemoteRules(), prereqs.GIT_REMOTE_RULES.github);
+  withGitProvider("bitbucket-dc", () => assert.equal(prereqs.gitRemoteRules(), prereqs.GIT_REMOTE_RULES["bitbucket-dc"]));
 });

@@ -2,6 +2,8 @@
 // Jira, git, LLM and job call injected — no network, no Claude, HOME in a
 // temp dir.
 const test = require("node:test");
+// This file is about a Bitbucket profile; the placeholder profile's git host is GitHub.
+require("./with-git-provider.js").useBitbucketProfile();
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");

@@ -5,7 +5,7 @@ const schema = require("./history-schema.js");
 test("normalizeKey maps bare issue keys and PR refs to the scopeKey forms", () => {
   assert.equal(schema.normalizeKey("proj-12"), "jira:PROJ-12");
   assert.equal(schema.normalizeKey(" PROJ-12 "), "jira:PROJ-12");
-  assert.equal(schema.normalizeKey("ci/Sample-App#7"), "bitbucket:CI/sample-app#7");
+  assert.equal(schema.normalizeKey("ci/Sample-App#7"), "github:ci/sample-app#7");
   assert.equal(schema.normalizeKey("jira:PROJ-12"), "jira:PROJ-12");
   assert.equal(schema.normalizeKey("job:abc"), "job:abc");
 });

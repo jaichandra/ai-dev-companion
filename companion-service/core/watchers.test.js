@@ -16,7 +16,7 @@ const PR = {
   approvals: 0,
   reviewers: [{ name: "me", status: "UNAPPROVED" }],
 };
-const KEY = "bitbucket:CI/sample-app#12";
+const KEY = "github:ci/sample-app#12";
 
 test("prKey is the scopeKey form, and seen maps are capped and pruned", () => {
   assert.equal(w.prKey(PR), KEY);

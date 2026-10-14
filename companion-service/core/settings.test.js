@@ -27,7 +27,7 @@ const CURRENT = {
 function fakeDeps({ check = () => ({ ok: true, message: "OK." }), origins = {} } = {}) {
   return {
     checkRepoPath: check,
-    getOriginUrl: (p) => origins[p] ?? `https://bitbucket.example.com/scm/acme/${path.basename(p)}.git`,
+    getOriginUrl: (p) => origins[p] ?? `https://github.com/acme/${path.basename(p)}.git`,
   };
 }
 
@@ -83,7 +83,7 @@ test("publicSettings never exposes the shared secret or any token", () => {
 test("publicSettings reports no token and blank fields for a minimal config", () => {
   const view = settings.publicSettings({ port: 1, sharedSecret: "x" }, fakeCredentials());
   assert.deepEqual(view.jira, { baseUrl: "", apiTokenSet: false, apiTokenExternal: "" });
-  assert.deepEqual(view.bitbucket, { baseUrl: "", apiTokenSet: false, apiTokenExternal: "" });
+  assert.deepEqual(view.github, { baseUrl: "", apiTokenSet: false, apiTokenExternal: "" });
   assert.deepEqual(view.repos, {});
   assert.equal(view.reviewEditor, null);
   // No enabledFeatures field means "every known feature" (legacy configs).
@@ -97,27 +97,27 @@ test("publicSettings reports apiTokenSet from the credential store, not config",
   const view = settings.publicSettings(CURRENT, credentials);
   assert.equal(view.jira.apiTokenSet, false);
   assert.equal(view.jenkins.apiTokenSet, true);
-  assert.equal(view.bitbucket.apiTokenSet, false);
+  assert.equal(view.github.apiTokenSet, false);
 });
 
-test("publicSettings reports bitbucket's baseUrl and apiTokenSet independently of jira/jenkins", () => {
-  const credentials = fakeCredentials({ "bitbucket.apiToken": "bb-token" });
+test("publicSettings reports github's baseUrl and apiTokenSet independently of jira/jenkins", () => {
+  const credentials = fakeCredentials({ "github.apiToken": "bb-token" });
   const view = settings.publicSettings(
-    { ...CURRENT, bitbucket: { baseUrl: "https://bitbucket.example.com" } },
+    { ...CURRENT, github: { baseUrl: "https://github.com" } },
     credentials,
   );
-  assert.deepEqual(view.bitbucket, { baseUrl: "https://bitbucket.example.com", apiTokenSet: true, apiTokenExternal: "" });
+  assert.deepEqual(view.github, { baseUrl: "https://github.com", apiTokenSet: true, apiTokenExternal: "" });
   assert.equal(view.jira.apiTokenSet, false);
 });
 
 test("publicSettings names the another tool file a site borrows its token from, only when none is saved", () => {
   const credentials = {
-    ...fakeCredentials({ "bitbucket.apiToken": "bb-token" }),
-    externalSources: () => ({ jira: "~/.ai/.jira.env", bitbucket: "~/.claude.json (acme-bitbucket)" }),
+    ...fakeCredentials({ "github.apiToken": "bb-token" }),
+    externalSources: () => ({ jira: "~/.ai/.jira.env", github: "~/.claude.json (acme-github)" }),
   };
   const view = settings.publicSettings(CURRENT, credentials);
   assert.equal(view.jira.apiTokenExternal, "~/.ai/.jira.env");
-  assert.equal(view.bitbucket.apiTokenExternal, "");
+  assert.equal(view.github.apiTokenExternal, "");
   assert.equal(view.jenkins.apiTokenExternal, "");
 });
 
@@ -142,7 +142,7 @@ test("validateSettingsUpdate accepts a full, valid update", () => {
       reviewEditor: "cursor",
       jira: { baseUrl: "https://jira.example.com/", apiToken: "", clearApiToken: false },
       jenkins: { baseUrl: "", username: "", apiToken: "abc" },
-      bitbucket: { baseUrl: "https://bitbucket.example.com/", apiToken: "bb-tok" },
+      github: { baseUrl: "https://github.com/", apiToken: "bb-tok" },
       analyzeIssue: { model: "" },
       acknowledgeWarnings: true,
     },
@@ -228,7 +228,7 @@ test("validateSettingsUpdate rejects a clone whose origin is a different repo", 
   const errors = settings.validateSettingsUpdate(
     { repos: { "ACME/other": "/Users/me/gitviews/sample-app2" } },
     CURRENT,
-    fakeDeps({ origins: { "/Users/me/gitviews/sample-app2": "https://bitbucket.example.com/scm/acme/sample-app.git" } }),
+    fakeDeps({ origins: { "/Users/me/gitviews/sample-app2": "https://github.com/acme/sample-app.git" } }),
   );
   assert.equal(errors.length, 1);
   assert.match(errors[0].message, /not ACME\/other/);
@@ -241,7 +241,7 @@ test("validateSettingsUpdate validates editor, models, URLs and tokens", () => {
       analyzeIssue: { model: "rm -rf /", extra: 1 },
       jira: { baseUrl: "javascript:alert(1)", apiToken: "has space", clearApiToken: "yes" },
       jenkins: { baseUrl: "ftp://jenkins", username: "a\nb", surprise: true },
-      bitbucket: { baseUrl: "not a url", username: "shouldn't be allowed" },
+      github: { baseUrl: "not a url", username: "shouldn't be allowed" },
     },
     CURRENT,
     fakeDeps(),
@@ -249,8 +249,8 @@ test("validateSettingsUpdate validates editor, models, URLs and tokens", () => {
   assert.deepEqual(fieldsOf(errors).sort(), [
     "analyzeIssue.extra",
     "analyzeIssue.model",
-    "bitbucket.baseUrl",
-    "bitbucket.username",
+    "github.baseUrl",
+    "github.username",
     "jenkins.baseUrl",
     "jenkins.surprise",
     "jenkins.username",
@@ -386,21 +386,21 @@ test("mergeSettings drops blank site fields, and the whole object once empty", (
   assert.equal(next.jira, undefined);
 });
 
-test("mergeSettings handles bitbucket like jira/jenkins: baseUrl merge, tokenOps, and dropping once empty", () => {
+test("mergeSettings handles github like jira/jenkins: baseUrl merge, tokenOps, and dropping once empty", () => {
   const { config: withUrl, tokenOps: setOps } = settings.mergeSettings(CURRENT, {
-    bitbucket: { baseUrl: "https://bitbucket.example.com/", apiToken: " bb-token " },
+    github: { baseUrl: "https://github.com/", apiToken: " bb-token " },
   });
-  assert.deepEqual(withUrl.bitbucket, { baseUrl: "https://bitbucket.example.com" });
-  assert.deepEqual(setOps, [{ name: "bitbucket.apiToken", value: "bb-token" }]);
+  assert.deepEqual(withUrl.github, { baseUrl: "https://github.com" });
+  assert.deepEqual(setOps, [{ name: "github.apiToken", value: "bb-token" }]);
 
   const { config: cleared, tokenOps: clearOps } = settings.mergeSettings(withUrl, {
-    bitbucket: { apiToken: "ignored", clearApiToken: true },
+    github: { apiToken: "ignored", clearApiToken: true },
   });
-  assert.deepEqual(cleared.bitbucket, { baseUrl: "https://bitbucket.example.com" });
-  assert.deepEqual(clearOps, [{ name: "bitbucket.apiToken", value: null }]);
+  assert.deepEqual(cleared.github, { baseUrl: "https://github.com" });
+  assert.deepEqual(clearOps, [{ name: "github.apiToken", value: null }]);
 
-  const { config: dropped } = settings.mergeSettings(cleared, { bitbucket: { baseUrl: " " } });
-  assert.equal(dropped.bitbucket, undefined);
+  const { config: dropped } = settings.mergeSettings(cleared, { github: { baseUrl: " " } });
+  assert.equal(dropped.github, undefined);
 });
 
 test("mergeSettings orders enabled features like the registry and snapshots knownFeatures", () => {
@@ -522,7 +522,7 @@ test("applyTokenOps stops at the first failure — ops before it stay applied, a
     [
       { name: "jira.apiToken", value: "jira-tok" },
       { name: "jenkins.apiToken", value: "jenkins-tok" },
-      { name: "bitbucket.apiToken", value: "never-reached" },
+      { name: "github.apiToken", value: "never-reached" },
     ],
     setToken,
   );
@@ -617,7 +617,7 @@ test("validateSettingsUpdate accepts a real clone with a matching origin", () =>
     const clone = path.join(dir, "sample-app");
     fs.mkdirSync(clone);
     execFileSync("git", ["init", "-q"], { cwd: clone });
-    execFileSync("git", ["remote", "add", "origin", "https://bitbucket.example.com/scm/acme/sample-app.git"], {
+    execFileSync("git", ["remote", "add", "origin", "https://github.com/acme/sample-app.git"], {
       cwd: clone,
     });
     assert.deepEqual(settings.validateSettingsUpdate({ repos: { "ACME/sample-app": clone } }, { repos: {} }), []);
@@ -630,23 +630,23 @@ test("validateSettingsUpdate accepts a real clone with a matching origin", () =>
 
 // ---- migrateTokensToStore ----
 
-test("migrateTokensToStore moves non-empty jira/jenkins/bitbucket apiToken into the store, blanks and saves config", () => {
+test("migrateTokensToStore moves non-empty jira/jenkins/github apiToken into the store, blanks and saves config", () => {
   const store = fakeStore();
   const config = {
     jira: { baseUrl: "https://jira.example.com", apiToken: "jira-tok" },
     jenkins: { baseUrl: "https://jenkins.example.com", apiToken: "jenkins-tok" },
-    bitbucket: { apiToken: "bb-tok" },
+    github: { apiToken: "bb-tok" },
   };
   let saved = null;
   const result = settings.migrateTokensToStore(config, store, (c) => (saved = c));
 
-  assert.deepEqual(result.migrated.sort(), ["bitbucket.apiToken", "jenkins.apiToken", "jira.apiToken"]);
+  assert.deepEqual(result.migrated.sort(), ["github.apiToken", "jenkins.apiToken", "jira.apiToken"]);
   assert.equal(store.get("jira.apiToken"), "jira-tok");
   assert.equal(store.get("jenkins.apiToken"), "jenkins-tok");
-  assert.equal(store.get("bitbucket.apiToken"), "bb-tok");
+  assert.equal(store.get("github.apiToken"), "bb-tok");
   assert.equal(config.jira.apiToken, undefined);
   assert.equal(config.jenkins.apiToken, undefined);
-  assert.equal(config.bitbucket.apiToken, undefined);
+  assert.equal(config.github.apiToken, undefined);
   assert.equal(config.jira.baseUrl, "https://jira.example.com", "other fields untouched");
   assert.strictEqual(saved, config, "saveConfig is called with the (now blanked) config");
 });

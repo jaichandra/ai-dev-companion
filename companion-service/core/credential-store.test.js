@@ -52,9 +52,9 @@ test("set stores multiple names independently", () => {
 
 test("list returns names only, never values", () => {
   const { store } = makeStore();
-  store.set("bitbucket.apiToken", "top-secret-value");
+  store.set("github.apiToken", "top-secret-value");
   const names = store.list();
-  assert.deepEqual(names, ["bitbucket.apiToken"]);
+  assert.deepEqual(names, ["github.apiToken"]);
   for (const name of names) assert.notEqual(name, "top-secret-value");
 });
 
@@ -102,9 +102,9 @@ test("an unknown name throws CredentialStoreError for get, set and remove", () =
 
 test("ALLOWED_NAMES is exactly the six known credential names", () => {
   assert.deepEqual(ALLOWED_NAMES, [
+    "github.apiToken",
     "jira.apiToken",
     "jenkins.apiToken",
-    "bitbucket.apiToken",
     "mcp.token",
     "slack.token",
     "llmProxy.apiKey",

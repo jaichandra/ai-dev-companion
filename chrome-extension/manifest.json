@@ -13,7 +13,6 @@
   "host_permissions": [
     "https://jira.example.com/*",
     "https://jenkins.example.com/*",
-    "https://bitbucket.example.com/*",
     "http://127.0.0.1/*"
   ],
   "background": {
@@ -22,9 +21,9 @@
   "content_scripts": [
     {
       "matches": [
+        "https://github.com/*/*/pull/*",
         "https://jira.example.com/*",
-        "https://jenkins.example.com/*",
-        "https://bitbucket.example.com/*"
+        "https://jenkins.example.com/*"
       ],
       "js": [
         "diff-viewer.js",
