@@ -205,7 +205,14 @@ function isJobWorktreeDir(worktreeRoot, dir, id) {
  */
 function loadJobs(
   dir,
-  { now = Date.now(), worktreeRoot, maxAgeMs = PRUNE_AFTER_MS, log = () => {}, sessionCwdOk = () => false } = {},
+  {
+    now = Date.now(),
+    worktreeRoot,
+    maxAgeMs = PRUNE_AFTER_MS,
+    log = () => {},
+    sessionCwdOk = () => false,
+    adoptedWorktreeOk = () => false,
+  } = {},
 ) {
   const result = { jobs: [], reconciled: [], pruned: [], prunedJobs: [], dropped: [] };
 
@@ -257,7 +264,15 @@ function loadJobs(
     // Any `data.worktree` at all must name exactly this job's own worktree
     // (isJobWorktreeDir) — an empty or missing `dir` included, since a job
     // that has a worktree is one discard will try to remove.
-    if (worktree !== undefined && !isJobWorktreeDir(worktreeRoot, worktreeDir, id)) {
+    // Or, for a job that reused an existing worktree (`adopted`), one that
+    // adoptedWorktreeOk vouches for: a linked worktree of a configured repo.
+    // Such a worktree is never removed with the job.
+    const adoptedOk =
+      worktree !== undefined &&
+      worktree.adopted === true &&
+      typeof job.data.repoPath === "string" &&
+      adoptedWorktreeOk(job.data.repoPath, worktreeDir);
+    if (worktree !== undefined && !adoptedOk && !isJobWorktreeDir(worktreeRoot, worktreeDir, id)) {
       log(`[jobs] dropping job ${id}: its worktree (${String(worktreeDir)}) isn't ${worktreeRoot}/<repo>/${id}`);
       removeJob(dir, id);
       result.dropped.push(id);
