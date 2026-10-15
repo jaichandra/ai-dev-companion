@@ -124,6 +124,7 @@ function publicSettings(config, credentials) {
     ticketToPr: {
       reviewTransitionName: config.ticketToPr?.reviewTransitionName || TICKET_TO_PR_TRANSITION_DEFAULT,
       autoMoveToReview: config.ticketToPr?.autoMoveToReview !== false,
+      createWorktreeWithoutAsking: config.ticketToPr?.createWorktreeWithoutAsking === true,
     },
     sessionCache: {
       ttlMinutes: config.sessionCache?.ttlMinutes ?? SESSION_CACHE_TTL_MINUTES_DEFAULT,
@@ -401,10 +402,13 @@ function validateSettingsUpdate(update, current, deps = {}) {
       errors.push({ field: "ticketToPr", message: "must be an object." });
     } else {
       for (const key of Object.keys(update.ticketToPr)) {
-        if (key !== "reviewTransitionName" && key !== "autoMoveToReview") errors.push({ field: `ticketToPr.${key}`, message: "isn't a known setting." });
+        if (key !== "reviewTransitionName" && key !== "autoMoveToReview" && key !== "createWorktreeWithoutAsking") errors.push({ field: `ticketToPr.${key}`, message: "isn't a known setting." });
       }
       if (update.ticketToPr.autoMoveToReview !== undefined && typeof update.ticketToPr.autoMoveToReview !== "boolean") {
         errors.push({ field: "ticketToPr.autoMoveToReview", message: "must be true or false." });
+      }
+      if (update.ticketToPr.createWorktreeWithoutAsking !== undefined && typeof update.ticketToPr.createWorktreeWithoutAsking !== "boolean") {
+        errors.push({ field: "ticketToPr.createWorktreeWithoutAsking", message: "must be true or false." });
       }
       const name = update.ticketToPr.reviewTransitionName;
       if (name !== undefined && (typeof name !== "string" || hasControlChars(name) || name.trim().length > 100)) {
@@ -629,14 +633,20 @@ function mergeSettings(current, update, { savedTokenNames, newMcpToken } = {}) {
     if (Object.keys(addressReviewComments).length > 0) next.addressReviewComments = addressReviewComments;
     else delete next.addressReviewComments;
   }
-  if (update.ticketToPr?.reviewTransitionName !== undefined || update.ticketToPr?.autoMoveToReview !== undefined) {
+  if (
+    update.ticketToPr?.reviewTransitionName !== undefined ||
+    update.ticketToPr?.autoMoveToReview !== undefined ||
+    update.ticketToPr?.createWorktreeWithoutAsking !== undefined
+  ) {
     // The defaults (In Review, automatic) aren't persisted, like reviewEditor's "auto".
     const saved = next.ticketToPr || {};
     const name = update.ticketToPr.reviewTransitionName !== undefined ? update.ticketToPr.reviewTransitionName.trim() : saved.reviewTransitionName;
     const auto = update.ticketToPr.autoMoveToReview !== undefined ? update.ticketToPr.autoMoveToReview : saved.autoMoveToReview !== false;
+    const create = update.ticketToPr.createWorktreeWithoutAsking !== undefined ? update.ticketToPr.createWorktreeWithoutAsking : saved.createWorktreeWithoutAsking === true;
     const out = {};
     if (name && name !== TICKET_TO_PR_TRANSITION_DEFAULT) out.reviewTransitionName = name;
     if (auto === false) out.autoMoveToReview = false;
+    if (create === true) out.createWorktreeWithoutAsking = true;
     if (Object.keys(out).length > 0) next.ticketToPr = out;
     else delete next.ticketToPr;
   }

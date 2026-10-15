@@ -151,7 +151,7 @@ export interface Config {
    * request is open; defaults to "In Review", skipped when the ticket has none
    * by that name. `autoMoveToReview` (default on; only `false` turns it off)
    * lets the service do that by itself when it sees the PR. */
-  ticketToPr?: { reviewTransitionName?: string; autoMoveToReview?: boolean };
+  ticketToPr?: { reviewTransitionName?: string; autoMoveToReview?: boolean; createWorktreeWithoutAsking?: boolean };
   /** Summarize comments: the Claude model that writes the summary. Defaults
    * to DEFAULT_SUMMARIZE_COMMENTS_MODEL (Haiku) — a short summary needs no more. */
   summarizeComments?: { model?: string };
