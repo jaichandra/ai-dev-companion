@@ -18,10 +18,10 @@ test("upsert creates a unit, then fills in fields without blanking any", (t) => 
   t.after(s.cleanup);
   const a = s.reg.upsert({ repoPath: "/r/app", branch: "feature/X-1", dir: "/w/x1", issueKey: "X-1" });
   assert.equal(a.key, unitKey("/r/app", "feature/X-1"));
-  const b = s.reg.upsert({ repoPath: "/r/app", branch: "feature/X-1", prKey: "bitbucket:CI/app#4" });
+  const b = s.reg.upsert({ repoPath: "/r/app", branch: "feature/X-1", prKey: "bitbucket:PROJ/app#4" });
   assert.equal(b.dir, "/w/x1");
   assert.equal(b.issueKey, "X-1");
-  assert.equal(b.prKey, "bitbucket:CI/app#4");
+  assert.equal(b.prKey, "bitbucket:PROJ/app#4");
   assert.equal(b.createdAt, a.createdAt);
   assert.ok(b.updatedAt > a.updatedAt);
   assert.equal(s.reg.list().length, 1);
