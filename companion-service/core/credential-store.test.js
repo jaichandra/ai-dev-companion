@@ -1,5 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+require("./with-git-provider.js").useGitHubProfile(); // pass under any distribution's profile
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -100,15 +101,9 @@ test("an unknown name throws CredentialStoreError for get, set and remove", () =
   assert.throws(() => store.remove("not.a.thing"), CredentialStoreError);
 });
 
-test("ALLOWED_NAMES is exactly the six known credential names", () => {
-  assert.deepEqual(ALLOWED_NAMES, [
-    "github.apiToken",
-    "jira.apiToken",
-    "jenkins.apiToken",
-    "mcp.token",
-    "slack.token",
-    "llmProxy.apiKey",
-  ]);
+test("ALLOWED_NAMES is the profile's site tokens plus the fixed names", () => {
+  const siteNames = require("../environment.js").sites.map((site) => `${site.id}.apiToken`);
+  assert.deepEqual([...ALLOWED_NAMES].sort(), [...siteNames, "mcp.token", "slack.token", "llmProxy.apiKey"].sort());
 });
 
 test("a tampered data field throws CredentialStoreError with code undecryptable", () => {

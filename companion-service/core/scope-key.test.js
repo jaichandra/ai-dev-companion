@@ -1,5 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+require("./with-git-provider.js").useGitHubProfile(); // pass under any distribution's profile
 const { scopeKeyFor, isValidScopeKey, lookupJob } = require("./scope-key.js");
 const { withGitProvider } = require("./with-git-provider.js");
 

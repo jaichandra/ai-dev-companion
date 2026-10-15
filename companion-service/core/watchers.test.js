@@ -1,5 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+require("./with-git-provider.js").useGitHubProfile(); // pass under any distribution's profile
 const w = require("./watchers.js");
 
 const PR = {
