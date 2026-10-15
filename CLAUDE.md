@@ -15,7 +15,7 @@ Run from `companion-service/` (Node >= 22.13):
 - Single test: `node --test core/settings.test.js`.
 - `npm run setup` (wizard), `npm run doctor`, `npm run service:install|uninstall|status`; CLI `bin/companion.js`.
 
-This repo's own tests run against its placeholder profile (`companion-service/environment.js`: GitHub, plus `example.com` Jira and Jenkins hosts, builtin pack only). Tests about Bitbucket behaviour switch the profile with `core/with-git-provider.js` (`useBitbucketProfile` before any `dist/` require, `withGitProvider`/`useGitProvider` for rules only); tests that need a distribution's values belong in that distribution.
+This repo's own tests run against its placeholder profile (`companion-service/environment.js`: GitHub, plus `example.com` Jira and Jenkins hosts, builtin pack only). Tests about Bitbucket behaviour switch the profile with `core/with-git-provider.js` (`useBitbucketProfile` before any `dist/` require, `withGitProvider`/`useGitProvider` for rules only); tests that need a distribution's values belong in that distribution. Tests written around the placeholder's GitHub site call `useGitHubProfile()` (same helper) first, so they also pass when a distribution runs them against its own profile; derive anything else profile-specific from `environment.js` rather than hardcoding it.
 
 ## Architecture
 
