@@ -51,7 +51,8 @@ test("the right-click 'Open in editor' menu is for the git host and CI server, n
 
 test("originsByKind gives the origin of the git, issues and ci site, honouring config", () => {
   assert.deepEqual(Object.keys(manifestTool.originsByKind({})).sort(), ["ci", "git", "issues"]);
-  assert.equal(manifestTool.originsByKind({ github: { baseUrl: "https://git.example.com/x" } }).git, "https://git.example.com");
+  const gitId = require("../environment.js").sites.find((site) => site.kind === "git").id;
+  assert.equal(manifestTool.originsByKind({ [gitId]: { baseUrl: "https://git.example.com/x" } }).git, "https://git.example.com");
 });
 
 test("checkManifest names what is wrong with a stale manifest", () => {

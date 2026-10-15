@@ -54,4 +54,29 @@ function useBitbucketProfile() {
   }
 }
 
-module.exports = { withGitProvider, useGitProvider, useBitbucketProfile };
+/** For a test file about the placeholder (GitHub) profile: forces the sites to the placeholder's values, so the file
+ * passes under any distribution's profile (a distribution runs the framework's tests against its own). A no-op under
+ * the placeholder itself. Call it before requiring anything else, as `useBitbucketProfile` says. */
+function useGitHubProfile() {
+  const copies = [require("../environment.js")];
+  try {
+    copies.push(require(require("node:path").join(__dirname, "..", "dist", "environment.js")));
+  } catch {
+    // No build yet: only the source profile exists.
+  }
+  for (const environment of copies) {
+    const site = environment.sites.find((s) => s.kind === "git");
+    site.id = "github";
+    site.provider = "github";
+    site.label = "GitHub";
+    site.baseUrl = "https://github.com";
+    site.tokenOnly = true;
+    site.pageMatches = ["{origin}/*/*/pull/*"];
+    for (const [kind, baseUrl] of [["issues", "https://jira.example.com"], ["ci", "https://jenkins.example.com"]]) {
+      const other = environment.sites.find((s) => s.kind === kind);
+      if (other) other.baseUrl = baseUrl;
+    }
+  }
+}
+
+module.exports = { withGitProvider, useGitProvider, useBitbucketProfile, useGitHubProfile };
