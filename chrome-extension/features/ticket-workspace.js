@@ -156,28 +156,27 @@ PaiRegistry.register({
   // Acts on the workspace's main item: the session in the ticket's own
   // worktree (else the newest). PRs and worktrees are links in the panel.
   footerActions: [
+    // One button for both: the ticket's recorded Claude session if there is one,
+    // else Claude Code in plan mode on the ticket's branch (an existing checkout
+    // first; the service asks before it makes a worktree).
     {
-      id: "resume-session",
-      label: "Resume Claude session",
-      when(job) {
-        return job.status === "awaiting-approval" && !!job.data?.workspace?.resume?.session;
-      },
-      async run(job, api) {
-        await api.action("resume-session", { sessionId: job.data.workspace.resume.session.id });
-      },
-    },
-    {
-      id: "start-fix",
-      label: "Start fix",
-      hint: "Creates a branch and worktree for this ticket, then opens Claude Code in plan mode with this analysis so you can work out and make the fix.",
+      id: "continue",
+      label: "Continue in Claude Code",
+      hint: "Reopens this ticket's Claude Code session. With none, opens Claude Code in plan mode on the ticket's branch, using a checkout you already have; it asks before creating a worktree.",
       when(job, env) {
+        if (job.status !== "awaiting-approval") return false;
+        if (job.data?.workspace?.resume?.session) return true;
         return (
-          job.status === "awaiting-approval" &&
           !!job.data?.workspace?.suggestions?.startFix &&
           (!env?.enabledFeatureIds || env.enabledFeatureIds.has("ticket-to-pr"))
         );
       },
       async run(job, api) {
+        const session = job.data.workspace.resume?.session;
+        if (session) {
+          await api.action("resume-session", { sessionId: session.id });
+          return;
+        }
         // The scan's related PRs point at the repository (no analysis needed).
         const hintRepoKeys = [...new Set((job.data.workspace.prs || []).map((pr) => pr.repoKey).filter(Boolean))];
         await api.startFeature("ticket-to-pr", { issueKey: job.data.issueKey, hintRepoKeys });

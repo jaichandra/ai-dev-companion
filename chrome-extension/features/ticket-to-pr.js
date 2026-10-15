@@ -101,9 +101,9 @@ PaiRegistry.register({
         api.rerender(await api.action("move-to-review"));
       },
     },
-    // No "Continue in Claude Code" here: Start fix has already opened that
-    // session, and a second click would open a duplicate terminal. To pick
-    // it up later, use Resume Claude session in the Ticket workspace panel.
+    // No "Continue in Claude Code" here: it has already opened that session,
+    // and a second click would open a duplicate terminal. To pick it up
+    // later, use Continue in Claude Code in the Ticket workspace panel.
     {
       id: "open-terminal",
       label: "Open in Claude Code",

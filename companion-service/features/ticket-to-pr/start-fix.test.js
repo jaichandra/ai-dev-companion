@@ -54,6 +54,8 @@ function fakeIo(over = {}) {
       issueForRepoGuess: async () => ({ fields: { components: [], labels: [] } }),
       defaultBranch: async () => "master",
       openTerminal: async (cwd, args, header, options) => void terminals.push({ cwd, args, options }),
+      confirmWorktree: async () => true,
+      resumeSession: async () => ({ ok: false }),
       ...over,
     },
   };
@@ -139,8 +141,8 @@ test("Create PR and the actions refuse a worktree that isn't where Start fix put
 
     jobStore.patchData(job.id, { ticketWorktree: { dir: root } }); // as if a job file were edited
     const tampered = jobStore.get(job.id);
-    await assert.rejects(feature.actions["open-terminal"](tampered, { auth: {} }), /isn't where Start fix puts it/);
-    await assert.rejects(feature.approve(tampered, { auth: {}, body: { title: "t", description: "" } }), /isn't where Start fix puts it/);
+    await assert.rejects(feature.actions["open-terminal"](tampered, { auth: {} }), /isn't a checkout of this repository/);
+    await assert.rejects(feature.approve(tampered, { auth: {}, body: { title: "t", description: "" } }), /isn't a checkout of this repository/);
     assert.equal(jobStore.get(job.id).status, "awaiting-approval");
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
@@ -349,6 +351,123 @@ test("no analysis: a single repo from the workspace scan needs no question; choo
     assert.equal(b.status, "failed");
     assert.match(b.error, /cancelled/);
     assert.equal(unsure.terminals.length, 0);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("a checkout of the ticket's branch you already have is reused: nothing is created and nothing is asked", async () => {
+  const { root, clone } = makeClone();
+  try {
+    git(clone, "config", "user.email", "t@example.com");
+    git(clone, "config", "user.name", "T");
+    const mine = path.join(root, "my-own-tree");
+    git(clone, "worktree", "add", "-q", "-b", "feature/PROJ-20-login", mine, "origin/master");
+    fs.writeFileSync(path.join(mine, "wip.txt"), "unfinished"); // dirty is fine for your own terminal
+    const asked = [];
+    const f = fakeIo({ confirmWorktree: async (id, q) => (asked.push(q), true) });
+    const feature = createTicketToPrFeature({ repos: { "ACME/sample-app": clone }, claudeModel: "m" }, {}, f.io);
+    const job = await settle((await feature.start({ issueKey: "PROJ-20" }, { auth: {} })).id);
+    assert.equal(job.status, "awaiting-approval", job.error);
+    assert.equal(job.data.ticketWorktree.dir, mine);
+    assert.equal(job.data.branch, "feature/PROJ-20-login");
+    assert.deepEqual(asked, []);
+    assert.equal(fs.existsSync(repoWorktreesRoot(clone)), false);
+    assert.equal(f.terminals[0].cwd, mine);
+    assert.match(job.result.summary, /Reused .* on feature\/PROJ-20-login/);
+    assert.match(job.result.summary, /uncommitted change/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("a ticket branch with no checkout asks first; declining creates nothing, accepting makes a worktree of that branch", async () => {
+  const { root, clone } = makeClone();
+  try {
+    git(clone, "config", "user.email", "t@example.com");
+    git(clone, "config", "user.name", "T");
+    git(clone, "push", "-q", "origin", "HEAD:refs/heads/feature/PROJ-21-logout");
+    git(clone, "fetch", "-q", "origin");
+    const asked = [];
+    const no = fakeIo({ confirmWorktree: async (id, q) => (asked.push(q), false) });
+    const feature = createTicketToPrFeature({ repos: { "ACME/sample-app": clone }, claudeModel: "m" }, {}, no.io);
+    const declined = await settle((await feature.start({ issueKey: "PROJ-21" }, { auth: {} })).id);
+    assert.equal(declined.status, "failed");
+    assert.match(declined.error, /no worktree was created/);
+    assert.match(asked[0].prompt, /feature\/PROJ-21-logout but no checkout/);
+    assert.equal(fs.existsSync(repoWorktreesRoot(clone)), false);
+    assert.equal(no.terminals.length, 0);
+
+    const yes = fakeIo({ confirmWorktree: async () => true });
+    const again = createTicketToPrFeature({ repos: { "ACME/sample-app": clone }, claudeModel: "m" }, {}, yes.io);
+    const made = await settle((await again.start({ issueKey: "PROJ-21" }, { auth: {} })).id);
+    assert.equal(made.status, "awaiting-approval", made.error);
+    assert.equal(made.data.branch, "feature/PROJ-21-logout");
+    assert.equal(made.data.ticketWorktree.dir, path.join(repoWorktreesRoot(clone), "feature-PROJ-21-logout"));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("a ticket with no branch at all asks before making one, unless the setting says to just do it", async () => {
+  const { root, clone } = makeClone();
+  try {
+    const asked = [];
+    const no = fakeIo({ confirmWorktree: async (id, q) => (asked.push(q), false) });
+    const feature = createTicketToPrFeature({ repos: { "ACME/sample-app": clone }, claudeModel: "m" }, {}, no.io);
+    const declined = await settle((await feature.start({ issueKey: "PROJ-22" }, { auth: {} })).id);
+    assert.equal(declined.status, "failed");
+    assert.match(asked[0].prompt, /no branch or checkout yet/);
+    assert.equal(asked[0].detail, path.join(repoWorktreesRoot(clone), "PROJ-22"));
+    assert.equal(fs.existsSync(repoWorktreesRoot(clone)), false);
+
+    const never = fakeIo({ confirmWorktree: async () => assert.fail("must not ask") });
+    const cfg = { repos: { "ACME/sample-app": clone }, claudeModel: "m", ticketToPr: { createWorktreeWithoutAsking: true } };
+    const auto = createTicketToPrFeature(cfg, {}, never.io);
+    const made = await settle((await auto.start({ issueKey: "PROJ-22" }, { auth: {} })).id);
+    assert.equal(made.status, "awaiting-approval", made.error);
+    assert.equal(made.data.ticketWorktree.dir, path.join(repoWorktreesRoot(clone), "PROJ-22"));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("a second Continue reopens the recorded Claude session instead of starting another; if it can't, a new one starts", async () => {
+  const { root, clone } = makeClone();
+  try {
+    const cfg = { repos: { "ACME/sample-app": clone }, claudeModel: "m", ticketToPr: { createWorktreeWithoutAsking: true } };
+    const first = fakeIo();
+    const job1 = await settle((await createTicketToPrFeature(cfg, {}, first.io).start({ issueKey: "PROJ-23" }, { auth: {} })).id);
+    assert.equal(job1.status, "awaiting-approval", job1.error);
+    assert.equal(first.terminals.length, 1);
+
+    const resumes = [];
+    const second = fakeIo({ resumeSession: async (c, session, header, dir) => (resumes.push({ session, dir }), { ok: true }) });
+    const job2 = await settle((await createTicketToPrFeature(cfg, {}, second.io).start({ issueKey: "PROJ-23" }, { auth: {} })).id);
+    assert.equal(job2.status, "awaiting-approval", job2.error);
+    assert.equal(second.terminals.length, 0);
+    assert.equal(resumes[0].session.id, job1.data.claudeSession.id);
+    assert.equal(job2.data.claudeSession.id, job1.data.claudeSession.id);
+    assert.match(job2.result.summary, /Reopened your Claude Code session/);
+
+    const third = fakeIo({ resumeSession: async () => ({ ok: false }) });
+    const job3 = await settle((await createTicketToPrFeature(cfg, {}, third.io).start({ issueKey: "PROJ-23" }, { auth: {} })).id);
+    assert.equal(third.terminals.length, 1);
+    assert.notEqual(job3.data.claudeSession.id, job1.data.claudeSession.id);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("Track PR (adopt) with no worktree for the ticket fails instead of creating one", async () => {
+  const { root, clone } = makeClone();
+  try {
+    const never = fakeIo({ confirmWorktree: async () => assert.fail("must not ask") });
+    const feature = createTicketToPrFeature({ repos: { "ACME/sample-app": clone }, claudeModel: "m" }, {}, never.io);
+    const job = await settle((await feature.start({ issueKey: "PROJ-24", adopt: true }, { auth: {} })).id);
+    assert.equal(job.status, "failed");
+    assert.match(job.error, /no worktree for PROJ-24 to track/);
+    assert.equal(fs.existsSync(repoWorktreesRoot(clone)), false);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

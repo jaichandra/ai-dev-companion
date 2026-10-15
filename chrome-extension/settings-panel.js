@@ -556,6 +556,7 @@
     // Ticket to PR. `settings.ticketToPr` is absent from an older companion service.
     let reviewTransitionInput = null;
     let autoMoveCheck = null;
+    let createWorktreeCheck = null;
     if (settings.ticketToPr) {
       const ticketOptions = optionsOf("ticket-to-pr");
       reviewTransitionInput = textInput(settings.ticketToPr.reviewTransitionName, "In Review");
@@ -573,6 +574,14 @@
         "Move the ticket to review automatically",
         autoMoveCheck,
         "Checks every few minutes for a pull request from a fix you started, and moves the ticket when there is one. Off: use the Move ticket to review button.",
+      );
+      createWorktreeCheck = el("input");
+      createWorktreeCheck.checked = settings.ticketToPr.createWorktreeWithoutAsking === true;
+      toggleRow(
+        ticketOptions,
+        "Create a worktree without asking",
+        createWorktreeCheck,
+        "Continue in Claude Code reuses a checkout of the ticket's branch when there is one. Off (default): it asks before it makes a new worktree or branch. On: it makes one straight away.",
       );
     }
 
@@ -1448,7 +1457,7 @@
         ...(historyDaysInput ? { history: { retentionDays: Number(historyDaysInput.value) } } : {}),
         ...(similarCheck ? { similar: { enabled: similarCheck.checked } } : {}),
         ...(riskUrlInput ? { riskFacts: { url: riskUrlInput.value.trim() } } : {}),
-        ...(reviewTransitionInput ? { ticketToPr: { reviewTransitionName: reviewTransitionInput.value.trim(), ...(autoMoveCheck ? { autoMoveToReview: autoMoveCheck.checked } : {}) } } : {}),
+        ...(reviewTransitionInput ? { ticketToPr: { reviewTransitionName: reviewTransitionInput.value.trim(), ...(autoMoveCheck ? { autoMoveToReview: autoMoveCheck.checked } : {}), ...(createWorktreeCheck ? { createWorktreeWithoutAsking: createWorktreeCheck.checked } : {}) } } : {}),
         ...(digestBox ? { digest: { enabled: digestBox.checked, time: digestTime.value.trim() || "08:30" } } : {}),
         ...(backgroundUpdate ? backgroundUpdate() : {}),
         ...(llmUpdate ? llmUpdate() : {}),
