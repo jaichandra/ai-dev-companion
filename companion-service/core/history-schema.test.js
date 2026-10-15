@@ -1,5 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+require("./with-git-provider.js").useGitHubProfile(); // pass under any distribution's profile
 const schema = require("./history-schema.js");
 
 test("normalizeKey maps bare issue keys and PR refs to the scopeKey forms", () => {
