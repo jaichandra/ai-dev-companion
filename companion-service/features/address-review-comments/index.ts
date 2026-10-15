@@ -13,8 +13,14 @@ import { git } from "../../core/exec";
 import { ClaudeSession, Feature, Job, JobStatusError, McpToolContext, WorktreeGoneError, jobStore } from "../../core/jobs";
 import { fetchOpenPullRequest, pendingStartResult } from "../../core/mcp";
 import { assertTreeMatchesReviewed, canReject, stageAll, withJobLock, writeTree } from "../../core/reviewed-push";
-import { addWorktree, removeWorktree, WorktreeHandle } from "../../core/worktree";
+import { acquireWorktree, removeWorktree, restoreAdoptedWorktree, WorktreeHandle } from "../../core/worktree";
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { recordWorkUnit, recordWorkUnitSession, prKeyFor } = require("../../core/work-unit-record.js") as {
+  recordWorkUnit(unit: Record<string, unknown>): string | null;
+  recordWorkUnitSession(unit: Record<string, unknown>): string | null;
+  prKeyFor(project: string, repo: string, prId: number | string): string | null;
+};
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { baselines } = require("../../core/integrity-baselines.js") as {
   baselines: {
@@ -249,10 +255,25 @@ async function discardWorktree(job: Job): Promise<void> {
         data.gitMetadataUntrusted ??
         (data.gitMetadataCompromised ? "changed" : untrustedReason(job.id, data.worktree.dir)),
     });
-    fs.rmSync(data.worktree.dir, { recursive: true, force: true });
+    // An adopted worktree is the user's own: never delete it.
+    if (!data.worktree.adopted) fs.rmSync(data.worktree.dir, { recursive: true, force: true });
+    return;
+  }
+  if (data.worktree.adopted) {
+    // Rejected or cancelled: put it back as it was. (After an approved push
+    // it is left alone — see releaseWorktree.)
+    if (data.preSha) await restoreAdoptedWorktree(data.worktree, data.preSha);
     return;
   }
   await removeWorktree(data.worktree);
+}
+
+/** After an approved push: a job's own worktree goes, an adopted one stays
+ * exactly as the push left it. */
+async function releaseWorktree(job: Job): Promise<void> {
+  const data = job.data as unknown as Partial<JobData> | undefined;
+  if (!data?.worktree || data.worktree.adopted) return;
+  await discardWorktree(job);
 }
 
 type RenderOutcome = { tree: string; fileDiffs: Array<{ path: string; diff: string }> };
@@ -458,7 +479,7 @@ export function createAddressReviewCommentsFeature(config: Config): Feature {
           }
         }
 
-        await discardWorktree(current).catch((err: Error) =>
+        await releaseWorktree(current).catch((err: Error) =>
           console.warn(`[address-review-comments] removing the worktree after approve failed: ${err.message}`),
         );
         baselines.remove(job.id);
@@ -610,9 +631,23 @@ async function runJob(
           : `Addressing ${comments.length} review comments with ${agentName} — this can take a few minutes…`,
     },
   });
-  const worktree = await addWorktree(repoPath, pr.fromBranch, jobId);
+  // An existing clean checkout of the branch is reused; only when there is none
+  // is a disposable worktree made (see acquireWorktree).
+  const { handle: worktree, reused } = await acquireWorktree(repoPath, pr.fromBranch, jobId);
   // Recorded before anything else can throw, so cancel/reject can find it.
   jobStore.patchData(jobId, { worktree });
+  const unit = {
+    repoPath,
+    branch: pr.fromBranch,
+    dir: reused ? worktree.dir : null,
+    prKey: prKeyFor(payload.project, payload.repo, payload.prId),
+  };
+  recordWorkUnit(unit);
+  if (reused) {
+    jobStore.update(jobId, {
+      progress: { stepId: "fetch", label: `Using the existing checkout of ${pr.fromBranch} at ${worktree.dir}…` },
+    });
+  }
   checkpoint();
   // Resolved and snapshotted as soon as the worktree exists — see
   // resolve-conflict's runJob. From here on every git the service runs in
@@ -687,6 +722,12 @@ async function runJob(
     comments.map((c) => c.id),
   );
   jobStore.patchData(jobId, { claudeSession, report, replies: plan.defaultReplies(report) });
+  if (claudeSession) {
+    recordWorkUnitSession({
+      ...unit,
+      session: { id: claudeSession.id, cwd: claudeSession.cwd, feature: "address-review-comments" },
+    });
+  }
 
   checkpoint();
   jobStore.update(jobId, { progress: { stepId: "diff", label: "Preparing diff for review…" } });

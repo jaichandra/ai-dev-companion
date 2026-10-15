@@ -83,6 +83,10 @@ const sessionCwd = require("./core/session-cwd.js") as {
   sessionCwdAllowed(cwd: string, opts: { repoPaths: string[]; sessionsRoot: string; checkoutsRoot: string }): boolean;
 };
 // eslint-disable-next-line @typescript-eslint/no-var-requires
+const worktreeRegistry = require("./core/worktree-registry.js") as {
+  isLinkedWorktreeOf(repoPath: string, dir: string): boolean;
+};
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const worktreePrune = require("./core/worktree-prune.js") as {
   removePrunedWorktree(
     job: Job,
@@ -432,6 +436,11 @@ if (persistJobs) {
       dir,
       worktreeRoot: WORKTREE_ROOT,
       featureIds: jobFiles.featureIdsToPersist(FEATURES.map((f) => f.id)),
+      // A job that reused an existing worktree: only a linked worktree of a
+      // configured repo is believed (a job file is untrusted input).
+      adoptedWorktreeOk: (repoPath, dir) =>
+        Object.values(config.repos || {}).some((p) => path.resolve(p) === path.resolve(repoPath)) &&
+        worktreeRegistry.isLinkedWorktreeOf(repoPath, dir),
       sessionCwdOk: (cwd) =>
         sessionCwd.sessionCwdAllowed(cwd, {
           repoPaths: Object.values(config.repos || {}),
