@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Workspace resolver (`core/workspace-resolver.js`): finds where to work on a branch without creating anything. An existing worktree (or the clone itself) that has the branch checked out comes first, reported unusable if it has uncommitted changes or a merge or rebase in progress; then a local or origin branch of that name, which needs the person's confirmation before a worktree is made (`createBranchWorktree`). Works from a PR's source branch or a ticket key. Not yet used by the features.
+- Work-unit registry (`core/work-units.js`): one record per repo and branch with its worktree, ticket, PR and Claude sessions, in `work-units.json` in the state dir, so a session can be found again.
+
 ## 0.2.0
 
 - GitHub as a git host (github.com and GitHub Enterprise): a provider with the same pull request, review-comment, build-status, dashboard and merge-status behaviour as the Bitbucket one, using a personal access token. Review threads come from GraphQL, so resolved and outdated threads are skipped.
