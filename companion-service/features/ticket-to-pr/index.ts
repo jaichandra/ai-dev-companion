@@ -29,6 +29,7 @@ import {
 import { IssueBasics, JiraTransition, PullRequestSummary, providersFor } from "../../core/providers";
 import { askRepoChoice, confirmRepoChoice, RepoOption } from "../../core/repo-choice";
 import { HeaderSegment, TerminalOptions, openClaudeCodeInTerminal } from "../../core/terminal";
+import { resumeSessionInTerminal } from "../../core/resume-session";
 import { createReviewMover } from "./review-mover";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -44,6 +45,30 @@ const ticketGit = require("../../core/ticket-git.js") as {
   ticketWorktreePath(repoPath: string, issueKey: string): string;
   currentBranch(dir: string): Promise<string>;
 };
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const workspaceResolver = require("../../core/workspace-resolver.js") as {
+  resolveWorkspace(
+    repoPath: string,
+    target: { issueKey: string },
+  ): Promise<
+    | { kind: "worktree"; dir: string; branch: string; usable: boolean; reason: string | null }
+    | { kind: "branch"; branch: string }
+    | { kind: "none" }
+  >;
+  branchWorktreePath(repoPath: string, branch: string): string;
+  createBranchWorktree(repoPath: string, branch: string): Promise<{ dir: string; branch: string; created: boolean }>;
+};
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { openWorkUnits } = require("../../core/work-units.js") as {
+  openWorkUnits(): { findByIssue(issueKey: string): Array<{ repoPath: string; branch: string; dir: string | null; sessions: Array<{ id: string; cwd: string | null }> }> };
+};
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { recordWorkUnit, recordWorkUnitSession } = require("../../core/work-unit-record.js") as {
+  recordWorkUnit(unit: Record<string, unknown>): string | null;
+  recordWorkUnitSession(unit: Record<string, unknown>): string | null;
+};
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const worktreeRegistry = require("../../core/worktree-registry.js") as { isLinkedWorktreeOf(repoPath: string, dir: string): boolean };
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const workspacePlan = require("../ticket-workspace/plan.js") as {
   prUrlAllowed(url: unknown, bitbucketBaseUrl: string): boolean;
@@ -145,6 +170,10 @@ export interface StartFixIo {
   issueForRepoGuess(config: Config, auth: AuthContext, issueKey: string): Promise<unknown>;
   defaultBranch(config: Config, auth: AuthContext, project: string, repo: string): Promise<string | null>;
   openTerminal(cwd: string, args: string[], header: HeaderSegment[][], options: TerminalOptions): Promise<unknown>;
+  /** Asks before a worktree is made; true means go ahead. */
+  confirmWorktree(jobId: string, q: { prompt: string; createLabel: string; detail: string }): Promise<boolean>;
+  /** Reopens a recorded Claude session in a terminal. */
+  resumeSession(config: Config, session: ClaudeSession, header: HeaderSegment[][], dir: string): Promise<{ ok: boolean }>;
 }
 
 export const REAL_START_FIX_IO: StartFixIo = {
@@ -154,6 +183,16 @@ export const REAL_START_FIX_IO: StartFixIo = {
     providersFor(config).issues.getIssueRaw(auth, issueKey, "summary,description,components,labels,issuelinks"),
   defaultBranch: (config, auth, project, repo) => providersFor(config).git.getDefaultBranch(auth, project, repo),
   openTerminal: (cwd, args, header, options) => openClaudeCodeInTerminal(cwd, args, header, options),
+  async confirmWorktree(jobId, q) {
+    const answer = await askRepoChoice(
+      jobId,
+      undefined,
+      { suggested: q.createLabel, options: [{ repoKey: q.createLabel, reason: q.detail }], prompt: q.prompt, noRepoLabel: "Cancel" },
+      "continue again.",
+    );
+    return answer !== null;
+  },
+  resumeSession: (config, session, header, dir) => resumeSessionInTerminal(config, session, header, dir),
 };
 
 /** A pull request reference whose address is only kept if it's a PR page on
@@ -196,9 +235,16 @@ function readyWorktree(job: Job, config: Config): { d: TicketToPrData; dir: stri
   const dir = d.ticketWorktree?.dir;
   if (!dir || !d.branch || !d.base || !d.repoKey) throw new JobStatusError("This job has no worktree yet.");
   const repoPath = config.repos?.[d.repoKey];
-  const expected = repoPath ? ticketGit.ticketWorktreePath(repoPath, d.issueKey) : null;
-  if (!expected || path.resolve(expected) !== path.resolve(dir)) {
-    throw new JobStatusError("This job's worktree isn't where Start fix puts it — start again from the ticket.");
+  // Where Start fix puts a new worktree, or a checkout of the ticket's branch
+  // that already existed: the clone itself or a linked worktree git has
+  // registered for it.
+  const known =
+    !!repoPath &&
+    (path.resolve(ticketGit.ticketWorktreePath(repoPath, d.issueKey)) === path.resolve(dir) ||
+      path.resolve(repoPath) === path.resolve(dir) ||
+      worktreeRegistry.isLinkedWorktreeOf(repoPath, dir));
+  if (!known) {
+    throw new JobStatusError("This job's worktree isn't a checkout of this repository — start again from the ticket.");
   }
   if (!fs.existsSync(dir)) throw new WorktreeGoneError(`The worktree ${dir} no longer exists.`);
   return { d, dir, branch: d.branch, base: d.base };
@@ -289,12 +335,44 @@ async function runStartFix(
   if (!base) base = await ticketGit.defaultBranchFromGit(repoPath);
   if (!isSafeBranchName(base)) throw new Error("The default branch name isn't one Start fix can use safely.");
 
-  progress("worktree", "Preparing the worktree…");
-  const wt = await ticketGit.ensureTicketWorktree(repoPath, { issueKey, branch, base });
-  // A reused worktree comes back before ensureTicketWorktree's own checks.
+  // What exists comes first: a checkout of the ticket's branch anywhere (a
+  // worktree of yours, the clone itself), then the ticket's own worktree.
+  // Nothing is made without asking, unless the setting says not to.
+  progress("worktree", "Looking for an existing checkout…");
+  const found = await workspaceResolver.resolveWorkspace(repoPath, { issueKey });
+  const ticketDir = ticketGit.ticketWorktreePath(repoPath, issueKey);
+  let wt: { dir: string; branch: string; created: boolean };
+  let note: string | null = null;
+  if (found.kind === "worktree") {
+    wt = { dir: found.dir, branch: found.branch, created: false };
+    if (!found.usable) note = `Note: ${found.reason}.`;
+  } else if (fs.existsSync(ticketDir)) {
+    wt = await ticketGit.ensureTicketWorktree(repoPath, { issueKey, branch, base });
+  } else if (p.adopt) {
+    throw new Error(`There is no worktree for ${issueKey} to track. Use Continue in Claude Code first.`);
+  } else {
+    const existingBranch = found.kind === "branch" ? found.branch : null;
+    const target = existingBranch ? workspaceResolver.branchWorktreePath(repoPath, existingBranch) : ticketDir;
+    if (!config.ticketToPr?.createWorktreeWithoutAsking) {
+      progress("worktree", "Waiting for you to confirm a new worktree…");
+      const ok = await io.confirmWorktree(jobId, {
+        prompt: existingBranch
+          ? `${issueKey} has the branch ${existingBranch} but no checkout of it. Create a worktree for it? Nothing is created until you answer.`
+          : `${issueKey} has no branch or checkout yet. Create the branch ${branch} from origin/${base} in a new worktree? Nothing is created until you answer.`,
+        createLabel: "Create a worktree",
+        detail: target,
+      });
+      if (!ok) throw new Error("Cancelled: no worktree was created.");
+    }
+    progress("worktree", "Creating the worktree…");
+    wt = existingBranch
+      ? await workspaceResolver.createBranchWorktree(repoPath, existingBranch)
+      : await ticketGit.ensureTicketWorktree(repoPath, { issueKey, branch, base });
+  }
   if (!isSafeBranchName(wt.branch)) {
     throw new Error(`The worktree ${wt.dir} is on an unsafe branch name; check out a normal branch there and try again.`);
   }
+  recordWorkUnit({ repoPath, branch: wt.branch, dir: wt.dir, issueKey });
 
   // An adopted worktree keeps the Start fix time the history recorded for it.
   let fixStartedAt: number | undefined = p.adopt ? undefined : Date.now();
@@ -312,7 +390,30 @@ async function runStartFix(
     ...(fixStartedAt !== undefined ? { fixStartedAt } : {}),
   });
 
+  let resumed = false;
   if (!p.adopt) {
+    // A Claude session already recorded for this branch is reopened instead
+    // of starting another one beside it.
+    const prior = openWorkUnits()
+      .findByIssue(issueKey)
+      .filter((u) => path.resolve(u.repoPath) === path.resolve(repoPath) && u.branch === wt.branch)
+      .flatMap((u) => u.sessions)
+      .filter((x) => x.cwd && path.resolve(x.cwd) === path.resolve(wt.dir))
+      .pop();
+    if (prior) {
+      progress("claude", "Reopening your Claude Code session…");
+      const session: ClaudeSession = { id: prior.id, cwd: wt.dir, permissionMode: permissionModeFor("ticket-to-pr") };
+      const header: HeaderSegment[][] = [
+        [{ text: "Ticket to PR", style: "title" }, { text: `  ${issueKey}`, style: "heading" }],
+        [{ text: "Resuming your Claude Code session", style: "status" }],
+        [],
+      ];
+      resumed = (await io.resumeSession(config, session, header, wt.dir)).ok;
+      if (resumed) jobStore.patchData(jobId, { claudeSession: session });
+    }
+  }
+
+  if (!p.adopt && !resumed) {
     progress("claude", "Opening Claude Code in plan mode…");
     const analysisMarkdown = cached
       ? analyzePlan.formatAnalysisAsMarkdownComment({
@@ -326,6 +427,13 @@ async function runStartFix(
     const prompt = plan.buildStartFixPrompt({ issueKey, summary, branch: wt.branch, base, analysisMarkdown });
     const session: ClaudeSession = { id: randomUUID(), cwd: wt.dir, permissionMode: permissionModeFor("ticket-to-pr") };
     jobStore.patchData(jobId, { claudeSession: session });
+    recordWorkUnitSession({
+      repoPath,
+      branch: wt.branch,
+      dir: wt.dir,
+      issueKey,
+      session: { id: session.id, cwd: session.cwd, feature: "ticket-to-pr" },
+    });
     const header: HeaderSegment[][] = [
       [{ text: "Ticket to PR", style: "title" }, { text: `  ${issueKey}`, style: "heading" }],
       [{ text: "Branch  ", style: "label" }, { text: wt.branch, style: "branch" }, { text: `  from origin/${base}`, style: "muted" }],
@@ -343,9 +451,13 @@ async function runStartFix(
     status: "awaiting-approval",
     progress: undefined,
     result: {
-      summary: p.adopt
-        ? `Tracking ${wt.branch}: the ticket moves to review once its pull request is open.`
-        : `${wt.created ? "Created" : "Reused"} ${wt.dir} on ${wt.branch} and opened Claude Code in plan mode. Commit, push and open the pull request there.`,
+      summary:
+        (p.adopt
+          ? `Tracking ${wt.branch}: the ticket moves to review once its pull request is open.`
+          : resumed
+            ? `Reopened your Claude Code session in ${wt.dir} on ${wt.branch}. Commit, push and open the pull request there.`
+            : `${wt.created ? "Created" : "Reused"} ${wt.dir} on ${wt.branch} and opened Claude Code in plan mode. Commit, push and open the pull request there.`) +
+        (note ? ` ${note}` : ""),
       files: [],
     },
   });

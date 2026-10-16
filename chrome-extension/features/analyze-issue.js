@@ -243,40 +243,19 @@ PaiRegistry.register({
     return container;
   },
 
-  // Resumes this analysis's headless Claude session in a terminal —
-  // job.data.claudeSession is set by the companion (core/jobs.ts's
-  // ClaudeSession) once the analysis has run; whether its working copy
-  // and transcript are STILL both on disk is only checked server-side
-  // when this button is actually clicked (core/resume.js), which shows a
-  // message instead of opening a terminal if it's since expired. Unlike
-  // resolve-conflict, analyze-issue has no worktree box to put a
-  // Continue button in (it's a report, not a diff), so this is a plain
-  // footerActions entry next to Done/Re-analyze/Add as comment instead.
+  // One button. With ticket-to-pr enabled it is the ticket's Claude Code
+  // session: the recorded one reopened, else plan mode on the ticket's branch
+  // with this analysis (an existing checkout first; the service asks before it
+  // makes a worktree). With it disabled, it reopens this analysis's own headless
+  // session read-only, as "Discuss in Claude Code" did: job.data.claudeSession
+  // is set by the companion once the analysis has run, and whether its working
+  // copy and transcript are still on disk is checked when the button is clicked
+  // (core/resume.js).
   footerActions: [
     {
-      id: "continue-claude-code",
-      label: "Discuss in Claude Code",
-      hint: "Reopens this analysis in a terminal so you can ask follow-up questions. Read-only: it changes nothing.",
-      when(job) {
-        // Without a repo the session's folder is an empty per-ticket one: nothing to continue in.
-        return !!job.data?.claudeSession && !!job.data?.repoKey && (job.status === "awaiting-approval" || job.status === "failed");
-      },
-      async run(job, api) {
-        try {
-          await api.send("open-in-claude-code", { body: { resume: true } });
-        } catch (err) {
-          api.showError(`Continue in Claude Code failed:\n\n${err.message}`);
-        }
-      },
-    },
-    // Ticket to PR's first step, from the report it builds on: a
-    // persistent worktree for this ticket and Claude Code in plan mode
-    // with this analysis. Only while ticket-to-pr is enabled and the
-    // analysis found a repository.
-    {
-      id: "start-fix",
-      label: "Start fix",
-      hint: "Creates a branch and worktree for this ticket, then opens Claude Code in plan mode with this analysis so you can work out and make the fix.",
+      id: "continue",
+      label: "Continue in Claude Code",
+      hint: "Reopens this ticket's Claude Code session, or opens Claude Code in plan mode on the ticket's branch with this analysis. Uses a checkout you already have; asks before creating a worktree.",
       when(job, env) {
         return (
           job.status === "awaiting-approval" &&
@@ -286,6 +265,28 @@ PaiRegistry.register({
       },
       async run(job, api) {
         await api.startFeature("ticket-to-pr", { issueKey: job.data.issueKey });
+      },
+    },
+    {
+      id: "continue-claude-code",
+      label: "Continue in Claude Code",
+      hint: "Reopens this analysis in a terminal so you can ask follow-up questions. Read-only: it changes nothing.",
+      when(job, env) {
+        // Without a repo the session's folder is an empty per-ticket one: nothing to continue in.
+        return (
+          !!job.data?.claudeSession &&
+          !!job.data?.repoKey &&
+          (job.status === "awaiting-approval" || job.status === "failed") &&
+          !!env?.enabledFeatureIds &&
+          !env.enabledFeatureIds.has("ticket-to-pr")
+        );
+      },
+      async run(job, api) {
+        try {
+          await api.send("open-in-claude-code", { body: { resume: true } });
+        } catch (err) {
+          api.showError(`Continue in Claude Code failed:\n\n${err.message}`);
+        }
       },
     },
   ],
