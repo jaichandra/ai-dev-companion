@@ -1082,10 +1082,17 @@
     function addButton(label, detail, repoKey, primary) {
       const btn = document.createElement("button");
       btn.className = primary ? "pill-action" : "pill-action secondary";
-      btn.textContent = detail ? `${label} — ${detail}` : label;
+      btn.textContent = label;
       btn.addEventListener("click", () => answer(repoKey, btn));
       buttons.push(btn);
       box.appendChild(btn);
+      if (detail) {
+        const note = document.createElement("div");
+        note.className = "pill-message";
+        note.style.cssText = "padding:0 10px 6px;font-size:12px;";
+        note.textContent = detail;
+        box.appendChild(note);
+      }
     }
     (choice.options || []).forEach((opt) => {
       const suggested = opt.repoKey === choice.suggested;
@@ -1098,7 +1105,8 @@
         box.appendChild(hint);
       }
     });
-    addButton(choice.noRepoLabel || "Analyze without a repo", "", null, false);
+    // A "no" that just cancels the job is the panel's own Cancel button already.
+    if (!(feature.cancellable && choice.nullIsCancel)) addButton(choice.noRepoLabel || "Analyze without a repo", "", null, false);
     return box;
   }
 

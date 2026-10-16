@@ -16,6 +16,9 @@ export interface RepoQuestion {
   options: RepoOption[];
   prompt?: string;
   noRepoLabel?: string;
+  /** The "no" answer only cancels the job, which the panel's own Cancel
+   * button does too: the panel leaves this one out for a cancellable feature. */
+  nullIsCancel?: boolean;
 }
 
 /** Thrown into the waiting job when it is aborted. */
