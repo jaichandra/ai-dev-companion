@@ -1090,7 +1090,7 @@
     (choice.options || []).forEach((opt) => {
       const suggested = opt.repoKey === choice.suggested;
       addButton(opt.repoKey, opt.reason, opt.repoKey, suggested);
-      if (suggested) {
+      if (suggested && (choice.options || []).length > 1) {
         const hint = document.createElement("div");
         hint.className = "pill-message";
         hint.style.cssText = "padding:0 10px 6px;font-size:12px;";
