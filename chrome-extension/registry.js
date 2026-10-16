@@ -219,8 +219,15 @@
     if (entry.settingsGroups !== undefined && !(Array.isArray(entry.settingsGroups) && entry.settingsGroups.every((g) => typeof g === "string"))) {
       throw new Error(`PaiRegistry.register: "${entry.id}" has settingsGroups that aren't a list of names`);
     }
-    if (entry.site !== undefined && !SITES.includes(entry.site)) {
-      throw new Error(`PaiRegistry.register: "${entry.id}" has site "${entry.site}", expected one of ${SITES.join(", ")}`);
+    // `site` is one kind of server, or a non-empty list of them for a feature offered on several.
+    const kinds = Array.isArray(entry.site) ? entry.site : entry.site === undefined ? [] : [entry.site];
+    if (Array.isArray(entry.site) && kinds.length === 0) {
+      throw new Error(`PaiRegistry.register: "${entry.id}" has an empty site list`);
+    }
+    for (const kind of kinds) {
+      if (!SITES.includes(kind)) {
+        throw new Error(`PaiRegistry.register: "${entry.id}" has site "${kind}", expected one of ${SITES.join(", ")}`);
+      }
     }
     entries.push(entry);
     return entry;

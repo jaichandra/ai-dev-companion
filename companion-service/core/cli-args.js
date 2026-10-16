@@ -1,7 +1,7 @@
 // Argument parsing for the `companion` command. Pure.
-const COMMANDS = ["status", "jobs", "history", "similar", "resume", "forget", "open", "inbox", "digest", "precheck", "hooks", "doctor", "help"];
+const COMMANDS = ["status", "jobs", "history", "similar", "resume", "forget", "open", "inbox", "digest", "precheck", "hooks", "worktrees", "doctor", "help"];
 const VALUE_FLAGS = ["--feature", "--search", "--days"];
-const BOOLEAN_FLAGS = { "--json": "json", "--yes": "yes", "-y": "yes", "--metrics": "metrics", "--all": "all", "--stdin": "stdin", "--brief": "brief" };
+const BOOLEAN_FLAGS = { "--json": "json", "--yes": "yes", "-y": "yes", "--metrics": "metrics", "--all": "all", "--stdin": "stdin", "--brief": "brief", "--prune": "prune" };
 
 function parseArgs(argv) {
   const out = { command: "help", positional: [], flags: {}, errors: [] };
