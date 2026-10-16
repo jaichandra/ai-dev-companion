@@ -370,3 +370,35 @@ test("writeJsonAtomic leaves no .tmp file behind", () => {
   assert.equal(fs.statSync(file).mode & 0o777, 0o600);
   fs.rmSync(root, { recursive: true, force: true });
 });
+
+test("a job that reused an existing worktree loads only when adoptedWorktreeOk vouches for it", () => {
+  const root = tmp();
+  const dir = jobFiles.jobsDir(root);
+  const worktreeRoot = path.join(root, "worktrees");
+  const mine = path.join(root, "my-own-tree");
+  const data = {
+    repoPath: "/r/app",
+    worktree: { id: ID, dir: mine, repoPath: "/r/app", adopted: true },
+    claudeSession: { id: "s-1", cwd: mine, permissionMode: "default" },
+  };
+  jobFiles.saveJob(dir, job({ data }));
+
+  const refused = jobFiles.loadJobs(dir, { now: 2000, worktreeRoot });
+  assert.deepEqual(refused.dropped, [ID], "dropped by default, as any worktree outside the root");
+
+  jobFiles.saveJob(dir, job({ data }));
+  const seen = [];
+  const ok = jobFiles.loadJobs(dir, {
+    now: 2000,
+    worktreeRoot,
+    adoptedWorktreeOk: (repo, d) => (seen.push([repo, d]), true),
+  });
+  assert.deepEqual(seen, [["/r/app", mine]]);
+  assert.equal(ok.jobs.length, 1);
+
+  // `adopted` alone is not enough for a job file that doesn't say which repo.
+  jobFiles.saveJob(dir, job({ data: { ...data, repoPath: undefined } }));
+  const noRepo = jobFiles.loadJobs(dir, { now: 2000, worktreeRoot, adoptedWorktreeOk: () => true });
+  assert.deepEqual(noRepo.dropped, [ID]);
+  fs.rmSync(root, { recursive: true, force: true });
+});
