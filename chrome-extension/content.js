@@ -135,11 +135,16 @@
   // condition can read capture groups, e.g. a ticket key or PR id) or null
   // when the feature has no urlPattern at all.
   function matchFeatureUrl(feature) {
-    // A feature belongs to one kind of server ("git" | "issues" | "ci"); on a page of any other
+    // A feature belongs to one kind of server ("git" | "issues" | "ci"), or a list of them; on a page of any other
     // configured server it isn't offered, even if the path happens to look right. The service says
     // which origin each kind has (GET /targets); until it answers there is nothing to compare.
-    const kindOrigin = feature.site && currentTargets.sites ? currentTargets.sites[feature.site] : null;
-    if (kindOrigin && kindOrigin !== location.origin) return { urlMatches: false, match: null };
+    // A feature may list several kinds (the Ticket workspace is on Jira, git and CI pages): then the page's
+    // origin has to be one of theirs.
+    if (feature.site && currentTargets.sites) {
+      const kinds = Array.isArray(feature.site) ? feature.site : [feature.site];
+      const origins = kinds.map((k) => currentTargets.sites[k]).filter(Boolean);
+      if (origins.length > 0 && !origins.includes(location.origin)) return { urlMatches: false, match: null };
+    }
     if (!feature.urlPattern) return { urlMatches: true, match: null };
     const pattern =
       typeof feature.urlPattern === "function" ? feature.urlPattern(currentTargets) : feature.urlPattern;

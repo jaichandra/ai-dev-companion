@@ -33,3 +33,28 @@ const opts = { repoPaths: [], sessionsRoot: "/Users/me/.ai-dev-companion/session
   assert.equal(sessionCwdAllowed("/Users/me/.ai-dev-companion/repos", opts), false);
   assert.equal(sessionCwdAllowed("/Users/me/.ai-dev-companion/repos/ACME/sample-app", { ...opts, checkoutsRoot: undefined }), false);
 });
+
+test("a linked worktree git registered for a mapped repo is allowed wherever it is; a lookalike is not", () => {
+  const fs = require("fs");
+  const { execFileSync } = require("child_process");
+  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "session-cwd-")));
+  try {
+    const repo = path.join(root, "app");
+    fs.mkdirSync(repo);
+    const git = (...a) => execFileSync("git", a, { cwd: repo, encoding: "utf8" });
+    git("init", "-q", "-b", "master");
+    git("config", "user.email", "t@example.com");
+    git("config", "user.name", "T");
+    fs.writeFileSync(path.join(repo, "a"), "a");
+    git("add", "a");
+    git("commit", "-q", "-m", "i");
+    const mine = path.join(root, "my-own-tree");
+    git("worktree", "add", "-q", "-b", "feat", mine);
+    const o = { repoPaths: [repo], sessionsRoot: path.join(root, "sessions") };
+    assert.equal(sessionCwdAllowed(mine, o), true);
+    assert.equal(sessionCwdAllowed(path.join(root, "not-a-worktree"), o), false);
+    assert.equal(sessionCwdAllowed(mine, { ...o, repoPaths: [path.join(root, "other")] }), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

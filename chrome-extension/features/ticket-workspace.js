@@ -126,8 +126,63 @@ function renderTicketWorkspacePanel(job, panelApi) {
   return container;
 }
 
+const TICKET_WORKSPACE_JIRA_PAGE = /\/browse\/([A-Z][A-Z0-9_]*-\d+)/;
+
+/** The Jira, pull request and CI build page patterns as one: the entry is offered on all three. */
+function ticketWorkspacePages(targets) {
+  return new RegExp(
+    [TICKET_WORKSPACE_JIRA_PAGE, PaiGit.urlPattern(targets), PaiJenkins.JENKINS_BUILD_PAGE].map((re) => `(?:${re.source})`).join("|"),
+  );
+}
+
+// The ticket a PR or a build belongs to is read from its branch, title or job name; these are asked
+// again on every page change, so a definitive answer is kept for a minute.
+const ticketWorkspaceKeyCache = new Map(); // page url -> { at, issueKey }
+async function ticketWorkspaceKeyCached(url, find) {
+  const hit = ticketWorkspaceKeyCache.get(url);
+  if (hit && Date.now() - hit.at < 60000) return hit.issueKey;
+  const found = await find();
+  if (found !== undefined) {
+    ticketWorkspaceKeyCache.delete(url);
+    ticketWorkspaceKeyCache.set(url, { at: Date.now(), issueKey: found });
+    while (ticketWorkspaceKeyCache.size > 50) ticketWorkspaceKeyCache.delete(ticketWorkspaceKeyCache.keys().next().value);
+  }
+  return found === undefined ? null : found;
+}
+
+/** The ticket key of the page: the ticket itself on Jira; on a pull request, the key in its branch or title; on a
+ * build, the key in its job name (a branch job), parameters, description or commit messages. null if it names none. */
+async function ticketWorkspaceIssueKey(ctx) {
+  const jira = ctx.url.match(TICKET_WORKSPACE_JIRA_PAGE);
+  if (jira) return jira[1];
+  const pr = ctx.url.match(PaiGit.urlPattern(ctx.targets));
+  if (pr) {
+    return ticketWorkspaceKeyCached(ctx.url, async () => {
+      const read = await PaiGit.pr(ctx, { project: pr[1], repo: pr[2], prId: pr[3] });
+      return read ? PaiTargets.ticketKeyFrom(read.fromBranch, read.title) : undefined;
+    });
+  }
+  const build = PaiJenkins.jenkinsBuildFromUrl(ctx.url);
+  if (!build) return null;
+  return ticketWorkspaceKeyCached(build.buildUrl, async () => {
+    try {
+      const res = await fetch(
+        `${build.buildUrl}api/json?tree=description,displayName,actions[parameters[name,value]],changeSets[items[msg]]`,
+        { credentials: "include" },
+      );
+      if (!res.ok) return undefined;
+      const b = await res.json();
+      const params = (b.actions || []).flatMap((a) => (a.parameters || []).map((p) => String(p.value ?? "")));
+      const commits = (b.changeSets || []).flatMap((c) => (c.items || []).map((i) => i.msg));
+      return PaiTargets.ticketKeyFrom(build.jobName, ...params, b.description, b.displayName, ...commits);
+    } catch (e) {
+      return undefined; // can't tell: no row, and nothing kept so the next check retries
+    }
+  });
+}
+
 PaiRegistry.register({
-  site: "issues",
+  site: ["issues", "git", "ci"],
   id: "ticket-workspace",
   settingsGroups: ["jira", "git"],
   menuLabel: "Ticket workspace",
@@ -137,10 +192,12 @@ PaiRegistry.register({
   // the menu item never turns green (content.js).
   alwaysFresh: true,
 
-  // Every Jira ticket; the scan itself runs only when clicked.
-  urlPattern: /\/browse\/([A-Z][A-Z0-9_]*-\d+)/,
-  condition(ctx) {
-    return { issueKey: ctx.match[1] };
+  // Every Jira ticket, and every pull request or build whose branch, title or job names one; the scan
+  // itself runs only when clicked.
+  urlPattern: ticketWorkspacePages,
+  async condition(ctx) {
+    const issueKey = await ticketWorkspaceIssueKey(ctx);
+    return issueKey ? { issueKey } : null;
   },
 
   progressSteps: [

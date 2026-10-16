@@ -37,6 +37,7 @@ const { permissionModeFor } = require("../../core/permission-mode.js") as { perm
 const ticketGit = require("../../core/ticket-git.js") as {
   ensureTicketWorktree(repoPath: string, o: { issueKey: string; branch: string; base: string }): Promise<{ dir: string; branch: string; created: boolean }>;
   defaultBranchFromGit(repoPath: string): Promise<string>;
+  defaultGit(args: string[], cwd: string, opts?: unknown): Promise<unknown>;
   fetchBase(dir: string, base: string): Promise<void>;
   commitsAhead(dir: string, base: string): Promise<number>;
   commitLog(dir: string, base: string): Promise<string>;
@@ -66,6 +67,11 @@ const { openWorkUnits } = require("../../core/work-units.js") as {
 const { recordWorkUnit, recordWorkUnitSession } = require("../../core/work-unit-record.js") as {
   recordWorkUnit(unit: Record<string, unknown>): string | null;
   recordWorkUnitSession(unit: Record<string, unknown>): string | null;
+};
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const worktreeReport = require("../../core/worktree-report.js") as {
+  WORKTREE_SOFT_LIMIT: number;
+  countOwned(o: { repoPath: string; git: (args: string[], cwd: string, opts?: unknown) => Promise<unknown> }): Promise<number>;
 };
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const worktreeRegistry = require("../../core/worktree-registry.js") as { isLinkedWorktreeOf(repoPath: string, dir: string): boolean };
@@ -355,10 +361,16 @@ async function runStartFix(
     const target = existingBranch ? workspaceResolver.branchWorktreePath(repoPath, existingBranch) : ticketDir;
     if (!config.ticketToPr?.createWorktreeWithoutAsking) {
       progress("worktree", "Waiting for you to confirm a new worktree…");
+      // Worktrees are cheap to make and easy to lose track of: past a handful, say so.
+      const owned = await worktreeReport.countOwned({ repoPath, git: ticketGit.defaultGit }).catch(() => 0);
+      const crowded =
+        owned >= worktreeReport.WORKTREE_SOFT_LIMIT
+          ? ` You already have ${owned} worktrees made by the tool for this repo; "companion worktrees --prune" lists the ones that can go.`
+          : "";
       const ok = await io.confirmWorktree(jobId, {
         prompt: existingBranch
-          ? `${issueKey} has the branch ${existingBranch} but no checkout of it. Create a worktree for it? Nothing is created until you answer.`
-          : `${issueKey} has no branch or checkout yet. Create the branch ${branch} from origin/${base} in a new worktree? Nothing is created until you answer.`,
+          ? `${issueKey} has the branch ${existingBranch} but no checkout of it. Create a worktree for it? Nothing is created until you answer.${crowded}`
+          : `${issueKey} has no branch or checkout yet. Create the branch ${branch} from origin/${base} in a new worktree? Nothing is created until you answer.${crowded}`,
         createLabel: "Create a worktree",
         detail: target,
       });

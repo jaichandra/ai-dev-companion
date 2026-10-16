@@ -34,3 +34,15 @@ test("a pack's own targets (the Acme pipelines) don't make targets valid or inva
   assert.equal(P.validTargets({ ...ok, pipelines: "anything" }), true);
   assert.equal(P.DEFAULT_TARGETS.pipelines, undefined);
 });
+
+test("ticketKeyFrom reads the first ticket key from a PR's branch, title or a build's name", () => {
+  const { ticketKeyFrom } = require("../../chrome-extension/target-patterns.js");
+  assert.equal(ticketKeyFrom("feature/PROJ-123-login", "Fix login"), "PROJ-123");
+  assert.equal(ticketKeyFrom("proj-7-login-fails-on-safari"), "PROJ-7", "branch names are often lower case");
+  assert.equal(ticketKeyFrom("fix-typo", "[ABC-42] Fix the typo"), "ABC-42", "falls through to the next text");
+  assert.equal(ticketKeyFrom(null, undefined, "PROJ-9"), "PROJ-9");
+  assert.equal(ticketKeyFrom("PROJ-12", "PROJ-9"), "PROJ-12", "texts are tried in the order given");
+  assert.equal(ticketKeyFrom("bump-to-UTF-8", "SHA-256 and CVE-2024 fixes"), null, "not tickets");
+  assert.equal(ticketKeyFrom("release-2024-10", "no ticket"), null);
+  assert.equal(ticketKeyFrom("PROJ-0", "PROJ-007"), null, "keys have no leading zero or zero number");
+});
