@@ -119,3 +119,58 @@ test("restoreAdoptedWorktree puts the worktree back as the job found it", async 
   await wt.restoreAdoptedWorktree({ id: "x", dir: mine, repoPath: r.clone }, "0".repeat(40));
   assert.equal(git(mine, "rev-parse", "HEAD"), start);
 });
+
+test("main clone on the branch: the person's choice decides, and nothing changes before it", async (t) => {
+  const r = makeRepos();
+  t.after(r.cleanup);
+  const wt = require("../dist/core/worktree.js");
+  git(r.clone, "checkout", "-q", B);
+
+  // Asked with what each option would do.
+  let seen;
+  const { handle, reused } = await wt.acquireWorktree(r.clone, B, "d1", {
+    onMainClone: async (info) => ((seen = info), "disposable"),
+  });
+  assert.equal(seen.branch, B);
+  assert.equal(seen.switchTo, "master");
+  assert.equal(seen.ahead, 0);
+  assert.equal(reused, false);
+  assert.ok(handle.dir.startsWith(wt.WORKTREE_ROOT), "a disposable worktree");
+  assert.equal(git(r.clone, "rev-parse", "--abbrev-ref", "HEAD"), B, "the clone was left alone");
+  await wt.removeWorktree(handle);
+
+  // Throwing from the callback (Cancel) changes nothing.
+  await assert.rejects(
+    wt.acquireWorktree(r.clone, B, "d2", { onMainClone: async () => { throw new Error("Cancelled"); } }),
+    /Cancelled/,
+  );
+  assert.equal(git(r.clone, "rev-parse", "--abbrev-ref", "HEAD"), B);
+
+  // "worktree": the clone moves to master, the branch gets a kept worktree that is reused.
+  const made = await wt.acquireWorktree(r.clone, B, "d3", { onMainClone: async () => "worktree" });
+  assert.equal(git(r.clone, "rev-parse", "--abbrev-ref", "HEAD"), "master");
+  assert.equal(made.reused, true);
+  assert.equal(made.handle.adopted, true);
+  assert.equal(git(made.handle.dir, "rev-parse", "--abbrev-ref", "HEAD"), B);
+});
+
+test("main clone with uncommitted changes can't be moved, but a temporary worktree still works", async (t) => {
+  const r = makeRepos();
+  t.after(r.cleanup);
+  const wt = require("../dist/core/worktree.js");
+  git(r.clone, "checkout", "-q", B);
+  fs.writeFileSync(path.join(r.clone, "README.md"), "mine\n");
+
+  let seen;
+  await assert.rejects(
+    wt.acquireWorktree(r.clone, B, "d4", { onMainClone: async (info) => ((seen = info), "worktree") }),
+    /Can't move the clone/,
+  );
+  assert.equal(seen.switchTo, null);
+  assert.match(seen.cannotSwitch, /uncommitted/);
+  assert.equal(git(r.clone, "rev-parse", "--abbrev-ref", "HEAD"), B);
+
+  const { handle } = await wt.acquireWorktree(r.clone, B, "d5", { onMainClone: async () => "disposable" });
+  assert.equal(fs.readFileSync(path.join(r.clone, "README.md"), "utf8"), "mine\n", "uncommitted work untouched");
+  await wt.removeWorktree(handle);
+});
