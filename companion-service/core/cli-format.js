@@ -153,4 +153,36 @@ function formatSimilar(r, label) {
   return lines.join("\n");
 }
 
-module.exports = { oneLine, ago, duration, formatJobs, formatStatus, formatHistory, formatMetrics, formatInbox, formatDigest, formatRisk, formatSimilar, formatInboxBrief };
+/** `companion worktrees`: one block per repo, one line per worktree. */
+function formatWorktrees(rows, now) {
+  if (!rows || rows.length === 0) return "No worktrees: no repositories are set up, or none could be read.";
+  const out = [];
+  let repo = null;
+  for (const r of rows) {
+    if (r.repoKey !== repo) {
+      if (repo !== null) out.push("");
+      repo = r.repoKey;
+      out.push(oneLine(r.repoKey));
+    }
+    const who = r.isMainClone ? "clone" : r.owned ? "tool" : "yours";
+    const state = !r.exists
+      ? "folder gone"
+      : [
+          r.dirty ? `${r.changed} changed` : "clean",
+          r.inProgress ? r.inProgress : null,
+          r.unpushed > 0 ? `${r.unpushed} unpushed` : null,
+          r.merged ? "merged" : null,
+          r.upstreamGone ? "branch gone" : null,
+        ]
+          .filter(Boolean)
+          .join(", ");
+    const links = [r.issueKey, r.prKey, r.sessions > 0 ? `${r.sessions} session${r.sessions === 1 ? "" : "s"}` : null].filter(Boolean).join(" ");
+    out.push(
+      `  ${who.padEnd(5)} ${cut(oneLine(r.branch || "(detached)"), 34).padEnd(34)} ${state.padEnd(30)} ${r.lastUsed ? ago(now - r.lastUsed).padEnd(8) : "".padEnd(8)} ${cut(oneLine(links), 40)}`.trimEnd(),
+    );
+    out.push(`        ${oneLine(r.dir)}${r.prunable ? "   <- can be pruned" : ""}`);
+  }
+  return out.join("\n");
+}
+
+module.exports = { formatWorktrees, oneLine, ago, duration, formatJobs, formatStatus, formatHistory, formatMetrics, formatInbox, formatDigest, formatRisk, formatSimilar, formatInboxBrief };

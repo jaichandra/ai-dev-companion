@@ -5,6 +5,7 @@ const { parseArgs } = require("./cli-args.js");
 const fmt = require("./cli-format.js");
 const resume = require("./resume.js");
 const gitHook = require("./git-hook.js");
+const worktreeReport = require("./worktree-report.js");
 
 const USAGE = `Usage: companion <command>
 
@@ -25,10 +26,14 @@ const USAGE = `Usage: companion <command>
                             With --stdin it reads what git gives a pre-push hook. COMPANION_SKIP=1 skips it.
   hooks install|uninstall|status [<repo>]
                             The optional pre-push check, set in the repo's own git config (runs alongside husky).
+  worktrees [--prune [--yes]]
+                            Every worktree of your repos: whose it is, its ticket and PR, and whether it is
+                            clean, pushed and merged. --prune lists the ones the tool made that are safe to
+                            remove (merged or branch gone, and clean; the branches stay); with --yes it removes them.
   doctor                    Check the installation.
   mcp-stdio                 The companion's MCP tools over stdin/stdout, for the Claude Code plugin (not for typing).
 
-Add --json to status, jobs, history, similar, inbox, digest and precheck for scripts.`;
+Add --json to status, jobs, history, similar, inbox, digest, precheck and worktrees for scripts.`;
 
 const PRECHECK_LIMIT_MS = 3000;
 // The service is down or the command isn't set up (no token / a refused one):
@@ -343,6 +348,35 @@ async function run(argv, deps) {
         const d = await deps.callTool("get_digest", {});
         print(d, fmt.formatDigest(d));
         return 0;
+      }
+
+      case "worktrees": {
+        const config = (typeof deps.readConfig === "function" && deps.readConfig()) || {};
+        const rows = await worktreeReport.listWorktrees({
+          repos: config.repos || {},
+          units: deps.workUnits ? deps.workUnits().list() : [],
+          git: deps.git,
+          jobWorktreesRoot: deps.jobWorktreesRoot || null,
+        });
+        if (!flags.prune) {
+          print(rows, fmt.formatWorktrees(rows, deps.now()));
+          return 0;
+        }
+        const targets = rows.filter((r) => r.prunable);
+        if (targets.length === 0) {
+          say("Nothing to prune: no worktree made by the tool is merged (or has its branch gone), clean and fully pushed.");
+          return 0;
+        }
+        if (!flags.yes) {
+          say(`Would remove ${targets.length} worktree${targets.length === 1 ? "" : "s"}:`);
+          targets.forEach((r) => say(`  ${fmt.oneLine(r.dir)}  (${fmt.oneLine(r.branch || "detached")}, ${r.merged ? "merged" : "branch gone"})`));
+          say("Re-run with --yes to remove them. The branches stay.");
+          return 2;
+        }
+        const result = await worktreeReport.pruneWorktrees(rows, { git: deps.git, workUnits: deps.workUnits ? deps.workUnits() : null });
+        result.removed.forEach((r) => say(`Removed ${fmt.oneLine(r.dir)}`));
+        result.failed.forEach((f) => say(`Kept ${fmt.oneLine(f.row.dir)}: ${fmt.oneLine(f.error)}`));
+        return result.failed.length > 0 ? 1 : 0;
       }
 
       case "precheck":
