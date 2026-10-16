@@ -13,6 +13,7 @@ const { callTool } = require("../core/mcp-client.js");
 const { main } = require("../core/cli-run.js");
 const { sessionCwdAllowed } = require("../core/session-cwd.js");
 const { createStdioBridge, runStdio } = require("../core/mcp-stdio.js");
+const { openWorkUnits } = require("../core/work-units.js");
 
 const companionDir = path.join(__dirname, "..");
 
@@ -131,6 +132,8 @@ if (argv[0] === "mcp-stdio") {
   relative: path.relative,
   readConfig,
   readStdin,
+  workUnits: () => openWorkUnits(),
+  jobWorktreesRoot: path.join(paths.stateDir(), "worktrees"),
   git,
   sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   mkTemp: () => fs.mkdtempSync(path.join(os.tmpdir(), "companion-hook-probe-")),

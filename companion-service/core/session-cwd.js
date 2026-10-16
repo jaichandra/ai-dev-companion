@@ -11,6 +11,7 @@
 // then load).
 const path = require("path");
 const { repoWorktreesRoot } = require("./paths.js");
+const { isLinkedWorktreeOf } = require("./worktree-registry.js");
 
 function strictlyInside(root, target) {
   if (typeof root !== "string" || typeof target !== "string") return false;
@@ -31,6 +32,9 @@ function sessionCwdAllowed(cwd, { repoPaths, sessionsRoot, checkoutsRoot, worktr
   const repos = (repoPaths || []).filter((p) => typeof p === "string");
   if (repos.some((p) => path.resolve(p) === resolved)) return true;
   if (repos.some((p) => isRepoWorktreeDir(p, resolved))) return true;
+  // A worktree of yours that a job or Continue in Claude Code reused: anywhere, as long as git has
+  // registered it as a linked worktree of a mapped repo.
+  if (repos.some((p) => isLinkedWorktreeOf(p, resolved))) return true;
   // core/analysis-checkout.js's read-only checkouts: <checkoutsRoot>/<PROJECT>/<repo>.
   if (strictlyInside(checkoutsRoot, resolved)) {
     const rel = path.relative(path.resolve(checkoutsRoot), resolved).split(path.sep);

@@ -183,3 +183,63 @@ test("resume with something that isn't an issue key is a job id (get_job); with 
   assert.equal(await main(["resume"], none.deps), 2);
   assert.deepEqual(none.calls, []);
 });
+
+test("worktrees lists them, --prune only plans, --yes removes, and a bad flag is refused", async () => {
+  const fs = require("fs");
+  const os = require("os");
+  const path = require("path");
+  const { execFileSync } = require("child_process");
+  const { defaultGit } = require("./ticket-git.js");
+  const { repoWorktreesRoot } = require("./paths.js");
+  const g = (cwd, ...a) => execFileSync("git", a, { cwd, encoding: "utf8" }).trim();
+  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "cli-worktrees-")));
+  try {
+    process.env.HOME = path.join(root, "home");
+    const seed = path.join(root, "seed");
+    fs.mkdirSync(seed);
+    g(seed, "init", "-q", "-b", "master");
+    g(seed, "config", "user.email", "t@example.com");
+    g(seed, "config", "user.name", "T");
+    fs.writeFileSync(path.join(seed, "a"), "a");
+    g(seed, "add", "a");
+    g(seed, "commit", "-q", "-m", "i");
+    execFileSync("git", ["clone", "-q", "--bare", seed, path.join(root, "origin.git")]);
+    const clone = path.join(root, "app");
+    execFileSync("git", ["clone", "-q", path.join(root, "origin.git"), clone]);
+    const tree = path.join(repoWorktreesRoot(clone), "PROJ-1");
+    fs.mkdirSync(path.dirname(tree), { recursive: true });
+    g(clone, "worktree", "add", "-q", "-b", "PROJ-1", tree, "origin/master");
+
+    const extra = { readConfig: () => ({ repos: { "ACME/app": clone } }), git: defaultGit, workUnits: () => ({ list: () => [], prune: () => [] }) };
+    const listed = harness({}, extra);
+    assert.equal(await main(["worktrees"], listed.deps), 0);
+    const text = listed.out.join("");
+    assert.match(text, /ACME\/app/);
+    assert.match(text, /clone\s+master/);
+    assert.match(text, /tool\s+PROJ-1\s+clean, merged/);
+    assert.match(text, /<- can be pruned/);
+
+    const json = harness({}, extra);
+    await main(["worktrees", "--json"], json.deps);
+    assert.equal(JSON.parse(json.out.join("")).length, 2);
+
+    const plan = harness({}, extra);
+    assert.equal(await main(["worktrees", "--prune"], plan.deps), 2);
+    assert.match(plan.out.join(""), /Would remove 1 worktree/);
+    assert.ok(fs.existsSync(tree), "nothing is removed without --yes");
+
+    const go = harness({}, extra);
+    assert.equal(await main(["worktrees", "--prune", "--yes"], go.deps), 0);
+    assert.match(go.out.join(""), /Removed .*PROJ-1/);
+    assert.equal(fs.existsSync(tree), false);
+
+    const nothing = harness({}, extra);
+    assert.equal(await main(["worktrees", "--prune"], nothing.deps), 0);
+    assert.match(nothing.out.join(""), /Nothing to prune/);
+
+    const bad = harness({}, extra);
+    assert.equal(await main(["worktrees", "--nope"], bad.deps), 2);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

@@ -20,6 +20,28 @@
     return new RegExp("/browse/(" + keys + "-\\d+)");
   }
 
+  // Words that look like a ticket key (ABC-123) but never are one.
+  const NOT_PROJECTS = new Set([
+    "UTF", "SHA", "ISO", "MD", "AES", "RSA", "TLS", "SSL", "HTTP", "CVE", "GPT",
+    "RELEASE", "HOTFIX", "VERSION", "BUILD", "SPRINT", "FIX", "BUGFIX", "FEATURE", "RC", "PR", "DAY", "WEEK",
+  ]);
+  const KEY_IN_TEXT = /(?:^|[^A-Za-z0-9])([A-Za-z][A-Za-z0-9_]*-[1-9]\d*)(?![0-9A-Za-z])/g;
+
+  // The first ticket key in the given texts (a PR's branch, then its title; a build's job name, then its
+  // parameters), upper-cased; null if none. Texts are tried in the order given.
+  function ticketKeyFrom(...texts) {
+    for (const text of texts) {
+      if (typeof text !== "string") continue;
+      for (const m of text.matchAll(KEY_IN_TEXT)) {
+        const key = m[1].toUpperCase();
+        const project = key.slice(0, key.lastIndexOf("-"));
+        // A Jira project key is 2 to 10 letters or digits, starting with a letter.
+        if (project.length >= 2 && project.length <= 10 && !NOT_PROJECTS.has(project)) return key;
+      }
+    }
+    return null;
+  }
+
   function validTargets(t) {
     return !!(t && t.analyzeIssue && Array.isArray(t.analyzeIssue.projects) && Array.isArray(t.analyzeIssue.issueTypes));
   }
@@ -28,6 +50,7 @@
     DEFAULT_TARGETS,
     escapeRegExp,
     issueUrlPattern,
+    ticketKeyFrom,
     validTargets,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
