@@ -13,7 +13,11 @@ const workspaceResolver = require("./workspace-resolver.js") as {
     | { kind: "worktree"; dir: string; isMainClone: boolean; usable: boolean; reason: string | null }
     | { kind: "branch" | "none" }
   >;
+  createBranchWorktree(repoPath: string, branch: string): Promise<{ dir: string; branch: string; created: boolean }>;
+  branchWorktreePath(repoPath: string, branch: string): string;
 };
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { isSafeBranchName } = require("./bitbucket-endpoints.js") as { isSafeBranchName(name: string): boolean };
 
 export interface WorktreeHandle {
   /** Job/feature-scoped id, used only for the directory name. */
@@ -32,6 +36,31 @@ export interface WorktreeHandle {
 
 /** An existing checkout of the branch was found but can't be used safely. */
 export class WorkspaceUnusableError extends Error {}
+
+/** What a job may do when the branch is checked out in the main clone, which
+ * Claude is never allowed to edit in. */
+export type MainCloneChoice = "worktree" | "disposable";
+
+export interface MainCloneInfo {
+  /** The main clone's folder. */
+  dir: string;
+  branch: string;
+  /** Commits on the clone's branch that aren't on origin. */
+  ahead: number;
+  /** The branch the clone would be switched to for "worktree"; null when that
+   * isn't possible, with the reason in `cannotSwitch`. */
+  switchTo: string | null;
+  cannotSwitch: string | null;
+  /** Where "worktree" would put the worktree. */
+  worktreeDir: string;
+}
+
+export interface AcquireOptions {
+  /** Asked when the branch is checked out in the main clone. Returns the
+   * person's choice, or throws to give up (the job then fails with its
+   * message). Without it, acquireWorktree refuses as it always did. */
+  onMainClone?(info: MainCloneInfo): Promise<MainCloneChoice>;
+}
 
 // Worktrees live outside any git-tracked directory (under the state dir,
 // not inside `repoPath`) so they never show up as untracked clutter in
@@ -120,15 +149,19 @@ export async function acquireWorktree(
   repoPath: string,
   branchRef: string,
   id: string,
+  options: AcquireOptions = {},
 ): Promise<{ handle: WorktreeHandle; reused: boolean }> {
   await git(["fetch", "origin", "--prune"], repoPath);
   const found = await workspaceResolver.resolveWorkspace(repoPath, { branch: branchRef });
   if (found.kind !== "worktree") return { handle: await addWorktree(repoPath, branchRef, id), reused: false };
   if (found.isMainClone) {
-    throw new WorkspaceUnusableError(
-      `The branch ${branchRef} is checked out in your main clone (${found.dir}). A job that lets Claude edit can't ` +
-        "run there. Check out another branch in the clone, or make a worktree for this branch, and try again.",
-    );
+    if (!options.onMainClone) {
+      throw new WorkspaceUnusableError(
+        `The branch ${branchRef} is checked out in your main clone (${found.dir}). A job that lets Claude edit can't ` +
+          "run there. Check out another branch in the clone, or make a worktree for this branch, and try again.",
+      );
+    }
+    return acquireFromMainClone(repoPath, branchRef, id, found, options.onMainClone);
   }
   if (!found.usable) {
     throw new WorkspaceUnusableError(`Can't reuse the checkout of ${branchRef}: ${found.reason}. Commit or stash there, then try again.`);
@@ -148,6 +181,59 @@ export async function acquireWorktree(
   }
   if (behind > 0) await git(["merge", "--ff-only", `origin/${branchRef}`], found.dir);
   return { handle: { id, dir: found.dir, repoPath, adopted: true, branch: branchRef }, reused: true };
+}
+
+/**
+ * The branch is checked out in the main clone. Asks what to do, then either
+ * moves the clone onto another branch and makes a worktree for this one (kept,
+ * and reused next time), or, as the last resort, works in a disposable
+ * worktree of origin/<branch> and leaves the clone alone. Nothing is changed
+ * until the answer is in.
+ */
+async function acquireFromMainClone(
+  repoPath: string,
+  branchRef: string,
+  id: string,
+  found: { dir: string; usable: boolean; reason: string | null },
+  ask: (info: MainCloneInfo) => Promise<MainCloneChoice>,
+): Promise<{ handle: WorktreeHandle; reused: boolean }> {
+  const aheadOut = await git(["rev-list", "--count", `origin/${branchRef}..HEAD`], found.dir, { allowFailure: true });
+  const ahead = Number(aheadOut.stdout.trim()) || 0;
+
+  // The branch to move the clone to: origin's default, if it exists locally.
+  let switchTo: string | null = null;
+  let cannotSwitch: string | null = found.usable ? null : `${found.reason}`;
+  if (!cannotSwitch) {
+    const head = await git(["symbolic-ref", "--short", "refs/remotes/origin/HEAD"], found.dir, { allowFailure: true });
+    const name = head.stdout.trim().replace(/^origin\//, "");
+    const local = name
+      ? (await git(["show-ref", "--verify", "--quiet", `refs/heads/${name}`], found.dir, { allowFailure: true })).code === 0
+      : false;
+    if (name && name !== branchRef && isSafeBranchName(name) && local) switchTo = name;
+    else cannotSwitch = "there is no other local branch (origin's default) to switch the clone to";
+  }
+
+  const choice = await ask({
+    dir: found.dir,
+    branch: branchRef,
+    ahead,
+    switchTo,
+    cannotSwitch,
+    worktreeDir: workspaceResolver.branchWorktreePath(repoPath, branchRef),
+  });
+
+  if (choice === "disposable") return { handle: await addWorktree(repoPath, branchRef, id), reused: false };
+  if (!switchTo) throw new WorkspaceUnusableError(`Can't move the clone off ${branchRef}: ${cannotSwitch}.`);
+  await git(["checkout", switchTo, "--"], found.dir);
+  try {
+    await workspaceResolver.createBranchWorktree(repoPath, branchRef);
+  } catch (err) {
+    // Put the clone back as it was; the job can't use it either way.
+    await git(["checkout", branchRef, "--"], found.dir, { allowFailure: true });
+    throw err;
+  }
+  // The new worktree is now just an existing checkout: the usual checks apply.
+  return acquireWorktree(repoPath, branchRef, id);
 }
 
 /** Puts an adopted worktree back exactly as the job found it: aborts any merge,

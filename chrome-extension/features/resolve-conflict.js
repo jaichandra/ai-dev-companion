@@ -7,6 +7,9 @@ PaiRegistry.register({
   describePendingStart: PaiGit.prSummary,
   menuLabel: "Resolve Conflict",
   quietCompleted: true,
+  // While running, the service may stop to ask where to work when the branch
+  // is checked out in the main clone (job.data.pendingChoice).
+  repoChoiceAction: "confirm-repo",
   progressSteps: [
     { id: "fetch", label: "Fetch & prepare workspace" },
     { id: "merge", label: "Merge destination branch" },

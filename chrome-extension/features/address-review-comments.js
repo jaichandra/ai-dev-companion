@@ -184,6 +184,9 @@ PaiRegistry.register({
   describePendingStart: PaiGit.prSummary,
   menuLabel: "Address review comments",
   quietCompleted: true,
+  // While running, the service may stop to ask where to work when the branch
+  // is checked out in the main clone (job.data.pendingChoice).
+  repoChoiceAction: "confirm-repo",
   progressSteps: [
     { id: "fetch", label: "Fetch the pull request" },
     { id: "comments", label: "Collect open review comments" },
