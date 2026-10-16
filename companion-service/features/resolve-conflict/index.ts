@@ -8,6 +8,7 @@ import { runClaude } from "../../core/claude";
 import {
   ClaudeSession,
   Feature,
+  FeatureContext,
   FileDiff,
   Job,
   JobStatusError,
@@ -16,6 +17,8 @@ import {
   jobStore,
 } from "../../core/jobs";
 import { fetchOpenPullRequest, pendingStartResult } from "../../core/mcp";
+import { askMainCloneChoice } from "../../core/main-clone-choice";
+import { confirmRepoChoice } from "../../core/repo-choice";
 import { acquireWorktree, removeWorktree, restoreAdoptedWorktree, WorktreeHandle } from "../../core/worktree";
 import { assertTreeMatchesReviewed, canReject, stageAll, withJobLock, writeTree } from "../../core/reviewed-push";
 import { buildResolveConflictPrompt } from "./prompt";
@@ -367,6 +370,14 @@ export function createResolveConflictFeature(config: Config): Feature {
     id: "resolve-conflict",
     label: "Resolve Conflict",
 
+    actions: {
+      // Body { repoKey }: one of the choices offered in job.data.pendingChoice
+      // when the branch is checked out in the main clone, or null to cancel.
+      async "confirm-repo"(job: Job, ctx: FeatureContext): Promise<unknown> {
+        return confirmRepoChoice(job, ctx.body);
+      },
+    },
+
     async start(payloadRaw: unknown): Promise<Job> {
       const payload = assertPayload(payloadRaw);
       const repo = resolveRepoPath(config, payload.project, payload.repo);
@@ -696,7 +707,12 @@ async function runJob(
   });
   // An existing clean checkout of the branch is reused; only when there is none
   // is a disposable worktree made (see acquireWorktree).
-  const { handle: worktree, reused } = await acquireWorktree(repoPath, payload.sourceBranch, jobId);
+  const { handle: worktree, reused } = await acquireWorktree(repoPath, payload.sourceBranch, jobId, {
+    onMainClone: (info) => {
+      jobStore.update(jobId, { progress: { stepId: "fetch", label: "Waiting for you to choose where to work…" } });
+      return askMainCloneChoice(jobId, signal, info);
+    },
+  });
   // Recorded before anything else can throw, so cancel/reject can find it.
   jobStore.patchData(jobId, { worktree });
   const unit = {

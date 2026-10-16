@@ -10,9 +10,11 @@ import { runCursorAgent } from "../../core/cursor-agent";
 import { resolveReviewEditor } from "../../core/editor";
 import { computeFileDiffs } from "../../core/diff";
 import { git } from "../../core/exec";
-import { ClaudeSession, Feature, Job, JobStatusError, McpToolContext, WorktreeGoneError, jobStore } from "../../core/jobs";
+import { ClaudeSession, Feature, FeatureContext, Job, JobStatusError, McpToolContext, WorktreeGoneError, jobStore } from "../../core/jobs";
 import { fetchOpenPullRequest, pendingStartResult } from "../../core/mcp";
 import { assertTreeMatchesReviewed, canReject, stageAll, withJobLock, writeTree } from "../../core/reviewed-push";
+import { askMainCloneChoice } from "../../core/main-clone-choice";
+import { confirmRepoChoice } from "../../core/repo-choice";
 import { acquireWorktree, removeWorktree, restoreAdoptedWorktree, WorktreeHandle } from "../../core/worktree";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -309,6 +311,14 @@ export function createAddressReviewCommentsFeature(config: Config): Feature {
   return {
     id: "address-review-comments",
     label: "Address review comments",
+
+    actions: {
+      // Body { repoKey }: one of the choices offered in job.data.pendingChoice
+      // when the branch is checked out in the main clone, or null to cancel.
+      async "confirm-repo"(job: Job, ctx: FeatureContext): Promise<unknown> {
+        return confirmRepoChoice(job, ctx.body);
+      },
+    },
 
     async start(payloadRaw: unknown, ctx): Promise<Job> {
       const payload = plan.validatePayload(payloadRaw);
@@ -633,7 +643,12 @@ async function runJob(
   });
   // An existing clean checkout of the branch is reused; only when there is none
   // is a disposable worktree made (see acquireWorktree).
-  const { handle: worktree, reused } = await acquireWorktree(repoPath, pr.fromBranch, jobId);
+  const { handle: worktree, reused } = await acquireWorktree(repoPath, pr.fromBranch, jobId, {
+    onMainClone: (info) => {
+      jobStore.update(jobId, { progress: { stepId: "fetch", label: "Waiting for you to choose where to work…" } });
+      return askMainCloneChoice(jobId, signal, info);
+    },
+  });
   // Recorded before anything else can throw, so cancel/reject can find it.
   jobStore.patchData(jobId, { worktree });
   const unit = {
