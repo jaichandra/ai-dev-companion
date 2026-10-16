@@ -2,8 +2,10 @@
 
 ## Unreleased
 
-- Workspace resolver (`core/workspace-resolver.js`): finds where to work on a branch without creating anything. An existing worktree (or the clone itself) that has the branch checked out comes first, reported unusable if it has uncommitted changes or a merge or rebase in progress; then a local or origin branch of that name, which needs the person's confirmation before a worktree is made (`createBranchWorktree`). Works from a PR's source branch or a ticket key. Not yet used by the features.
-- Work-unit registry (`core/work-units.js`): one record per repo and branch with its worktree, ticket, PR and Claude sessions, in `work-units.json` in the state dir, so a session can be found again.
+- Workspace resolver (`core/workspace-resolver.js`): finds where to work on a branch without creating anything. An existing worktree (or the clone itself) that has the branch checked out comes first, reported unusable if it has uncommitted changes or a merge or rebase in progress; then a local or origin branch of that name, which needs the person's confirmation before a worktree is made (`createBranchWorktree`). Works from a PR's source branch or a ticket key. Review PR, Resolve merge conflicts and Address review comments use it (below).
+- Resolve merge conflicts and Address review comments reuse an existing clean linked worktree that has the PR's source branch checked out (fast-forwarded to origin first) instead of making a worktree per job; only when there is none do they make a disposable one, as before. A checkout with uncommitted changes, a merge or rebase in progress, commits not on origin, or the main clone is refused with the reason. Rejecting restores a reused worktree to where it started (and removes what the job added); approving leaves it as the push left it; it is never deleted. Jobs on a reused worktree survive a service restart when it is still a linked worktree of a configured repo.
+- Review PR looks for the branch in any worktree or clone through the resolver, then falls back to the shared review worktree.
+- Work-unit registry (`core/work-units.js`): one record per repo and branch with its worktree, ticket, PR and Claude sessions, in `work-units.json` in the state dir, so a session can be found again. The three features above record their branch, worktree and Claude session in it.
 
 ## 0.2.0
 

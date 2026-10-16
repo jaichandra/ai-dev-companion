@@ -13,6 +13,7 @@ const jobFiles = require("./job-files.js") as {
       worktreeRoot: string;
       maxAgeMs?: number;
       sessionCwdOk?: (cwd: string) => boolean;
+      adoptedWorktreeOk?: (repoPath: string, dir: string) => boolean;
       log?: (msg: string) => void;
     },
   ): { jobs: Job[]; reconciled: string[]; pruned: string[]; prunedJobs: Job[]; dropped: string[] };
@@ -260,11 +261,13 @@ class JobStore {
     worktreeRoot: string;
     featureIds: string[];
     sessionCwdOk?: (cwd: string) => boolean;
+    adoptedWorktreeOk?: (repoPath: string, dir: string) => boolean;
   }): { loaded: number; reconciled: string[]; pruned: string[]; prunedJobs: Job[]; dropped: string[] } {
-    const { dir, worktreeRoot, featureIds, sessionCwdOk } = opts;
+    const { dir, worktreeRoot, featureIds, sessionCwdOk, adoptedWorktreeOk } = opts;
     const { jobs, reconciled, pruned, prunedJobs, dropped } = jobFiles.loadJobs(dir, {
       worktreeRoot,
       sessionCwdOk,
+      adoptedWorktreeOk,
       log: (m: string) => console.log(`[jobs] WARN - ${m}`),
     });
     for (const job of jobs) {

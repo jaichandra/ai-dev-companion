@@ -16,10 +16,16 @@ import {
   jobStore,
 } from "../../core/jobs";
 import { fetchOpenPullRequest, pendingStartResult } from "../../core/mcp";
-import { addWorktree, removeWorktree, WorktreeHandle } from "../../core/worktree";
+import { acquireWorktree, removeWorktree, restoreAdoptedWorktree, WorktreeHandle } from "../../core/worktree";
 import { assertTreeMatchesReviewed, canReject, stageAll, withJobLock, writeTree } from "../../core/reviewed-push";
 import { buildResolveConflictPrompt } from "./prompt";
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { recordWorkUnit, recordWorkUnitSession, prKeyFor } = require("../../core/work-unit-record.js") as {
+  recordWorkUnit(unit: Record<string, unknown>): string | null;
+  recordWorkUnitSession(unit: Record<string, unknown>): string | null;
+  prKeyFor(project: string, repo: string, prId: number | string): string | null;
+};
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { baselines } = require("../../core/integrity-baselines.js") as {
   baselines: {
@@ -214,7 +220,13 @@ async function discardWorktree(job: Job): Promise<void> {
     // main repo's own `.git/worktrees/<id>` registration behind (rather
     // than risk a `git worktree prune`/`remove` touching it) — a small,
     // inert leftover, safe to clean up by hand later.
-    fs.rmSync(data.worktree.dir, { recursive: true, force: true });
+    // An adopted worktree is the user's own: never delete it, and leave it
+    // as it is (it is flagged, and nothing here runs git in it again).
+    if (!data.worktree.adopted) fs.rmSync(data.worktree.dir, { recursive: true, force: true });
+    return;
+  }
+  if (data.worktree.adopted) {
+    await restoreAdoptedWorktree(data.worktree, data.preMergeSha as string);
     return;
   }
   await git(["merge", "--abort"], data.worktree.dir).catch(() => undefined);
@@ -682,9 +694,27 @@ async function runJob(
   jobStore.update(jobId, {
     progress: { stepId: "fetch", label: "Fetching latest changes and preparing an isolated workspace…" },
   });
-  const worktree = await addWorktree(repoPath, payload.sourceBranch, jobId);
+  // An existing clean checkout of the branch is reused; only when there is none
+  // is a disposable worktree made (see acquireWorktree).
+  const { handle: worktree, reused } = await acquireWorktree(repoPath, payload.sourceBranch, jobId);
   // Recorded before anything else can throw, so cancel/reject can find it.
   jobStore.patchData(jobId, { worktree });
+  const unit = {
+    repoPath,
+    branch: payload.sourceBranch,
+    // A job's own worktree is gone after the job; only a reused one is worth recording.
+    dir: reused ? worktree.dir : null,
+    prKey: prKeyFor(payload.project, payload.repo, payload.prId),
+  };
+  recordWorkUnit(unit);
+  jobStore.update(jobId, {
+    progress: {
+      stepId: "fetch",
+      label: reused
+        ? `Using the existing checkout of ${payload.sourceBranch} at ${worktree.dir}…`
+        : "Fetching latest changes and preparing an isolated workspace…",
+    },
+  });
   checkpoint();
   // `git add`/`git commit` inside a worktree write to the worktree's
   // index/HEAD, which git keeps in the MAIN repo, not the worktree
@@ -885,6 +915,10 @@ async function runJob(
     permissionMode: "default",
   };
   jobStore.patchData(jobId, { claudeSession });
+  recordWorkUnitSession({
+    ...unit,
+    session: { id: claudeSession.id, cwd: claudeSession.cwd, feature: "resolve-conflict" },
+  });
 
   checkpoint();
   jobStore.update(jobId, {
