@@ -32,7 +32,7 @@ This repo's own tests run against its placeholder profile (`companion-service/en
 ## Design decisions to respect
 
 - Conflict resolution merges the target branch in (never rebases) so the push is a plain, non-force `git push`. Approve & Push refuses if the worktree fingerprint differs from what the panel rendered.
-- Claude jobs run in disposable worktrees, never the user's working copy; analysis is read-only.
+- Claude jobs that edit reuse an existing clean linked worktree of the branch if there is one (`core/worktree.ts`'s `acquireWorktree`; rejecting the job restores it, approving leaves it, and it is never deleted), and otherwise run in a disposable worktree. They never run in the main clone (Claude's sandbox may write the worktree's git dir, which for the clone is the whole `.git`) or in a checkout with uncommitted work or unpushed commits. Review PR only reads, so it may use the clone. Analysis is read-only.
 - Keep organization-specific names (hosts, job names, internal tools) out of this repo; they belong in a distribution's profile or pack.
 
 ## Docs

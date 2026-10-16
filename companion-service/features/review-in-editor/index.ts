@@ -23,6 +23,18 @@ interface LiveSession {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
+const workspaceResolver = require("../../core/workspace-resolver.js") as {
+  resolveWorkspace(
+    repoPath: string,
+    target: { branch: string },
+  ): Promise<{ kind: "worktree"; dir: string } | { kind: "branch" | "none" }>;
+};
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { recordWorkUnit, prKeyFor } = require("../../core/work-unit-record.js") as {
+  recordWorkUnit(unit: Record<string, unknown>): string | null;
+  prKeyFor(project: string, repo: string, prId: number): string | null;
+};
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const reviewSession = require("../../core/review-session.js") as {
   createStatusFile(jobId: string): string;
   statusFileFor(jobId: string): string;
@@ -304,11 +316,12 @@ async function runReview(
     );
   }
 
-  // The branch is already checked out in another worktree of this repo (the
-  // user's own working copy, say): `git checkout -B` would fail there, so
-  // review in that checkout as it is rather than touching it.
-  const worktreeList = (await git(["worktree", "list", "--porcelain"], repoPath)).stdout;
-  const existing = findWorktreeOnBranch(worktreeList, sourceBranch, dir);
+  // The branch is already checked out somewhere else (your own clone or a
+  // worktree of yours): review it there as it is, nothing is created and
+  // nothing is touched. Only otherwise does the shared review worktree take
+  // the branch.
+  const found = await workspaceResolver.resolveWorkspace(repoPath, { branch: sourceBranch });
+  const existing = found.kind === "worktree" && path.resolve(found.dir) !== path.resolve(dir) ? found.dir : null;
   let dirtyFiles: string[] = [];
   if (existing) {
     dir = existing;
@@ -320,6 +333,7 @@ async function runReview(
     }
     await git(["checkout", "-B", sourceBranch, "--track", `origin/${sourceBranch}`], dir);
   }
+  recordWorkUnit({ repoPath, branch: sourceBranch, dir, prKey: prKeyFor(payload.project, payload.repo, Number(payload.prId)) });
 
   const editor = resolveReviewEditor(config.reviewEditor);
   if (!editor) {
@@ -373,22 +387,4 @@ async function runReview(
     reviewSession.writeSessionRecord({ jobId: job.id, worktree: dir, payload, summary, review, terminal: launch.terminal });
   }
   return { summary, review };
-}
-
-/** The path of whatever *other* registered worktree of this repo already
- * has `branch` checked out, if any — `reviewDir` is excluded since landing
- * back on the review worktree's own current branch is not a conflict. */
-function findWorktreeOnBranch(porcelainOutput: string, branch: string, reviewDir: string): string | null {
-  for (const entry of porcelainOutput.split("\n\n")) {
-    const lines = entry.split("\n");
-    const pathLine = lines.find((l) => l.startsWith("worktree "));
-    const branchLine = lines.find((l) => l.startsWith("branch "));
-    if (!pathLine || !branchLine) continue;
-    const wtPath = pathLine.slice("worktree ".length).trim();
-    const wtBranch = branchLine.slice("branch ".length).trim().replace(/^refs\/heads\//, "");
-    if (wtBranch === branch && path.resolve(wtPath) !== path.resolve(reviewDir)) {
-      return wtPath;
-    }
-  }
-  return null;
 }
