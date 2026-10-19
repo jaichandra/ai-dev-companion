@@ -4,6 +4,7 @@ PaiRegistry.register({
   site: "git",
   id: "review-in-editor",
   menuLabel: "Review PR",
+  icon: "code",
   oneShot: true,
 
   urlPattern: (targets) => PaiGit.urlPattern(targets),

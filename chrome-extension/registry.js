@@ -38,6 +38,8 @@
 //   id            must match the companion-service feature id
 //   menuLabel     text for this feature's row in the flyout menu
 //   menuHint      optional one-line subtitle shown under menuLabel in the flyout row
+//   icon          name of a PaiIcons glyph (icons.js, e.g. "workspace") for this feature's menu row,
+//                settings row and panel header. Absent => the sparkle.
 //   global        true => not tied to a page: shown as an icon shortcut in the menu header
 //                (next to Settings) instead of a row in the page's list.
 //   oneShot       optional boolean. When true, clicking the flyout row
@@ -126,6 +128,11 @@
 //                has nothing to poll, so it has no progressSteps either.
 //   quietCompleted optional; true to mark a finished, kept job on the menu with
 //                just a check (like a saved result) instead of the green row.
+//   liveReport    optional; true for a read-only report that should open instantly from the last saved
+//                copy (browser storage), re-run behind it with a progress bar on the panel, and swap in
+//                the new result when it differs (content.js openLiveReport). Replaces alwaysFresh.
+//   liveScope(payload) optional; string that keys the saved copy (default: one copy per feature),
+//                e.g. the ticket key.
 //   alwaysFresh   optional; true for a read-only report whose finished job is
 //                never kept as a green "completed" menu item: each click starts
 //                a new run and the panel opens when it finishes (ticket-workspace

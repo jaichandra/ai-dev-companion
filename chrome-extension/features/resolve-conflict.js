@@ -6,6 +6,7 @@ PaiRegistry.register({
   settingsGroups: ["git"],
   describePendingStart: PaiGit.prSummary,
   menuLabel: "Resolve Conflict",
+  icon: "copy_replicate",
   quietCompleted: true,
   // While running, the service may stop to ask where to work when the branch
   // is checked out in the main clone (job.data.pendingChoice).

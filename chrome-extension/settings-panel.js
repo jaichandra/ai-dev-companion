@@ -403,7 +403,10 @@
       );
       text.append(title, el("div", "settings-feature-desc", feature.description));
       for (const name of failing) text.appendChild(el("div", "settings-feature-problem", checks[name].message));
-      label.append(box, text);
+      const entry = PaiRegistry.all().find((e) => e.id === feature.id);
+      const tile = el("span", "settings-feature-tile");
+      tile.style.setProperty("--pai-row-icon", PaiIcons.mask((entry && entry.icon) || "AI"));
+      label.append(box, tile, text);
       const toggle = el("button", "settings-link-button", "Options");
       toggle.type = "button";
       toggle.hidden = true;

@@ -78,11 +78,14 @@ PaiRegistry.register({
   id: "digest",
   settingsGroups: ["jira", "git"],
   menuLabel: "Morning digest",
+  icon: "light",
   // Not tied to a page: the menu shows it as a header shortcut, not a row.
   global: true,
   readOnly: true,
   // Reads live PRs/reviews/tickets, so nothing is kept: every click runs
   // it again and opens the panel when it finishes (content.js).
+  // Opens the last report straight away and refreshes it behind the panel (content.js openLiveReport).
+  liveReport: true,
   alwaysFresh: true,
 
   // Every covered page; nothing is read until it's clicked.

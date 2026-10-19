@@ -18,7 +18,7 @@ const { PRODUCT_NAME } = require("./product-name.js");
 
 /** Scripts every install loads, in order, before any feature file: they share one
  * global scope, and the registry must exist before the features register. */
-const BASE_SCRIPTS = ["diff-viewer.js", "open-in-editor.js", "settings-panel.js", "target-patterns.js", "jenkins-urls.js", "registry.js", "ui-kit.js", "jira-helpers.js", "git-host.js"];
+const BASE_SCRIPTS = ["icons.js", "diff-viewer.js", "open-in-editor.js", "settings-panel.js", "target-patterns.js", "jenkins-urls.js", "registry.js", "ui-kit.js", "jira-helpers.js", "git-host.js"];
 /** Loaded last: it reads the registry once at startup. */
 const FINAL_SCRIPT = "content.js";
 /** The service the extension talks to; any port. */

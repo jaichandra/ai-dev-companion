@@ -20,6 +20,7 @@ PaiRegistry.register({
   id: "analyze-issue",
   settingsGroups: ["jira"],
   menuLabel: "Analyze ticket",
+  icon: "file_search",
   readOnly: true,
   // The report is kept on the companion (analysis-cache), not by this tab:
   // every click starts a run (instant when saved) and opens the panel, and
