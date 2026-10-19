@@ -57,7 +57,7 @@ function analyzeTargetsFrom(config) {
 
 /** "PROJ tickets", "CI/PROJ Bugs/Tasks" — for messages. */
 function describeAnalyzeScope({ projects, issueTypes }) {
-  return `${projects.join("/")} ${issueTypes.length ? issueTypes.map((t) => `${t}s`).join("/") : "tickets"}`;
+  return `${projects.length ? `${projects.join("/")} ` : ""}${issueTypes.length ? issueTypes.map((t) => `${t}s`).join("/") : "tickets"}`;
 }
 
 const MAX_COMPONENTS = 50;

@@ -173,8 +173,13 @@ test("conflictRule's WIP check has no false positives on ordinary titles", () =>
   for (const t of ["PROJ-7: WIP fix", "PROJ-7 [Draft] fix", "(WIP) fix", "wip: x", "PROJ-7: Draft: x"]) assert.equal(worth(t), false, t);
 });
 
-test("assignedBugsJql refuses empty lists; notificationFor never prints undefined", () => {
-  assert.throws(() => w.assignedBugsJql({ projects: [], issueTypes: ["Bug"] }), /project/);
+test("assignedBugsJql refuses missing lists; notificationFor never prints undefined", () => {
+  assert.throws(() => w.assignedBugsJql({ issueTypes: ["Bug"] }), /project/);
+  // No projects configured = every project.
+  assert.equal(
+    w.assignedBugsJql({ projects: [], issueTypes: [] }),
+    "assignee = currentUser() AND statusCategory != Done AND updated >= -1d ORDER BY updated DESC",
+  );
   assert.throws(() => w.assignedBugsJql({ projects: ["PROJ"] }), /issue types/);
   // No types configured = every type of the projects.
   assert.equal(

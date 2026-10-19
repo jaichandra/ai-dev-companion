@@ -374,6 +374,7 @@ const environment = require("./environment.js") as {
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const extensionManifest = require("./core/extension-manifest.js") as {
   originsByKind(config: Config): Record<string, string>;
+  fabAnchors(config: Config): { origin: string; right?: number; bottom?: number }[];
   providersByKind(): Record<string, string>;
   hostsChanged(before: Config, after: Config): boolean;
   writeExtensionFiles(extensionDir: string, config: Config): boolean;
@@ -662,7 +663,7 @@ app.get("/history/metrics", (req, res) => {
 // and Jira projects the features cover). Reads `config` live, so a saved
 // Settings change shows up on the next page refresh with no restart.
 app.get("/targets", (_req, res) => {
-  res.json({ ...packs.targetsFor(config), analyzeIssue: targets.analyzeTargetsFrom(config), sites: extensionManifest.originsByKind(config), providers: extensionManifest.providersByKind() });
+  res.json({ ...packs.targetsFor(config), analyzeIssue: targets.analyzeTargetsFrom(config), sites: extensionManifest.originsByKind(config), fabAnchors: extensionManifest.fabAnchors(config), providers: extensionManifest.providersByKind() });
 });
 
 // What the extension needs to know about the pull request on its page (state, conflicts, branches, fork), answered

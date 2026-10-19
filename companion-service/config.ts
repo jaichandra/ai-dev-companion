@@ -120,7 +120,7 @@ export interface Config {
     model?: string;
     /** Jira component/label name -> "PROJECT/repo" key in config.repos. */
     componentRepoMap?: Record<string, string>;
-    /** Jira project keys Analyze ticket accepts. Defaults to the profile's `targets.projects`. */
+    /** Jira project keys Analyze ticket accepts (empty = every project). Defaults to the profile's `targets.projects`. */
     projects?: string[];
     /** Jira issue types Analyze ticket accepts. Defaults to ["Bug"]. */
     issueTypes?: string[];

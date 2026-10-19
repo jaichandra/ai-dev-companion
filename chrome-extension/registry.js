@@ -37,6 +37,7 @@
 // Other entry fields:
 //   id            must match the companion-service feature id
 //   menuLabel     text for this feature's row in the flyout menu
+//   menuHint      optional one-line subtitle shown under menuLabel in the flyout row
 //   global        true => not tied to a page: shown as an icon shortcut in the menu header
 //                (next to Settings) instead of a row in the page's list.
 //   oneShot       optional boolean. When true, clicking the flyout row

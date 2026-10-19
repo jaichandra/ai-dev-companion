@@ -51,6 +51,11 @@ function defineEnvironment(profile) {
       fail(`site "${site.id}" needs a baseUrl that is a URL`);
     }
     if (site.tokenOnly !== undefined && typeof site.tokenOnly !== "boolean") fail(`site "${site.id}": tokenOnly must be true or false`);
+    if (site.fabAnchor !== undefined) {
+      const a = site.fabAnchor;
+      const ok = a && typeof a === "object" && !Array.isArray(a) && Object.keys(a).every((k) => k === "right" || k === "bottom") && Object.keys(a).length > 0 && Object.values(a).every((v) => Number.isFinite(v) && v >= 0);
+      if (!ok) fail(`site "${site.id}": fabAnchor must be { right?, bottom? } in pixels from the page's right and bottom edges, e.g. { bottom: 96 }`);
+    }
     if (site.pageMatches !== undefined) {
       const ok = Array.isArray(site.pageMatches) && site.pageMatches.length > 0 && site.pageMatches.every((m) => typeof m === "string" && m.startsWith("{origin}/"));
       if (!ok) fail(`site "${site.id}": pageMatches must be a list of patterns starting with "{origin}/", e.g. "{origin}/*/*/pull/*"`);
