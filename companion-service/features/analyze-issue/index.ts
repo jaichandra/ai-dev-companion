@@ -462,7 +462,8 @@ async function runAnalyze(
     issue.fields?.project?.key || plan.parseIssueKey(issueKey).projectKey;
   const wanted = targets.analyzeTargetsFrom(config);
   const scope = targets.describeAnalyzeScope(wanted);
-  if (!wanted.projects.includes(projectKey.toUpperCase())) {
+  // No projects configured means every project.
+  if (wanted.projects.length > 0 && !wanted.projects.includes(projectKey.toUpperCase())) {
     throw new Error(`${issueKey} is in project ${projectKey}, not one of ${wanted.projects.join(", ")} — Analyze ticket only runs on ${scope}.`);
   }
   if (wanted.issueTypes.length > 0 && (!typeName || !wanted.issueTypes.includes(typeName))) {

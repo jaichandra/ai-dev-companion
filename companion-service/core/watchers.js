@@ -90,13 +90,14 @@ function jqlString(value) {
   return `"${String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
 }
 
-/** Your open tickets of the configured projects (and types, when any are set), updated in the last day. */
+/** Your open tickets of the configured projects (all when none are set) (and types, when any are set), updated in the last day. */
 function assignedBugsJql({ projects, issueTypes }) {
-  if (!Array.isArray(projects) || !projects.length) throw new Error("assignedBugsJql needs at least one project");
+  if (!Array.isArray(projects)) throw new Error("assignedBugsJql needs a list of projects (empty = any)");
   if (!Array.isArray(issueTypes)) throw new Error("assignedBugsJql needs a list of issue types (empty = any)");
   return [
     "assignee = currentUser()",
-    `project in (${projects.map(jqlString).join(", ")})`,
+    // No projects configured: every project.
+    ...(projects.length ? [`project in (${projects.map(jqlString).join(", ")})`] : []),
     // No issue types configured: every type of those projects.
     ...(issueTypes.length ? [`issuetype in (${issueTypes.map(jqlString).join(", ")})`] : []),
     "statusCategory != Done",

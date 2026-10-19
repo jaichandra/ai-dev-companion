@@ -55,6 +55,20 @@ test("originsByKind gives the origin of the git, issues and ci site, honouring c
   assert.equal(manifestTool.originsByKind({ [gitId]: { baseUrl: "https://git.example.com/x" } }).git, "https://git.example.com");
 });
 
+test("fabAnchors lists the origin and offsets of each site that sets a fabAnchor", () => {
+  const environment = require("../environment.js");
+  const expected = environment.sites.filter((s) => s.fabAnchor).map((s) => ({ origin: new URL(s.baseUrl).origin, ...s.fabAnchor }));
+  assert.deepEqual(manifestTool.fabAnchors({}), expected);
+});
+
+test("a profile's fabAnchor must be pixel offsets from the right and bottom edges", () => {
+  const { defineEnvironment } = require("./environment-base.js");
+  const base = require("../environment.js");
+  const withAnchor = (fabAnchor) => defineEnvironment({ ...base, sites: [{ ...base.sites[0], fabAnchor }, ...base.sites.slice(1)] });
+  assert.doesNotThrow(() => withAnchor({ bottom: 96 }));
+  for (const bad of [{}, { top: 4 }, { bottom: "96" }, { right: -1 }, []]) assert.throws(() => withAnchor(bad), /fabAnchor/);
+});
+
 test("checkManifest names what is wrong with a stale manifest", () => {
   const dir = fs.mkdtempSync(path.join(require("node:os").tmpdir(), "manifest-"));
   try {

@@ -54,6 +54,13 @@ function originsByKind(config) {
   return out;
 }
 
+/** Where the ✨ button sits on each site that sets a `fabAnchor` ([{ origin, right?, bottom? }]), for GET /targets:
+ * a profile uses it to clear a site's own floating buttons. */
+function fabAnchors(config) {
+  const origins = siteOrigins(config);
+  return environment.sites.filter((s) => s.fabAnchor && origins[s.id]).map((s) => ({ origin: origins[s.id], ...s.fabAnchor }));
+}
+
 /** The kind-by-kind provider ids of the profile ({ git: "github", issues: "jira-dc", ci: "jenkins" }), for GET /targets:
  * the extension reads pull request pages the way that git host lays them out. */
 function providersByKind() {
@@ -194,6 +201,7 @@ module.exports = {
   LOCAL_HOST,
   siteOrigins,
   originsByKind,
+  fabAnchors,
   providersByKind,
   hostPatterns,
   matchPatterns,
