@@ -6,10 +6,10 @@
 module.exports = {
   descriptor: {
     id: "diagnose-build",
-    summary: "On a failed Jenkins build, find out why with Claude Code",
+    summary: "On a failed Jenkins build, find out why with Claude",
     label: "Diagnose failed builds",
     description:
-      "On a failed Jenkins build, open Claude Code to work out why — through a pack's diagnose command when one is installed, otherwise a plain read-only diagnosis.",
+      "On a failed Jenkins build, work out why with a read-only Claude run — through a pack's diagnose command when one is installed — and show the report in the panel. Continue in Claude Code picks the session up in a terminal.",
     enabledByDefault: true,
     requiredChecks: ["claudeCli"],
     async promptSetup() {

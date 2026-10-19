@@ -183,6 +183,7 @@ PaiRegistry.register({
   settingsGroups: ["git"],
   describePendingStart: PaiGit.prSummary,
   menuLabel: "Address review comments",
+  panelTitle: "Review comments",
   icon: "feedback",
   quietCompleted: true,
   // While running, the service may stop to ask where to work when the branch
@@ -223,12 +224,6 @@ PaiRegistry.register({
       return node;
     };
 
-    const container = document.createElement("div");
-
-    const summary = document.createElement("p");
-    summary.textContent = job.result?.summary || "";
-    container.appendChild(summary);
-
     // companion-service/features/address-review-comments/index.ts's
     // JobData: comments is the open root comments Claude was asked to
     // address; report is Claude's parsed per-comment verdict (or null
@@ -244,125 +239,84 @@ PaiRegistry.register({
     const checkboxByCommentId = new Map();
 
     const files = job.result?.files || [];
-    // Which file (if any) each comment's own collapsed diff row should
-    // show, and which files are left for the "other changed files"
-    // section below the table — see splitDiffsByComment's own doc
-    // comment for the matching rule.
+    // Which file (if any) each comment's own collapsed diff should show, and which files are left for the
+    // "Other changed files" card — see splitDiffsByComment's own doc comment for the matching rule.
     const { byCommentId: diffsByCommentId, others: otherFiles } = splitDiffsByComment(comments, files);
 
-    if (comments.length > 0) {
-      const scroll = el("div", "data-table-scroll");
-      const table = el("table", "data-table review-comments-table");
+    const prId = job.data?.payload?.prId;
+    const prTitle = job.data?.pr?.title;
+    const open = comments.length;
+    const header = {
+      subtitle: [prId ? `PR #${prId}` : "", prTitle || ""].filter(Boolean).join(" · "),
+      tag: job.status === "failed" ? "Couldn't finish" : open > 0 ? `${open} addressed` : "No comments",
+      tone: job.status === "failed" ? "bad" : open > 0 ? "warn" : "neutral",
+    };
 
-      const headings = ["Author", "Location", "Comment", "Action", "Note", "Reply on push"];
-      const thead = el("thead");
-      const headRow = el("tr");
-      for (const heading of headings) {
-        headRow.appendChild(el("th", null, heading));
+    const rows = comments.map((comment) => {
+      const reportEntry = reportById.get(comment.id);
+      const badgeInfo = reportEntry ? REVIEW_ACTION_BADGE[reportEntry.action] : null;
+      const extra = [];
+      if (reportEntry?.note) extra.push(el("div", "pai-row-sub", reportEntry.note));
+
+      // Ruled: no replies entry for this comment (e.g. report is null) means no checkbox and no reply —
+      // nothing to tick, and nothing to show as "the exact text that will be posted".
+      const replyEntry = repliesById.get(comment.id);
+      if (replyEntry) {
+        const toggle = el("label", "reply-toggle");
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = defaultReplyChecked(replyEntry.action);
+        checkboxByCommentId.set(comment.id, checkbox);
+        toggle.appendChild(checkbox);
+        toggle.appendChild(document.createTextNode("Reply on push"));
+        extra.push(toggle);
+        // Read-only (ruled) — the server-built text, shown verbatim, never edited here.
+        extra.push(el("pre", "reply-text", replyEntry.text));
       }
-      thead.appendChild(headRow);
-      table.appendChild(thead);
 
-      const tbody = el("tbody");
-      for (const comment of comments) {
-        const diffFile = diffsByCommentId.get(comment.id);
-
-        const tr = el("tr");
-        // No bottom border on this row when its diff row follows right
-        // below — see .review-comment-diff-row in content.js — so the
-        // pair reads as one block rather than two separate rows.
-        if (diffFile) tr.classList.add("review-comment-has-diff");
-        tr.appendChild(el("td", null, comment.authorName || comment.authorSlug || "Unknown"));
-        tr.appendChild(el("td", null, reviewCommentLocation(comment.anchor)));
-        tr.appendChild(el("td", "comment-text", comment.text || ""));
-
-        const reportEntry = reportById.get(comment.id);
-        const actionCell = el("td");
-        const badgeInfo = reportEntry ? REVIEW_ACTION_BADGE[reportEntry.action] : null;
-        actionCell.appendChild(
-          el("span", `status-badge ${badgeInfo ? badgeInfo.tone : "neutral"}`, badgeInfo ? badgeInfo.text : "No report"),
-        );
-        tr.appendChild(actionCell);
-
-        tr.appendChild(el("td", null, reportEntry?.note || ""));
-
-        // Ruled: no replies entry for this comment (e.g. report is
-        // null) means no checkbox and no reply — nothing to tick, and
-        // nothing to show as "the exact text that will be posted".
-        const replyCell = el("td");
-        const replyEntry = repliesById.get(comment.id);
-        if (replyEntry) {
-          const toggle = el("label", "reply-toggle");
-          const checkbox = document.createElement("input");
-          checkbox.type = "checkbox";
-          checkbox.checked = defaultReplyChecked(replyEntry.action);
-          checkboxByCommentId.set(comment.id, checkbox);
-          toggle.appendChild(checkbox);
-          toggle.appendChild(document.createTextNode("Reply on push"));
-          replyCell.appendChild(toggle);
-          // Read-only (ruled) — the server-built text, shown verbatim,
-          // never edited here.
-          replyCell.appendChild(el("pre", "reply-text", replyEntry.text));
-        } else {
-          replyCell.appendChild(el("span", "data-muted", "—"));
-        }
-        tr.appendChild(replyCell);
-
-        tbody.appendChild(tr);
-
-        if (diffFile) {
-          const diffRow = el("tr", "review-comment-diff-row");
-          const diffCell = document.createElement("td");
-          diffCell.colSpan = headings.length;
-
-          // Collapsed disclosure (same arrow-marker look as the
-          // failing-test detail's .row-detail), labelled with the
-          // file this diff belongs to.
-          const details = document.createElement("details");
-          details.className = "row-detail";
-          details.appendChild(el("summary", null, `Show diff — ${diffFile.path}`));
-
-          // Lazy (ruled): the diff itself is only built the first time
-          // this disclosure is opened, not while the panel renders —
-          // cheap when most rows stay collapsed.
-          let diffRendered = false;
-          details.addEventListener("toggle", () => {
-            if (!details.open || diffRendered) return;
-            diffRendered = true;
-            // Same optional per-file note the bottom section shows,
-            // same look, same order (note above the diff).
-            if (typeof diffFile.note === "string" && diffFile.note) {
-              details.appendChild(el("p", "file-diff-note", diffFile.note));
-            }
-            details.appendChild(window.renderDiff(diffFile.diff));
-          });
-
-          diffCell.appendChild(details);
-          diffRow.appendChild(diffCell);
-          tbody.appendChild(diffRow);
-        }
+      const diffFile = diffsByCommentId.get(comment.id);
+      if (diffFile) {
+        // Collapsed disclosure labelled with the file this diff belongs to; lazy (ruled): the diff itself is
+        // only built the first time it is opened.
+        const details = document.createElement("details");
+        details.className = "row-detail";
+        details.appendChild(el("summary", null, `Show diff — ${diffFile.path}`));
+        let diffRendered = false;
+        details.addEventListener("toggle", () => {
+          if (!details.open || diffRendered) return;
+          diffRendered = true;
+          if (typeof diffFile.note === "string" && diffFile.note) details.appendChild(el("p", "file-diff-note", diffFile.note));
+          details.appendChild(window.renderDiff(diffFile.diff));
+        });
+        extra.push(details);
       }
-      table.appendChild(tbody);
-      scroll.appendChild(table);
-      container.appendChild(scroll);
-    }
 
-    // Same gate and widget as resolve-conflict's renderPanel: only while
-    // there's still a worktree on disk to open, and claudeSession swaps
-    // its button for "Continue in Claude Code" once set.
+      return paiRow({
+        icon: "chat",
+        tone: badgeInfo ? (badgeInfo.tone === "neutral" ? "mute" : badgeInfo.tone) : "mute",
+        title: comment.text || "",
+        sub: [reviewCommentLocation(comment.anchor), comment.authorName || comment.authorSlug || "Unknown"].join(" · "),
+        tag: badgeInfo ? badgeInfo.text : "No report",
+        tagTone: badgeInfo ? badgeInfo.tone : "neutral",
+        extra,
+      });
+    });
+
+    // Same gate and widget as resolve-conflict's renderPanel: only while there's still a worktree on disk to
+    // open, and claudeSession swaps its button for "Continue in Claude Code" once set.
+    let worktreeBox = null;
     const worktreeDir = job.data?.worktree?.dir;
     if (worktreeDir && (job.status === "awaiting-approval" || job.status === "failed")) {
-      container.appendChild(window.renderOpenInEditor(worktreeDir, job.id, { claudeSession: job.data?.claudeSession, editor: job.data?.editor }));
+      worktreeBox = window.renderOpenInEditor(worktreeDir, job.id, { claudeSession: job.data?.claudeSession, editor: job.data?.editor });
     }
 
-    // Ruled: a banner above the diffs for any changed file on a hook,
-    // CI, tool-config or script path — approve runs `git commit` with
-    // hooks on and unsandboxed. It's a pointer to the likeliest places,
-    // not a safety verdict, and says so: a hook can execute any changed
-    // file, so the diff as a whole still needs reviewing.
+    // Ruled: a banner above the diffs for any changed file on a hook, CI, tool-config or script path — approve
+    // runs `git commit` with hooks on and unsandboxed. It's a pointer to the likeliest places, not a safety
+    // verdict, and says so: a hook can execute any changed file, so the diff as a whole still needs reviewing.
+    let banner = null;
     const riskyPaths = files.map((file) => file.path).filter(isRiskyChangePath);
     if (riskyPaths.length > 0) {
-      const banner = el("div", "risky-paths-banner");
+      banner = el("div", "risky-paths-banner");
       banner.appendChild(
         el(
           "p",
@@ -375,43 +329,35 @@ PaiRegistry.register({
       const list = el("ul");
       for (const path of riskyPaths) list.appendChild(el("li", null, path));
       banner.appendChild(list);
-      container.appendChild(banner);
     }
 
-    // otherFiles is `files` minus whatever now renders inline under a
-    // comment row above (splitDiffsByComment) — never re-filtered here.
-    // Ruled: when nothing's left, the section is omitted outright
-    // rather than shown empty or with a heading and no rows.
-    if (otherFiles.length > 0) {
-      // Only worth calling out as "other" once something else already
-      // has its own inline diff; otherwise this is just the whole list,
-      // same heading-less look this section has always had.
-      if (diffsByCommentId.size > 0) {
-        container.appendChild(el("div", "report-headline", "Other changed files"));
-      }
-      for (const file of otherFiles) {
-        const details = document.createElement("details");
-        details.open = true;
-        details.appendChild(el("summary", null, file.path));
-        // Optional per-file note, same look as resolve-conflict's — this
-        // feature's own FileDiffs don't set one today, but renderPanel
-        // handles it the same way in case that ever changes.
-        if (typeof file.note === "string" && file.note) {
-          details.appendChild(el("p", "file-diff-note", file.note));
-        }
-        details.appendChild(window.renderDiff(file.diff));
-        container.appendChild(details);
-      }
-    } else if (files.length === 0 && !job.error) {
-      container.appendChild(el("p", null, "No file changes to review."));
-    }
+    // otherFiles is `files` minus whatever renders under a comment above (splitDiffsByComment) — never
+    // re-filtered here. Ruled: when nothing's left, the card is omitted rather than shown empty.
+    const fileNodes = otherFiles.map((file) => {
+      const details = document.createElement("details");
+      details.open = diffsByCommentId.size === 0;
+      details.className = "row-detail";
+      details.appendChild(el("summary", null, file.path));
+      if (typeof file.note === "string" && file.note) details.appendChild(el("p", "file-diff-note", file.note));
+      details.appendChild(window.renderDiff(file.diff));
+      return details;
+    });
+    const fileCard = paiCard(diffsByCommentId.size > 0 ? "Other changed files" : "Changed files", "edit", fileNodes);
 
-    if (job.error) {
-      container.appendChild(el("p", "error", job.error));
-    }
+    for (const loose of [worktreeBox, banner]) if (loose) loose.style.marginBottom = "20px";
+    const cards = [
+      paiProseCard("Summary", "light_bulb", job.result?.summary),
+      paiCard("Review comments", "chat", rows),
+      worktreeBox,
+      banner,
+      fileCard,
+    ];
+    if (!fileCard && files.length === 0 && !job.error) cards.push(paiProseCard("Changes", "edit", "No file changes to review."));
+    if (job.error) cards.push(el("p", "error", job.error));
 
     return {
-      node: container,
+      node: paiPage(cards, "Changes are made in a worktree. Nothing is pushed until you approve."),
+      header,
       // Approve's body (companion-service/features/address-review-comments/
       // index.ts's approve(): ctx.body.replies): only the ticked rows,
       // each with the exact text the table showed — the service itself

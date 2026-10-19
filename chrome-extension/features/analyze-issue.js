@@ -1,14 +1,99 @@
 // The "analyze-issue" feature of the ✨ menu: its helpers and its registry entry (the contract is in registry.js).
 
-/** Confidence → status-badge colour. Mirrors the report schema's
- * high|medium|low values; anything else still renders as itself. */
-function confidenceBadge(confidence) {
-  const badge = document.createElement("span");
+/** Confidence → status-tag tone. Mirrors the report schema's high|medium|low values; anything else still
+ * renders as itself. */
+function confidenceTone(confidence) {
   const key = String(confidence || "").toLowerCase();
-  const tone = key === "high" ? "ok" : key === "medium" ? "warn" : "neutral";
-  badge.className = `status-badge ${tone}`;
-  badge.textContent = confidence || "unknown";
-  return badge;
+  return key === "high" ? "ok" : key === "medium" ? "warn" : "neutral";
+}
+
+/** The panel's body and header for the analysis of a ticket. Every string is model output or ticket text. */
+function renderAnalyzeIssuePanel(job) {
+  const analysis = job.data?.analysis;
+  if (job.status === "failed" || !analysis) {
+    return paiErrorBox(job.error || "No analysis was produced.");
+  }
+
+  const issueKey = job.data?.issueKey || "";
+  const summary = job.data?.summary || "";
+  const repoKey = job.data?.repoKey || "";
+  // Companion stores repoMatch; tolerate older/alternate field names.
+  const matchReason = job.data?.repoMatch || job.data?.repoMatchReason || job.data?.matchReason || job.data?.reason || "";
+  const saved = job.data?.fromCache ? formatAnalysisSavedAt(job.data.completedAt) || "earlier" : "";
+  const header = {
+    subtitle: [[issueKey, summary].filter(Boolean).join(" · "), saved ? `Saved analysis · ${saved}` : ""].filter(Boolean).join(" · "),
+    tag: saved ? "Saved" : "Ready",
+    tone: saved ? "neutral" : "ok",
+  };
+  const foot = "Uses WebFetch and your MCP servers. Nothing is written to Jira.";
+
+  // Parse failure from the companion: show the raw Claude text rather than pretending the structured sections exist.
+  if (typeof analysis.raw === "string" && analysis.raw && !analysis.tldr) {
+    const text = paiProseCard("Analysis", "file_search", analysis.raw);
+    text.querySelector(".pai-prose").style.whiteSpace = "pre-wrap";
+    return { node: paiPage([text], foot), header };
+  }
+
+  const preferred = Object.entries(analysis.toolsUsed?.preferred || {});
+  const toolTags = preferred.map(([server, used]) => {
+    const tag = paiTag(`${server} used: ${used === true ? "yes" : "no"}`, used === true ? "ok" : "neutral");
+    tag.style.marginRight = "6px";
+    return tag;
+  });
+  const repoRow = paiRow({
+    icon: "source",
+    tone: repoKey ? "info" : "mute",
+    title: repoKey || "No repository matched",
+    sub: matchReason,
+    tag: repoKey ? "Matched" : "",
+    tagTone: "ok",
+    extra: toolTags,
+  });
+
+  const affected = (analysis.affectedArea || []).map((entry) =>
+    paiRow({
+      icon: "code",
+      tone: "info",
+      title: [entry?.path || "", entry?.symbol || ""].filter(Boolean).join(" · ") || "(unknown location)",
+      sub: entry?.why,
+    }),
+  );
+  const hypotheses = (analysis.hypotheses || []).map((entry) =>
+    paiRow({
+      icon: "light_bulb",
+      tone: "warn",
+      title: entry?.hypothesis || "",
+      sub: entry?.evidence,
+      tag: entry?.confidence || "unknown",
+      tagTone: confidenceTone(entry?.confidence),
+    }),
+  );
+  const references = (analysis.referencesReviewed || []).map((entry) =>
+    paiRow({
+      icon: "link",
+      tone: "mute",
+      title: entry?.url || "",
+      href: ticketWorkspaceHttpsUrl(entry?.url) || undefined,
+      sub: entry?.takeaway,
+    }),
+  );
+
+  return {
+    node: paiPage(
+      [
+        paiProseCard("Initial assessment", "light_bulb", analysis.tldr),
+        paiCard("Matched repository", "source", [repoRow]),
+        paiCard("Likely affected area", "code", affected),
+        paiCard("Root-cause hypotheses", "search", hypotheses),
+        paiProseCard("Repro and scope", "info", analysis.reproScope),
+        paiCard("References reviewed", "link", references),
+        paiListCard("Suggested next steps", "timeline", analysis.nextSteps, "arrow_right", "info"),
+        paiListCard("Open questions", "info", analysis.openQuestions, "chat", "info"),
+      ],
+      foot,
+    ),
+    header,
+  };
 }
 
 //
@@ -20,6 +105,7 @@ PaiRegistry.register({
   id: "analyze-issue",
   settingsGroups: ["jira"],
   menuLabel: "Analyze ticket",
+  panelTitle: "Ticket analysis",
   icon: "file_search",
   readOnly: true,
   // The report is kept on the companion (analysis-cache), not by this tab:
@@ -75,173 +161,11 @@ PaiRegistry.register({
     { id: "format", label: "Prepare report" },
   ],
 
-  // Read-only report panel — same shape as pre-deployment-stats: the job
-  // lands in awaiting-approval with job.data.analysis, and the footer is
-  // Done + Re-analyze (content.js's reanalyzeLabel path). Add as
-  // comment posts the report to the ticket via the companion.
+  // Read-only report panel: the job lands in awaiting-approval with job.data.analysis, and the footer is
+  // Done + Re-analyze (content.js's reanalyzeLabel path). Add as comment posts the report to the ticket via
+  // the companion.
   renderPanel(job) {
-    const container = document.createElement("div");
-    const analysis = job.data?.analysis;
-
-    if (job.status === "failed" || !analysis) {
-      const box = document.createElement("pre");
-      box.className = "action-error";
-      box.textContent = job.error || "No analysis was produced.";
-      container.appendChild(box);
-      return container;
-    }
-
-    // Parse failure from the companion: show the raw Claude text rather
-    // than pretending the structured sections exist.
-    if (typeof analysis.raw === "string" && analysis.raw && !analysis.tldr) {
-      const headline = document.createElement("div");
-      headline.className = "report-headline";
-      headline.textContent = job.result?.summary || job.data?.issueKey || "Analysis";
-      container.appendChild(headline);
-      const pre = document.createElement("pre");
-      pre.className = "action-error";
-      pre.style.background = "#fafbfc";
-      pre.style.borderColor = "#dfe1e6";
-      pre.textContent = analysis.raw;
-      container.appendChild(pre);
-      return container;
-    }
-
-    const issueKey = job.data?.issueKey || "";
-    const summary = job.data?.summary || "";
-    const repoKey = job.data?.repoKey || "";
-    // Companion stores repoMatch; tolerate older/alternate field names.
-    const matchReason =
-      job.data?.repoMatch ||
-      job.data?.repoMatchReason ||
-      job.data?.matchReason ||
-      job.data?.reason ||
-      "";
-    const preferred = Object.entries(analysis.toolsUsed?.preferred || {});
-
-    const headline = document.createElement("div");
-    headline.className = "report-headline";
-    headline.textContent = [issueKey, summary].filter(Boolean).join(" — ") || job.result?.summary || "Analysis";
-    container.appendChild(headline);
-
-    const meta = document.createElement("div");
-    meta.className = "report-meta";
-    const metaBits = [];
-    if (repoKey) {
-      metaBits.push(matchReason ? `Repo: ${repoKey} (${matchReason})` : `Repo: ${repoKey}`);
-    } else {
-      metaBits.push(matchReason ? `Repo: none (${matchReason})` : "Repo: none matched");
-    }
-    meta.appendChild(document.createTextNode(metaBits.join(" · ")));
-    for (const [server, used] of preferred) {
-      meta.appendChild(document.createTextNode(" · "));
-      const badge = document.createElement("span");
-      badge.className = `status-badge ${used === true ? "ok" : "neutral"}`;
-      badge.textContent = `${server} used: ${used === true ? "yes" : "no"}`;
-      meta.appendChild(badge);
-    }
-    container.appendChild(meta);
-
-    if (job.data?.fromCache) {
-      const saved = document.createElement("div");
-      saved.className = "report-meta";
-      saved.style.marginTop = "-8px";
-      const when = formatAnalysisSavedAt(job.data.completedAt);
-      saved.textContent = when ? `Saved analysis · ${when}` : "Saved analysis";
-      container.appendChild(saved);
-    }
-
-    if (analysis.tldr) {
-      const tldr = document.createElement("p");
-      tldr.style.lineHeight = "1.5";
-      tldr.style.margin = "0 0 16px";
-      tldr.textContent = analysis.tldr;
-      const section = renderSection("Initial assessment", tldr);
-      if (section) container.appendChild(section);
-    }
-
-    const affectedList = renderList(analysis.affectedArea, (entry) => {
-      const wrap = document.createElement("div");
-      const where = document.createElement("div");
-      const path = entry?.path || "";
-      const symbol = entry?.symbol || "";
-      where.textContent = [path, symbol].filter(Boolean).join(" · ") || "(unknown location)";
-      wrap.appendChild(where);
-      if (entry?.why) {
-        const why = document.createElement("div");
-        why.className = "report-meta";
-        why.style.marginBottom = "0";
-        why.textContent = entry.why;
-        wrap.appendChild(why);
-      }
-      return wrap;
-    });
-    const affectedSection = renderSection("Likely affected area", affectedList);
-    if (affectedSection) container.appendChild(affectedSection);
-
-    const hypothesisList = renderList(analysis.hypotheses, (entry) => {
-      const wrap = document.createElement("div");
-      const top = document.createElement("div");
-      top.style.display = "flex";
-      top.style.alignItems = "baseline";
-      top.style.gap = "8px";
-      top.style.flexWrap = "wrap";
-      const text = document.createElement("span");
-      text.textContent = entry?.hypothesis || "";
-      top.append(confidenceBadge(entry?.confidence), text);
-      wrap.appendChild(top);
-      if (entry?.evidence) {
-        const evidence = document.createElement("div");
-        evidence.className = "report-meta";
-        evidence.style.marginBottom = "0";
-        evidence.textContent = entry.evidence;
-        wrap.appendChild(evidence);
-      }
-      return wrap;
-    });
-    const hypSection = renderSection("Root-cause hypotheses", hypothesisList);
-    if (hypSection) container.appendChild(hypSection);
-
-    if (analysis.reproScope) {
-      const repro = document.createElement("p");
-      repro.style.lineHeight = "1.5";
-      repro.style.margin = "0";
-      repro.textContent = analysis.reproScope;
-      const section = renderSection("Repro and scope", repro);
-      if (section) container.appendChild(section);
-    }
-
-    const refList = renderList(analysis.referencesReviewed, (entry) => {
-      const wrap = document.createElement("div");
-      if (entry?.url) {
-        const link = document.createElement("a");
-        link.href = entry.url;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        link.textContent = entry.url;
-        wrap.appendChild(link);
-      }
-      if (entry?.takeaway) {
-        const takeaway = document.createElement("div");
-        takeaway.className = "report-meta";
-        takeaway.style.marginBottom = "0";
-        takeaway.textContent = entry.takeaway;
-        wrap.appendChild(takeaway);
-      }
-      return wrap;
-    });
-    const refSection = renderSection("References reviewed", refList);
-    if (refSection) container.appendChild(refSection);
-
-    const nextList = renderList(analysis.nextSteps);
-    const nextSection = renderSection("Suggested next steps", nextList);
-    if (nextSection) container.appendChild(nextSection);
-
-    const questionsList = renderList(analysis.openQuestions);
-    const questionsSection = renderSection("Open questions", questionsList);
-    if (questionsSection) container.appendChild(questionsSection);
-
-    return container;
+    return renderAnalyzeIssuePanel(job);
   },
 
   // One button. With ticket-to-pr enabled it is the ticket's Claude Code

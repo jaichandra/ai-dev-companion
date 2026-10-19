@@ -45,50 +45,48 @@ PaiRegistry.register({
       if (text !== undefined) node.textContent = text;
       return node;
     };
-    const container = el("div", "review-summary");
-
-    const headline = el("div", "report-headline");
-    if (pr.prId !== undefined && pr.prId !== null) headline.appendChild(el("span", "review-pr-id", `#${pr.prId}`));
-    headline.appendChild(document.createTextNode(pr.title || "Pull request"));
-    container.appendChild(headline);
-
-    const branches = el("div", "review-branches");
-    branches.append(
-      el("span", "branch-chip", pr.sourceBranch),
-      el("span", "review-arrow", "→"),
-      el("span", "branch-chip target", pr.targetBranch || "default branch"),
-    );
-    container.appendChild(branches);
-
-    const statusRow = el("div", "review-status");
-    container.appendChild(statusRow);
+    const target = pr.targetBranch || "default branch";
+    const subtitle = [pr.prId !== undefined && pr.prId !== null ? `PR #${pr.prId}` : "Pull request", `${pr.sourceBranch} → ${target}`].join(" · ");
+    // What the panel says is going on: the header's tag and the status row's icon, title and tag.
+    const result = (tone, tag, icon, title, sub) => ({ tone, tag, icon, title, sub });
+    // Loose nodes under the cards (buttons, the worktree box, notes) get the cards' spacing.
+    const loose = (node) => {
+      node.style.marginBottom = "20px";
+      return node;
+    };
+    const prCard = () =>
+      paiCard("Checkout", "folder", [
+        paiRow({ icon: "copy_replicate", tone: "info", title: pr.title || "Pull request", sub: pr.prId !== undefined && pr.prId !== null ? `PR #${pr.prId}` : "" }),
+        paiRow({ icon: "view_tree", tone: "info", title: pr.sourceBranch, sub: `Source branch → ${target}` }),
+        review
+          ? paiRow({ icon: "folder", tone: "info", title: review.worktree, sub: "Review worktree", tag: "Ready", tagTone: "ok" })
+          : null,
+      ]);
+    const foot = "The branch is checked out into its own worktree. Your clone is not touched.";
+    const page = (st, ...rest) =>
+      paiPage(
+        [
+          prCard(),
+          paiCard("Review", "play", [paiRow({ icon: st.icon, tone: st.tone === "neutral" ? "mute" : st.tone === "busy" ? "info" : st.tone, title: st.title, sub: st.sub, tag: st.tag, tagTone: st.tone })]),
+          ...rest,
+        ],
+        foot,
+      );
 
     if (status === "running") {
-      statusRow.append(
-        el("span", "status-badge busy", "In progress"),
-        el(
-          "span",
-          "review-status-text",
-          payload.replaceJobId
-            ? `Cancelling the other review, then checking out ${pr.sourceBranch}…`
-            : `Checking out ${pr.sourceBranch} into the review worktree…`,
-        ),
+      const st = result(
+        "busy",
+        "In progress",
+        "refresh",
+        payload.replaceJobId ? `Cancelling the other review, then checking out ${pr.sourceBranch}…` : `Checking out ${pr.sourceBranch} into the review worktree…`,
+        "Once it's checked out, the review opens in your editor or a new terminal window. This panel stays open so you can come back to it.",
       );
-      container.appendChild(
-        el(
-          "p",
-          "review-hint",
-          "Once it's checked out, the review opens in your editor or a new terminal window. " +
-            "This panel stays open so you can come back to it.",
-        ),
-      );
-      return container;
+      return { node: page(st), header: { subtitle, tag: "Checking out", tone: "busy" } };
     }
 
     if (status === "failed") {
-      statusRow.appendChild(el("span", "status-badge bad", "Failed"));
-      container.appendChild(el("pre", "action-error", error || "Something went wrong."));
-      return container;
+      const st = result("bad", "Failed", "error", "The review couldn't start", "");
+      return { node: page(st, loose(el("pre", "action-error", error || "Something went wrong."))), header: { subtitle, tag: "Failed", tone: "bad" } };
     }
 
     // The repo's one review worktree is busy with another PR's review
@@ -97,18 +95,13 @@ PaiRegistry.register({
     if (status === "conflict") {
       const other = conflict.existing.payload || {};
       const otherPr = other.prId !== undefined && other.prId !== null ? `PR #${other.prId}` : "another PR";
-      statusRow.append(
-        el("span", "status-badge warn", "Another review is running"),
-        el("span", "review-status-text", "Nothing was checked out."),
+      const st = result(
+        "warn",
+        "Another review is running",
+        "notice_triangle",
+        "Nothing was checked out",
+        `A review of ${otherPr} (${other.sourceBranch || "unknown branch"}) is in progress in ${conflict.existing.worktree}. Checking out this pull request there would change the files under it.`,
       );
-      const note = el("p", "review-hint");
-      note.append(
-        `A review of ${otherPr} (`,
-        el("span", "branch-chip", other.sourceBranch || "unknown branch"),
-        `) is in progress in ${conflict.existing.worktree}. Checking out this pull request there ` +
-          "would change the files under it.",
-      );
-      container.appendChild(note);
       const goBtn = el("button", "approve", "Go to that review");
       goBtn.type = "button";
       goBtn.addEventListener("click", () => startWith(other));
@@ -121,52 +114,46 @@ PaiRegistry.register({
         );
         if (ok) startWith({ ...payload, replaceJobId: conflict.existing.jobId });
       });
-      const actions = el("div", "actions review-actions");
+      const actions = loose(el("div", "actions review-actions"));
       actions.append(goBtn, replaceBtn);
-      container.appendChild(actions);
-      return container;
+      return { node: page(st, actions), header: { subtitle, tag: "Waiting", tone: "warn" } };
     }
 
     if (!review) {
-      statusRow.appendChild(el("span", "status-badge ok", "Done"));
-      container.appendChild(el("p", "review-hint", job?.result?.summary || "Done."));
-      return container;
+      const st = result("ok", "Done", "success", job?.result?.summary || "Done.", "");
+      return { node: page(st), header: { subtitle, tag: "Done", tone: "ok" } };
     }
 
-    const setStatus = (badgeClass, badge, text) => {
-      statusRow.appendChild(el("span", `status-badge ${badgeClass}`, badge));
-      if (text) statusRow.appendChild(el("span", "review-status-text", text));
-    };
     const live = review.tracked ? session || { state: "starting" } : null;
+    let st;
     if (!review.reviewStarted) {
-      setStatus("warn", "Checked out — review not started");
+      st = result("warn", "Not started", "notice_triangle", "Checked out — review not started", review.reviewNote && !live ? review.reviewNote : "");
     } else if (!live) {
-      setStatus("ok", `Started in ${review.editorLabel}`, "Its progress can't be followed from here.");
+      st = result("ok", "Started", "success", `Started in ${review.editorLabel}`, "Its progress can't be followed from here.");
     } else if (live.state === "starting") {
-      setStatus("busy", "Starting", "Waiting for the terminal to start the review…");
+      st = result("busy", "Starting", "refresh", "Starting", "Waiting for the terminal to start the review…");
     } else if (live.state === "running") {
-      setStatus("busy", "Review running", `${review.agentLabel || "The agent"} is reviewing in a terminal window.`);
+      st = result("busy", "Running", "play", "Review running", `${review.agentLabel || "The agent"} is reviewing in a terminal window.`);
     } else if (live.state === "finished") {
-      setStatus(
-        "ok",
-        "Review finished",
-        live.exitCode ? `The agent exited with code ${live.exitCode}.` : "The agent has exited.",
-      );
+      st = result("ok", "Finished", "success", "Review finished", live.exitCode ? `The agent exited with code ${live.exitCode}.` : "The agent has exited.");
     } else if (live.state === "cancelled") {
-      setStatus("neutral", "Review cancelled", "Stopped from here; its terminal is still open in the worktree.");
+      st = result("neutral", "Cancelled", "close", "Review cancelled", "Stopped from here; its terminal is still open in the worktree.");
     } else {
-      setStatus("neutral", "Review ended", "Its terminal window was closed.");
+      st = result("neutral", "Ended", "info", "Review ended", "Its terminal window was closed.");
     }
+
+    const rest = [];
     if (review.switched) {
-      container.appendChild(
-        el(
-          "p",
-          review.switched.focused ? "review-hint" : "review-hint review-switched-warn",
-          `This review was already running, so no new one was started. ${review.switched.note}`,
+      rest.push(
+        loose(
+          el(
+            "p",
+            review.switched.focused ? "review-hint" : "review-hint review-switched-warn",
+            `This review was already running, so no new one was started. ${review.switched.note}`,
+          ),
         ),
       );
     }
-
     if (live && ["starting", "running"].includes(live.state) && stopSession) {
       const cancelBtn = el("button", "reject", stopping ? "Cancelling…" : "Cancel review");
       cancelBtn.type = "button";
@@ -177,26 +164,23 @@ PaiRegistry.register({
         );
         if (ok) stopSession();
       });
-      const actions = el("div", "actions review-actions");
+      const actions = loose(el("div", "actions review-actions"));
       actions.appendChild(cancelBtn);
-      container.appendChild(actions);
+      rest.push(actions);
     }
-    if (stopError) container.appendChild(el("pre", "action-error", stopError));
+    if (stopError) rest.push(loose(el("pre", "action-error", stopError)));
 
-    const facts = el("dl", "review-facts");
-    const fact = (label, value) => facts.append(el("dt", "", label), el("dd", "", value));
-    fact("Editor", review.editorLabel || review.editor);
-    if (review.agentLabel) fact("Reviewer", review.agentLabel);
+    const facts = [paiRow({ icon: "code", tone: "info", title: review.editorLabel || review.editor, sub: "Editor" })];
+    if (review.agentLabel) facts.push(paiRow({ icon: "AI", tone: "info", title: review.agentLabel, sub: "Reviewer" }));
     if (review.reviewStarted) {
-      fact("Instructions", review.usedSkill ? "Your review-pr skill" : "Built-in review prompt");
+      facts.push(paiRow({ icon: "file_search", tone: "info", title: review.usedSkill ? "Your review-pr skill" : "Built-in review prompt", sub: "Instructions" }));
     }
-    container.appendChild(facts);
-    if (review.reviewNote && !live) container.appendChild(el("p", "review-hint", review.reviewNote));
+    rest.push(paiCard("Setup", "settings", facts));
 
     // Same look as open-in-editor.js's widget, not the widget itself: its
     // wording is about approving a job, and its Claude Code button needs
     // a job with data.worktree.
-    const box = el("div", "open-in-editor");
+    const box = loose(el("div", "open-in-editor"));
     box.appendChild(el("div", "open-in-editor-label", "Worktree"));
     box.appendChild(el("code", "open-in-editor-path", review.worktree));
     const actions = el("div", "open-in-editor-actions");
@@ -241,11 +225,11 @@ PaiRegistry.register({
     });
     actions.appendChild(copyBtn);
     box.appendChild(actions);
-    container.appendChild(box);
+    rest.push(box);
 
     const stashed = review.stashedFiles || [];
     if (stashed.length > 0) {
-      const note = el("div", "review-stash");
+      const note = loose(el("div", "review-stash"));
       note.appendChild(
         el(
           "p",
@@ -261,8 +245,8 @@ PaiRegistry.register({
       const list = el("ul");
       for (const file of stashed) list.appendChild(el("li", "", file));
       note.appendChild(list);
-      container.appendChild(note);
+      rest.push(note);
     }
-    return container;
+    return { node: page(st, ...rest), header: { subtitle, tag: st.tag, tone: st.tone } };
   },
 });

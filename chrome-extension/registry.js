@@ -126,6 +126,16 @@
 //                starting (resolve-conflict) — a feature whose /start runs
 //                to completion before responding (create-jira-subtasks)
 //                has nothing to poll, so it has no progressSteps either.
+//   panelTitle    optional; the panel's title when it should differ from menuLabel (the design's "Ticket analysis").
+//   panelWhileRunning optional; true for a read-only report that runs for a while: the click opens the panel at
+//                once with a progress bar and the tag runningHeader(payload) gives ({ subtitle, tag, tone }),
+//                runningLabel says what is running, and the report replaces it when the job finishes
+//                (content.js openRunningReport). The job is not stored for the page: a second click reaches the
+//                same job through the service. Needs the feature's start() to return the running job.
+//   reanalyzePayload(job) optional; what the reanalyzeLabel button POSTs to /start (default { issueKey, force: true }
+//                from the job's issueKey); null hides the button.
+//   renderPanel may return { node, header } where header is { subtitle, tag, tone }: what the panel's header
+//                shows for the report (tone: ok | bad | warn | busy | neutral). ui-kit.js has the card helpers.
 //   quietCompleted optional; true to mark a finished, kept job on the menu with
 //                just a check (like a saved result) instead of the green row.
 //   liveReport    optional; true for a read-only report that should open instantly from the last saved
