@@ -59,6 +59,7 @@ PaiRegistry.register({
   id: "ticket-to-pr",
   settingsGroups: ["jira", "git"],
   menuLabel: "Ticket to PR",
+  icon: "send",
   // No Create PR form: the pull request is opened from the Claude Code
   // terminal, and the service moves the ticket to review when it is open.
   hideApprove: true,

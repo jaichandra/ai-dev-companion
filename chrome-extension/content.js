@@ -297,7 +297,7 @@
       --pai-sparkle:${SPARKLE_MASK};
       --pai-icon-digest:url("data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%0A%3Cpath%20fill-rule%3D%22evenodd%22%20clip-rule%3D%22evenodd%22%20d%3D%22M12.0012%2013.993C13.1057%2013.993%2014.0012%2013.0975%2014.0012%2011.993C14.0012%2010.8884%2013.1057%209.99295%2012.0012%209.99295C10.8966%209.99295%2010.0012%2010.8884%2010.0012%2011.993C10.0012%2013.0975%2010.8966%2013.993%2012.0012%2013.993ZM12.0012%2015.493C13.9342%2015.493%2015.5012%2013.9259%2015.5012%2011.993C15.5012%2010.06%2013.9342%208.49295%2012.0012%208.49295C10.0682%208.49295%208.50116%2010.06%208.50116%2011.993C8.50116%2013.9259%2010.0682%2015.493%2012.0012%2015.493Z%22%20class%3D%22base-layer%22%20fill%3D%22currentColor%22%3E%3C%2Fpath%3E%0A%3Cpath%20fill-rule%3D%22evenodd%22%20clip-rule%3D%22evenodd%22%20d%3D%22M12.0012%202.58105C12.4154%202.58105%2012.7512%202.91684%2012.7512%203.33105V6.32623C12.7512%206.74044%2012.4154%207.07623%2012.0012%207.07623C11.5869%207.07623%2011.2512%206.74044%2011.2512%206.32623V3.33105C11.2512%202.91684%2011.5869%202.58105%2012.0012%202.58105Z%22%20class%3D%22base-layer%22%20fill%3D%22currentColor%22%3E%3C%2Fpath%3E%0A%3Cpath%20fill-rule%3D%22evenodd%22%20clip-rule%3D%22evenodd%22%20d%3D%22M12.0012%2016.9144C12.4154%2016.9144%2012.7512%2017.2502%2012.7512%2017.6644V20.6691C12.7512%2021.0833%2012.4154%2021.4191%2012.0012%2021.4191C11.5869%2021.4191%2011.2512%2021.0833%2011.2512%2020.6691V17.6644C11.2512%2017.2502%2011.5869%2016.9144%2012.0012%2016.9144Z%22%20class%3D%22base-layer%22%20fill%3D%22currentColor%22%3E%3C%2Fpath%3E%0A%3Cpath%20fill-rule%3D%22evenodd%22%20clip-rule%3D%22evenodd%22%20d%3D%22M2.57007%2011.9929C2.57007%2011.5787%202.90585%2011.2429%203.32007%2011.2429H6.32976C6.74397%2011.2429%207.07976%2011.5787%207.07976%2011.9929C7.07976%2012.4071%206.74397%2012.7429%206.32976%2012.7429H3.32007C2.90585%2012.7429%202.57007%2012.4071%202.57007%2011.9929Z%22%20class%3D%22base-layer%22%20fill%3D%22currentColor%22%3E%3C%2Fpath%3E%0A%3Cpath%20fill-rule%3D%22evenodd%22%20clip-rule%3D%22evenodd%22%20d%3D%22M16.9226%2011.9929C16.9226%2011.5787%2017.2584%2011.2429%2017.6726%2011.2429H20.6798C21.0941%2011.2429%2021.4298%2011.5787%2021.4298%2011.9929C21.4298%2012.4071%2021.0941%2012.7429%2020.6798%2012.7429H17.6726C17.2584%2012.7429%2016.9226%2012.4071%2016.9226%2011.9929Z%22%20class%3D%22base-layer%22%20fill%3D%22currentColor%22%3E%3C%2Fpath%3E%0A%3Cpath%20fill-rule%3D%22evenodd%22%20clip-rule%3D%22evenodd%22%20d%3D%22M5.33185%2018.6623C5.03896%2018.3694%205.03896%2017.8946%205.33185%2017.6017L7.4606%2015.4729C7.75349%2015.18%208.22836%2015.18%208.52126%2015.4729C8.81415%2015.7658%208.81415%2016.2407%208.52126%2016.5336L6.39251%2018.6623C6.09962%2018.9552%205.62475%2018.9552%205.33185%2018.6623Z%22%20class%3D%22base-layer%22%20fill%3D%22currentColor%22%3E%3C%2Fpath%3E%0A%3Cpath%20fill-rule%3D%22evenodd%22%20clip-rule%3D%22evenodd%22%20d%3D%22M15.4812%208.51296C15.1883%208.22007%2015.1883%207.74519%2015.4812%207.4523L17.6019%205.33161C17.8948%205.03872%2018.3697%205.03872%2018.6626%205.33161C18.9555%205.6245%2018.9555%206.09938%2018.6626%206.39227L16.5419%208.51296C16.249%208.80585%2015.7741%208.80585%2015.4812%208.51296Z%22%20class%3D%22base-layer%22%20fill%3D%22currentColor%22%3E%3C%2Fpath%3E%0A%3Cpath%20fill-rule%3D%22evenodd%22%20clip-rule%3D%22evenodd%22%20d%3D%22M18.6566%2018.6485C18.3638%2018.9414%2017.8889%2018.9414%2017.596%2018.6485L15.4811%2016.5336C15.1882%2016.2407%2015.1882%2015.7658%2015.4811%2015.4729C15.774%2015.1801%2016.2488%2015.1801%2016.5417%2015.4729L18.6566%2017.5879C18.9495%2017.8808%2018.9495%2018.3556%2018.6566%2018.6485Z%22%20class%3D%22base-layer%22%20fill%3D%22currentColor%22%3E%3C%2Fpath%3E%0A%3Cpath%20fill-rule%3D%22evenodd%22%20clip-rule%3D%22evenodd%22%20d%3D%22M8.5211%208.51298C8.2282%208.80587%207.75333%208.80587%207.46044%208.51298L5.33448%206.38702C5.04158%206.09413%205.04158%205.61925%205.33448%205.32636C5.62737%205.03347%206.10224%205.03347%206.39514%205.32636L8.5211%207.45232C8.81399%207.74521%208.81399%208.22009%208.5211%208.51298Z%22%20class%3D%22base-layer%22%20fill%3D%22currentColor%22%3E%3C%2Fpath%3E%0A%3C%2Fsvg%3E"); --pai-icon-settings:url("data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%0A%3Cg%3E%0A%3Cpath%20d%3D%22M13.1132%2024H10.9685C10.5089%2024%2010.1209%2023.6531%2010.0698%2023.1939L9.70213%2021.0204C8.91574%2020.847%208.12936%2020.5306%207.39404%2020.1021L5.5966%2021.4082C5.46383%2021.5%205.31064%2021.551%205.14723%2021.551C5.08596%2021.551%204.93277%2021.5714%204.74894%2021.5204C4.6366%2021.4898%204.52426%2021.4286%204.43234%2021.347L2.84936%2019.847C2.84936%2019.847%202.78809%2019.7857%202.76766%2019.7551C2.52255%2019.4286%202.52255%2018.9796%202.76766%2018.6531L4.06468%2016.8368C3.58468%2016.1327%203.24766%2015.3266%203.02298%2014.4797L0.755745%2014.0919C0.347234%2014.0511%200%2013.6633%200%2013.2041V10.9695C0%2010.5103%200.347234%2010.1225%200.796596%2010.0715L2.95149%209.70417C3.10468%208.90825%203.42128%208.09193%203.85021%207.33684L2.58383%205.53073C2.35915%205.2246%202.35915%204.77563%202.59404%204.4491C2.61447%204.41849%202.63489%204.38788%202.66553%204.36747L4.24851%202.76544C4.32%202.69401%204.41191%202.63278%204.50383%202.59197C4.7183%202.50013%204.91234%202.53074%205.00426%202.53074C5.17787%202.53074%205.32085%202.59197%205.45362%202.69401L7.22043%204.10216C7.89447%203.60217%208.70128%203.25523%209.53872%203.03074L9.94723%200.755244C9.98808%200.561367%2010.1004%200.347083%2010.2332%200.224635C10.4272%200.0511664%2010.6723%20-0.0304657%2010.9277%200.0103504H13.0519C13.2357%200.0103504%2013.5115%200.102187%2013.6545%200.234839C13.8179%200.387899%2013.92%200.581775%2013.9506%200.79606L14.3183%202.96952C15.1353%203.13278%2015.9728%203.46951%2016.7489%203.91849L18.526%202.65319C18.6587%202.56136%2018.8119%202.51034%2018.9753%202.51034C19.0264%202.50013%2019.2306%202.47972%2019.4553%202.57156C19.5472%202.61238%2019.6289%202.6634%2019.7004%202.74503L21.2426%204.31645C21.2426%204.31645%2021.2936%204.36747%2021.314%204.39808C21.406%204.53073%2021.4877%204.77563%2021.4877%204.93889C21.4877%205.13277%2021.4264%205.32664%2021.314%205.4797L20.017%207.31643C20.497%208.0001%2020.834%208.81642%2021.0587%209.66335L23.234%2010.0001C23.234%2010.0001%2023.2545%2010.0001%2023.2647%2010.0001C23.4383%2010.0409%2023.6834%2010.1838%2023.7957%2010.3266C23.9285%2010.4899%2024%2010.694%2024%2010.898V13.1225C24%2013.245%2023.9694%2013.3572%2023.9183%2013.4695C23.7549%2013.796%2023.3974%2013.9694%2023.0502%2013.9592L20.9668%2014.3164C20.7932%2015.1327%2020.446%2015.9388%2019.9966%2016.6939L21.263%2018.4796C21.3651%2018.6327%2021.4468%2018.847%2021.4468%2019.0102C21.4468%2019.2653%2021.3345%2019.5102%2021.1506%2019.6735L19.6187%2021.2143C19.5268%2021.2959%2019.4247%2021.3674%2019.3021%2021.4082C19.1183%2021.4694%2018.914%2021.4694%2018.7302%2021.4082C18.6587%2021.3878%2018.5872%2021.347%2018.5157%2021.3061L16.6877%2020C15.9932%2020.4898%2015.1762%2020.8265%2014.3285%2021.051L13.9915%2023.2245C13.9506%2023.6327%2013.5626%2023.9796%2013.103%2023.9796L13.1132%2024ZM12.5004%2022.9592C12.5004%2022.9592%2012.4902%2023.0102%2012.4902%2023.0408V22.9592H12.5004ZM11.5915%2022.9286V22.9898C11.5915%2022.9898%2011.5915%2022.949%2011.5915%2022.9286ZM11.5098%2022.4694H12.5821L12.8681%2020.7653C12.9089%2020.4898%2013.0417%2020.2245%2013.2357%2020.0102C13.4298%2019.7959%2013.6851%2019.6531%2013.9609%2019.5817C14.6655%2019.398%2015.3396%2019.1123%2015.9728%2018.7347C16.4221%2018.449%2017.0757%2018.4388%2017.5557%2018.7347L18.9549%2019.7347L19.7311%2018.9592L18.72%2017.5307C18.5464%2017.2551%2018.4647%2016.9796%2018.4647%2016.7041C18.4647%2016.4286%2018.5464%2016.1531%2018.6894%2015.9082C19.057%2015.2858%2019.343%2014.6123%2019.5268%2013.898C19.5881%2013.6327%2019.7413%2013.3776%2019.9557%2013.1735C20.1702%2012.9797%2020.4357%2012.847%2020.7319%2012.8062L22.4783%2012.5103V11.4286L20.783%2011.1429C20.5072%2011.1021%2020.2417%2010.9695%2020.0272%2010.7756C19.8128%2010.5817%2019.6698%2010.3266%2019.5983%2010.0409C19.4145%209.34703%2019.1285%208.66336%2018.7506%208.03071C18.6179%207.81642%2018.5362%207.54092%2018.5362%207.2552C18.5362%206.96949%2018.6179%206.69398%2018.7711%206.45929L19.8026%205.01032L19.0162%204.2042L17.617%205.2042C17.0655%205.55113%2016.463%205.53072%2015.983%205.2246C15.36%204.86746%2014.6553%204.58175%2013.9302%204.40828C13.6545%204.34706%2013.3991%204.194%2013.2051%203.97971C13.0111%203.76543%2012.8783%203.50012%2012.8374%203.20421L12.5515%201.53075H11.3974L11.1013%203.25523C11.0809%203.51033%2010.9481%203.80625%2010.7438%204.04094C10.5294%204.27563%2010.2536%204.43889%209.94723%204.51032C9.27319%204.694%208.59915%204.97971%207.96596%205.35726C7.53702%205.63277%206.85277%205.65317%206.37277%205.33685L4.98383%204.23481L4.17702%205.05114L5.18809%206.4797C5.3617%206.75521%205.4434%207.03072%205.4434%207.30622C5.4434%207.58173%205.3617%207.85724%205.21872%208.10214C4.8817%208.70417%204.61617%209.38784%204.44255%2010.0919C4.38128%2010.3776%204.22809%2010.6327%204.01362%2010.8266C3.79915%2011.0307%203.53362%2011.1531%203.23745%2011.194L1.57277%2011.4797V12.6531L3.28851%2012.9388C3.55404%2012.9695%203.85021%2013.0919%204.08511%2013.3062C4.32%2013.5103%204.4834%2013.7858%204.55489%2014.1021C4.73872%2014.7858%205.02468%2015.4694%205.39234%2016.1021C5.53532%2016.3062%205.61702%2016.5919%205.61702%2016.8776C5.61702%2017.1633%205.53532%2017.449%205.37192%2017.6939L4.36085%2019.1123L5.15745%2019.8674L6.58723%2018.847C6.83234%2018.6633%207.15915%2018.5613%207.46553%2018.5715C7.73106%2018.5715%207.9966%2018.6429%208.23149%2018.7959C8.81362%2019.1327%209.47745%2019.4082%2010.1719%2019.5817C10.4374%2019.6429%2010.6928%2019.7959%2010.897%2020.0102C11.0911%2020.2245%2011.2238%2020.4898%2011.2647%2020.7755L11.5506%2022.4592L11.5098%2022.4694ZM4.03404%2019.5306L4.01362%2019.551C4.01362%2019.551%204.02383%2019.5408%204.03404%2019.5306ZM0.970213%2012.5715H1.05191C1.05191%2012.5715%201.00085%2012.5715%200.970213%2012.5715ZM1.07234%2011.5715H1.01106C1.01106%2011.5715%201.05191%2011.5715%201.07234%2011.5715ZM3.84%204.63277L3.86043%204.65318C3.86043%204.65318%203.85021%204.63277%203.84%204.63277ZM13.0009%201.55116C13.0519%201.55116%2013.103%201.55116%2013.1643%201.55116H13.0009ZM11.9898%2016.8368C11.04%2016.8368%2010.1209%2016.5613%209.32425%2016.0307C8.52766%2015.5001%207.91489%2014.7552%207.54723%2013.8674C7.17957%2012.9797%207.08766%2012.0205%207.27149%2011.0817C7.45532%2010.1429%207.91489%209.2858%208.58894%208.61234C9.26298%207.93887%2010.1209%207.47969%2011.0604%207.29602C12%207.11235%2012.96%207.20418%2013.8485%207.57153C14.7268%207.93887%2015.4723%208.55111%2016.0034%209.35723C16.5345%2010.1531%2016.8102%2011.0817%2016.8102%2012.0409C16.8102%2013.3164%2016.3098%2014.5205%2015.4009%2015.4286C14.5021%2016.3368%2013.297%2016.8368%2012.0204%2016.8368H12H11.9898ZM12%2015.3062C12.8681%2015.3062%2013.6851%2014.9592%2014.3081%2014.347C14.9311%2013.7348%2015.2681%2012.9082%2015.2681%2012.0409C15.2681%2011.3878%2015.0843%2010.7552%2014.7166%2010.2144C14.3591%209.67356%2013.8485%209.25519%2013.246%209.00009C12.6434%208.74499%2011.9898%208.68377%2011.3464%208.80622C10.703%208.92866%2010.1311%209.24499%209.66128%209.70417C9.2017%2010.1633%208.88511%2010.745%208.76255%2011.3878C8.64%2012.0307%208.70128%2012.6837%208.9566%2013.2858C9.21192%2013.8878%209.63064%2014.398%2010.1719%2014.7552C10.7132%2015.1123%2011.3362%2015.3062%2011.9796%2015.3062H11.9898H12Z%22%20class%3D%22base-layer%22%20fill%3D%22currentColor%22%3E%3C%2Fpath%3E%0A%3C%2Fg%3E%0A%3Cdefs%3E%0A%3CclipPath%20id%3D%22clip0_2_153%22%3E%0A%3Crect%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22white%22%3E%3C%2Frect%3E%0A%3C%2FclipPath%3E%0A%3C%2Fdefs%3E%0A%3C%2Fsvg%3E");
       --pai-accent:#0067c5; --pai-accent-dark:#1e4a93; --pai-accent-bg:#f4fbff;
-      --pai-text:#1c1c1c; --pai-muted:#6f6f6f; --pai-border:#e0e0e0; --pai-surface:#f5f5f5; --pai-icon:#1c1c1c;
+      --pai-text:#1c1c1c; --pai-muted:#6f6f6f; --pai-border:#e0e0e0; --pai-surface:#f5f5f5; --pai-icon:#1c1c1c; --pai-chev:${PaiIcons.mask("chevron_right")};
       --pai-font:'Segoe UI',-apple-system,BlinkMacSystemFont,system-ui,Roboto,'Helvetica Neue',Arial,sans-serif;
     }
     /* --pai-fab-right/-bottom are set from the saved, profile or default position (applyFabPosition). */
@@ -415,12 +415,13 @@
     .flyout-item:hover { background:var(--pai-accent-bg); }
     .row-tile {
       flex:0 0 auto; width:32px; height:32px; border-radius:4px; background:var(--pai-surface);
-      display:flex; align-items:center; justify-content:center; color:var(--pai-icon);
+      display:flex; align-items:center; justify-content:center; color:var(--pai-accent);
     }
     .row-tile::before {
-      content:''; width:14.4px; height:14.4px; background-color:currentColor;
-      -webkit-mask:var(--pai-sparkle) center/contain no-repeat; mask:var(--pai-sparkle) center/contain no-repeat;
+      content:''; width:16px; height:16px; background-color:currentColor;
+      -webkit-mask:var(--pai-row-icon, var(--pai-sparkle)) center/contain no-repeat; mask:var(--pai-row-icon, var(--pai-sparkle)) center/contain no-repeat;
     }
+    .row-chev { flex:none; width:12px; height:12px; color:var(--pai-icon); background-color:currentColor; -webkit-mask:var(--pai-chev) center/contain no-repeat; mask:var(--pai-chev) center/contain no-repeat; }
     .row-text { flex:1 1 auto; min-width:0; }
     .row-title { display:block; }
     .row-hint { display:block; font-size:10.8px; line-height:16px; font-weight:400; color:var(--pai-muted); }
@@ -752,7 +753,7 @@
     btn.type = "button";
     btn.title = feature.menuLabel;
     btn.setAttribute("aria-label", feature.menuLabel);
-    btn.appendChild(headerIcon("digest"));
+    btn.appendChild(feature.icon ? PaiIcons.el(feature.icon, 14.4) : headerIcon("digest"));
     btn.addEventListener("click", (event) => {
       event.stopPropagation();
       onClick();
@@ -893,6 +894,11 @@
     const { feature, payload } = binding.opt;
     const existingJob = binding.storedJobInfo;
 
+    if (feature.liveReport) {
+      void openLiveReport(binding.opt);
+      return;
+    }
+
     // If a feature has an existing completed job, open it instead of starting new
     if (existingJob && existingJob.job && !feature.renderStartForm && !feature.oneShot) {
       setPopoverOpen(false);
@@ -1002,6 +1008,7 @@
       item.className = "flyout-item";
       const tile = document.createElement("span");
       tile.className = "row-tile";
+      if (opt.feature.icon) tile.style.setProperty("--pai-row-icon", PaiIcons.mask(opt.feature.icon));
       const text = document.createElement("span");
       text.className = "row-text";
       const rowTitle = document.createElement("span");
@@ -1014,7 +1021,9 @@
         hint.textContent = opt.feature.menuHint;
         text.appendChild(hint);
       }
-      item.append(tile, text);
+      const chev = document.createElement("span");
+      chev.className = "row-chev";
+      item.append(tile, text, chev);
 
       // Check if this feature has an existing completed job
       const storedJobInfo = storedJobsByFeatureId.get(opt.feature.id);
@@ -1481,7 +1490,7 @@
   async function runOneShotInPanel(opt) {
     const { feature, payload } = opt;
     setPopoverOpen(false);
-    const { body } = openOverlayPanel(feature.menuLabel);
+    const { body } = openOverlayPanel(feature.menuLabel, { icon: feature.icon || "AI" });
     const thisPanel = panelHost;
     const render = (state) => {
       if (panelHost !== thisPanel) return false;
@@ -1631,7 +1640,7 @@
         continue;
       }
       if (job.status !== "approved" || panelHost) continue;
-      const { body } = openOverlayPanel(feature.menuLabel);
+      const { body } = openOverlayPanel(feature.menuLabel, { icon: feature.icon || "AI" });
       const thisPanel = panelHost;
       const render = (state) => {
         if (panelHost !== thisPanel) return false;
@@ -1663,7 +1672,7 @@
     const { project, repo } = details;
     const key = `${project}/${repo}`;
     setPopoverOpen(false);
-    const { body, footer, close } = openOverlayPanel(`Set up ${key}`);
+    const { body, footer, close } = openOverlayPanel(`Set up ${key}`, { icon: "settings" });
     const thisPanel = panelHost;
 
     const wrap = document.createElement("div");
@@ -1813,7 +1822,7 @@
   // can run several lines) — same reasoning as showPanel's own errorBox: a
   // native alert() truncates/wraps long text badly.
   function showOneShotError(feature, message) {
-    const { body, footer, close } = openOverlayPanel(feature.menuLabel);
+    const { body, footer, close } = openOverlayPanel(feature.menuLabel, { icon: feature.icon || "AI" });
     const errorBox = document.createElement("pre");
     errorBox.className = "action-error";
     errorBox.textContent = message;
@@ -1899,7 +1908,93 @@
   // hides while expanded and docks to the rail when collapsed. Opening
   // always starts expanded — the collapsed pref is only applied when the
   // user hits the toggle.
-  function openOverlayPanel(title) {
+  // ---- Icons added to existing panel content ----
+  // Feature panels build plain buttons, section headings and status badges. Instead of editing
+  // each one, the panel watches its own content and puts the matching design icon in front of
+  // anything it recognises by its words. Anything already carrying an icon is left alone.
+  const BUTTON_ICONS = [
+    [/claude code|claude session|resume/i, "code"],
+    [/open (in )?(jira|jenkins|bitbucket|pr|pull|build|ticket)|view (in|on)/i, "external_link"],
+    [/open in (editor|ide)|editor/i, "code"],
+    [/refresh|re-?run|check again|retry|try again|update now/i, "refresh"],
+    [/approve|accept|done|confirm|apply|merge|push/i, "check"],
+    [/reject|discard|cancel|close|dismiss|decline/i, "close"],
+    [/copy/i, "clipboard"],
+    [/save/i, "save"],
+    [/settings|options/i, "settings"],
+    [/analy[sz]e|diagnose|summari[sz]e|start|run|generate|create|fix|resolve/i, "play"],
+  ];
+  const HEADING_ICONS = [
+    [/comment|review|feedback|reviewer/i, "chat"],
+    [/branch/i, "view_tree"],
+    [/worktree|folder|checkout/i, "folder"],
+    [/pull request|\bPRs?\b/i, "copy_replicate"],
+    [/build|pipeline|job|stage/i, "modules"],
+    [/session|claude/i, "AI"],
+    [/analy|finding|cause|diagnos/i, "light_bulb"],
+    [/test|flak|fail|error|problem/i, "error"],
+    [/similar|history|earlier|past|previous/i, "restore"],
+    [/file|change|diff|commit/i, "edit"],
+    [/repo|source|clone/i, "source"],
+    [/person|people|author|member/i, "members"],
+    [/ticket|issue|jira|subtask/i, "tag"],
+    [/summary|digest|overview|status/i, "timeline"],
+    [/question|note|warning/i, "info"],
+  ];
+  const BADGE_ICONS = { ok: "success", bad: "error", warn: "notice_triangle", busy: "refresh" };
+
+  function firstMatch(table, text) {
+    for (const [re, name] of table) if (re.test(text)) return name;
+    return null;
+  }
+  function addIcon(node, name, size) {
+    if (!name || node.querySelector(":scope > .pai-ico")) return;
+    const icon = PaiIcons.el(name, size);
+    icon.classList.add("pai-ico");
+    node.insertBefore(icon, node.firstChild);
+  }
+  function decorateIcons(root) {
+    if (!root || !root.querySelectorAll) return;
+    const nodes = root.matches ? [root, ...root.querySelectorAll("*")] : [...root.querySelectorAll("*")];
+    for (const node of nodes) {
+      if (node.dataset && node.dataset.noIcon != null) continue;
+      if (node.matches(".actions button, .pill-action, .settings-btn")) {
+        addIcon(node, node.dataset.icon || firstMatch(BUTTON_ICONS, node.textContent || ""), 14.4);
+      } else if (node.matches(".report-headline")) {
+        addIcon(node, node.dataset.icon || firstMatch(HEADING_ICONS, node.textContent || ""), 14.4);
+      } else if (node.matches(".digest-row")) {
+        const tone = ["ok", "bad", "warn", "busy"].find((k) => node.classList.contains(k));
+        if (!node.querySelector(":scope > .pai-tile")) {
+          const tile = document.createElement("span");
+          tile.className = "pai-tile";
+          addIcon(tile, node.dataset.icon || (tone ? BADGE_ICONS[tone] : "info"), 14.4);
+          node.insertBefore(tile, node.firstChild);
+        }
+      } else if (node.matches(".status-badge")) {
+        const kind = ["ok", "bad", "warn", "busy"].find((k) => node.classList.contains(k));
+        if (kind && (node.textContent || "").trim()) addIcon(node, BADGE_ICONS[kind], 12);
+      }
+    }
+  }
+  function watchForIcons(root) {
+    if (!root) return;
+    let queued = false;
+    const run = () => {
+      queued = false;
+      observer.disconnect();
+      decorateIcons(root);
+      observer.observe(root, { childList: true, subtree: true });
+    };
+    const observer = new MutationObserver(() => {
+      if (!queued) {
+        queued = true;
+        requestAnimationFrame(run);
+      }
+    });
+    run();
+  }
+
+  function openOverlayPanel(title, opts = {}) {
     closePanel();
 
     panelHost = document.createElement("div");
@@ -1984,6 +2079,27 @@
         flex:0 0 auto; padding:14px 20px 16px; border-top:1px solid #e0e0e0;
         background:#fafafa;
       }
+      .panel-head { display:flex; align-items:flex-start; gap:12px; margin:0 0 16px; padding-right:72px; }
+      .panel-head-tile {
+        flex:none; width:40px; height:40px; border-radius:4px; background:#f4fbff; color:#0067c5;
+        display:flex; align-items:center; justify-content:center;
+      }
+      .panel-head-text { flex:1; min-width:0; }
+      .panel-head-line { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+      .panel-head h2 { margin:0; padding:0; font-size:16.2px; line-height:24px; font-weight:590; }
+      .panel-head-sub { margin-top:2px; font-size:11.7px; line-height:1.4; color:#6f6f6f; overflow-wrap:anywhere; }
+      .panel-progress { position:absolute; top:0; left:0; right:0; height:3px; overflow:hidden; display:none; z-index:3; }
+      .panel-progress.on { display:block; background:#ddf1ff; }
+      .panel-progress.on::after {
+        content:''; position:absolute; top:0; bottom:0; width:35%; background:#0067c5;
+        animation:pai-progress 1.1s ease-in-out infinite;
+      }
+      @keyframes pai-progress { from { left:-35%; } to { left:100%; } }
+      .pai-ico { display:inline-flex; vertical-align:middle; margin-right:6px; }
+      .actions button .pai-ico { margin-right:8px; }
+      .actions button { display:inline-flex; align-items:center; }
+      .status-badge .pai-ico { margin-right:4px; }
+      .report-headline .pai-ico { color:#6f6f6f; margin-right:8px; }
       h2 { margin:0 0 14px; font-size:18px; font-weight:600; color:#1c1c1c; padding-right:72px; }
       summary { cursor:pointer; font-weight:600; margin:12px 0 4px; }
 
@@ -2226,24 +2342,27 @@
         margin:0 0 16px; border:1px solid #e0e0e0; border-radius:4px; background:#fff; overflow:hidden;
       }
       .digest-section > .report-headline {
-        display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0;
-        padding:10px 14px; background:#fafafa; border-bottom:1px solid #e0e0e0;
-        font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:#6f6f6f;
+        display:flex; align-items:center; justify-content:flex-start; gap:8px; margin:0;
+        padding:10px 12px; background:#fff; border-bottom:1px solid #e0e0e0;
+        font-size:12.6px; font-weight:590; color:#1c1c1c;
       }
-      .digest-count {
-        min-width:20px; padding:0 6px; box-sizing:border-box; border-radius:10px; background:#e8e8e8;
-        font-size:11px; line-height:20px; text-align:center; letter-spacing:0; color:#525252;
-      }
+      .digest-section > .report-headline .pai-ico { margin-right:0; color:#6f6f6f; }
+      .digest-count { font-size:10.8px; line-height:16px; font-weight:400; color:#6f6f6f; }
       .digest-row {
-        margin:0; padding:10px 14px 10px 11px; border-left:3px solid transparent;
-        font-size:13px; line-height:1.5; color:#1c1c1c; overflow-wrap:anywhere;
+        margin:0; padding:10px 12px;
+        font-size:12.6px; line-height:1.5; color:#1c1c1c; overflow-wrap:anywhere;
       }
       .digest-row + .digest-row { border-top:1px solid #f0f0f0; }
-      .digest-row.bad { border-left-color:#DE350B; }
-      .digest-row.warn { border-left-color:#FF991F; }
-      .digest-row.busy { border-left-color:#0067c5; }
-      .digest-row.ok { border-left-color:#36B37E; }
       .digest-row .status-badge { margin-right:8px; vertical-align:1px; }
+      .pai-tile {
+        display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; margin-right:12px;
+        border-radius:4px; background:#f5f5f5; vertical-align:middle; color:#6f6f6f;
+      }
+      .pai-tile .pai-ico { margin:0; }
+      .digest-row.ok > .pai-tile { color:#2a8a4a; }
+      .digest-row.bad > .pai-tile { color:#c9372c; }
+      .digest-row.warn > .pai-tile { color:#b25e09; }
+      .digest-row.busy > .pai-tile { color:#0067c5; }
       .digest-row a { color:#0052a3; text-decoration:none; }
       .digest-row a:hover { text-decoration:underline; }
       .digest-more {
@@ -2453,6 +2572,14 @@
       .settings-feature-head { display:flex; align-items:center; gap:16px; padding:12px 16px; }
       .settings-feature-label { flex:1; min-width:0; display:flex; align-items:center; gap:16px; cursor:pointer; }
       .settings-feature-label .settings-switch { margin-top:0; }
+      .settings-feature-tile {
+        flex:none; width:32px; height:32px; border-radius:4px; background:#f5f5f5; color:#0067c5;
+        display:flex; align-items:center; justify-content:center;
+      }
+      .settings-feature-tile::before {
+        content:''; width:14.4px; height:14.4px; background-color:currentColor;
+        -webkit-mask:var(--pai-row-icon) center/contain no-repeat; mask:var(--pai-row-icon) center/contain no-repeat;
+      }
       .settings-feature-text { min-width:0; }
       .settings-feature-title { font-size:12.6px; font-weight:590; color:#1c1c1c; }
       .settings-feature-title .status-badge { margin-left:2.5px; vertical-align:1px; }
@@ -2661,7 +2788,47 @@
 
     const heading = document.createElement("h2");
     heading.textContent = title;
-    panelBody.appendChild(heading);
+    // With an icon the heading becomes the design's header: icon tile, title, status tag and a
+    // subtitle line, all updatable later (setHeader) as a refresh brings new facts.
+    let subtitleNode = null;
+    let tagNode = null;
+    if (opts.icon) {
+      const head = document.createElement("div");
+      head.className = "panel-head";
+      const tile = document.createElement("span");
+      tile.className = "panel-head-tile";
+      tile.appendChild(PaiIcons.el(opts.icon, 20));
+      const text = document.createElement("div");
+      text.className = "panel-head-text";
+      const line = document.createElement("div");
+      line.className = "panel-head-line";
+      tagNode = document.createElement("span");
+      tagNode.className = "status-badge";
+      tagNode.style.display = "none";
+      line.append(heading, tagNode);
+      subtitleNode = document.createElement("div");
+      subtitleNode.className = "panel-head-sub";
+      text.append(line, subtitleNode);
+      head.append(tile, text);
+      panelBody.appendChild(head);
+    } else {
+      panelBody.appendChild(heading);
+    }
+    const progressBar = document.createElement("div");
+    progressBar.className = "panel-progress";
+    progressBar.setAttribute("role", "progressbar");
+    panel.appendChild(progressBar);
+    const setHeader = ({ subtitle, tag, tone } = {}) => {
+      if (subtitleNode && subtitle !== undefined) subtitleNode.textContent = subtitle || "";
+      if (tagNode && tag !== undefined) {
+        tagNode.textContent = tag || "";
+        tagNode.style.display = tag ? "" : "none";
+        tagNode.className = `status-badge ${tone || ""}`.trim();
+        decorateIcons(tagNode);
+      }
+    };
+    const setProgress = (running) => progressBar.classList.toggle("on", !!running);
+    if (opts.subtitle || opts.tag) setHeader(opts);
 
     const body = document.createElement("div");
     body.className = "panel-body-content";
@@ -2702,14 +2869,17 @@
     document.addEventListener("keydown", onEscape, true);
     removeEscapeListener = () => document.removeEventListener("keydown", onEscape, true);
 
-    return { body, footer, close: closePanel };
+    watchForIcons(panelBody);
+    watchForIcons(footer);
+    const thisHost = panelHost;
+    return { body, footer, close: closePanel, setHeader, setProgress, isOpen: () => panelHost === thisHost };
   }
 
   // ---- Review panel: an already-started job (resolve-conflict's diff, or
   // create-jira-subtasks' result after it's run) ----
 
-  function showPanel(feature, job, jobKey) {
-    const { body, footer } = openOverlayPanel(feature.menuLabel);
+  function showPanel(feature, job, jobKey, live = {}) {
+    const { body, footer, setHeader, setProgress, isOpen } = openOverlayPanel(feature.menuLabel, { icon: feature.icon || "AI" });
 
     // Draws the whole panel (body + footer) for `job`. Called once below,
     // and again by a footerAction's api.rerender(job) — e.g. resolve-
@@ -3212,14 +3382,135 @@
       }
     }
 
-    renderJob(job);
+    if (live.loading) {
+      const loading = document.createElement("div");
+      loading.className = "settings-loading";
+      loading.textContent = live.loading;
+      body.appendChild(loading);
+    } else {
+      renderJob(job);
+    }
+    return { renderJob, setHeader, setProgress, isOpen, body };
+  }
+
+  // ---- Live reports (morning digest, ticket workspace) ----
+  // The last report is kept in browser storage. A click opens it at once, then runs the feature
+  // again behind it (progress bar along the top of the panel) and swaps the new result into the
+  // open panel when it finishes, only if something changed. Nothing is stored in the job list,
+  // so the button never gets stuck on a finished job.
+
+  const LIVE_REFRESH_MS = 5 * 60 * 1000;
+  const VOLATILE_KEYS = new Set(["generatedAt", "completedAt", "updatedAt", "elapsedMs", "durationMs"]);
+
+  function liveCacheKey(feature, payload) {
+    const scope = typeof feature.liveScope === "function" ? feature.liveScope(payload) : "";
+    return `paiLive:${feature.id}:${scope || "all"}`;
+  }
+  function liveFingerprint(data) {
+    try {
+      return JSON.stringify(data, (key, value) => (VOLATILE_KEYS.has(key) ? undefined : value));
+    } catch {
+      return String(Math.random());
+    }
+  }
+  function liveAgo(ms) {
+    const sec = Math.max(0, Math.round((Date.now() - ms) / 1000));
+    if (sec < 45) return "just now";
+    if (sec < 3600) return `${Math.max(1, Math.round(sec / 60))} min ago`;
+    if (sec < 86400) return `${Math.round(sec / 3600)} h ago`;
+    return new Date(ms).toLocaleDateString();
+  }
+  async function liveLoad(key) {
+    try {
+      const got = await chrome.storage.local.get(key);
+      const saved = got && got[key];
+      return saved && typeof saved === "object" && saved.job ? saved : null;
+    } catch {
+      return null;
+    }
+  }
+  function liveSave(key, job) {
+    try {
+      void chrome.storage.local.set({ [key]: { savedAt: Date.now(), job: { id: job.id, status: job.status, data: job.data, error: job.error } } });
+    } catch {
+      // Storage unavailable: the report just won't be kept.
+    }
+  }
+
+  async function openLiveReport(opt) {
+    const { feature, payload } = opt;
+    const ctx = buildPageCtx();
+    const jobKey = storageKey(feature, ctx, opt.match);
+    const cacheKey = liveCacheKey(feature, payload);
+    const saved = await liveLoad(cacheKey);
+    setPopoverOpen(false);
+    const view = showPanel(feature, saved ? saved.job : { status: "running", data: {} }, jobKey, saved ? {} : { loading: "Putting your report together…" });
+    let shownPrint = saved ? liveFingerprint(saved.job.data) : null;
+    let savedAt = saved ? saved.savedAt : null;
+    let refreshing = false;
+
+    const idleHeader = (extra = {}) =>
+      view.setHeader({
+        subtitle: savedAt ? `Updated ${liveAgo(savedAt)}` : "",
+        tag: "Up to date",
+        tone: "ok",
+        ...extra,
+      });
+
+    const refresh = async () => {
+      if (refreshing || !view.isOpen()) return;
+      refreshing = true;
+      view.setProgress(true);
+      view.setHeader({ subtitle: savedAt ? `Showing the report from ${liveAgo(savedAt)} · checking for changes…` : "Reading your data…", tag: "Refreshing", tone: "busy" });
+      try {
+        const { job: started } = await sendToBackground({ type: "start", featureId: feature.id, payload, pageUrl: ctx.url });
+        let job = started;
+        for (let i = 0; i < 300 && view.isOpen() && job.status !== "awaiting-approval" && job.status !== "failed"; i++) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          job = (await sendToBackground({ type: "status", jobId: started.id })).job;
+        }
+        if (!view.isOpen()) return;
+        if (job.status === "failed") {
+          view.setHeader({ subtitle: saved || shownPrint ? `Couldn't refresh: ${job.error || "unknown error"}. Showing the saved report.` : job.error || "The report couldn't be put together.", tag: "Couldn't refresh", tone: "bad" });
+          if (!shownPrint) view.renderJob(job);
+          return;
+        }
+        const print = liveFingerprint(job.data);
+        const changed = print !== shownPrint;
+        if (changed) {
+          const scroller = view.body.closest(".panel-body");
+          const top = scroller ? scroller.scrollTop : 0;
+          view.renderJob(job);
+          if (scroller) scroller.scrollTop = top;
+          shownPrint = print;
+        }
+        savedAt = Date.now();
+        liveSave(cacheKey, job);
+        idleHeader({ tag: changed && saved ? "Updated" : "Up to date" });
+      } catch (err) {
+        if (isContextInvalidated(err)) return;
+        if (view.isOpen()) view.setHeader({ subtitle: `Couldn't refresh: ${err.message}`, tag: "Couldn't refresh", tone: "bad" });
+      } finally {
+        refreshing = false;
+        if (view.isOpen()) view.setProgress(false);
+      }
+    };
+
+    await refresh();
+    // Keep an open panel current without the user asking again.
+    const again = async () => {
+      if (!view.isOpen()) return;
+      if (document.visibilityState === "visible") await refresh();
+      setTimeout(again, LIVE_REFRESH_MS);
+    };
+    setTimeout(again, LIVE_REFRESH_MS);
   }
 
   // ---- Compose panel: collect input *before* a job exists (e.g.
   // create-jira-subtasks' subtask rows), then start it directly ----
 
   function openComposePanel(feature, payload, ctx) {
-    const { body, footer, close } = openOverlayPanel(feature.menuLabel);
+    const { body, footer, close } = openOverlayPanel(feature.menuLabel, { icon: feature.icon || "AI" });
 
     const { node, getPayload } = feature.renderStartForm(payload);
     body.appendChild(node);
@@ -3459,7 +3750,7 @@
 
   function openUpdatePanel(offer) {
     const { info, extensionVersion } = offer;
-    const { body, footer, close } = openOverlayPanel(`Update ${chrome.runtime.getManifest().name}`);
+    const { body, footer, close } = openOverlayPanel(`Update ${chrome.runtime.getManifest().name}`, { icon: "refresh" });
     const thisPanel = panelHost;
 
     const wrap = document.createElement("div");

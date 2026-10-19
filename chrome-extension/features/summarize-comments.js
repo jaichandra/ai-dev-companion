@@ -4,6 +4,7 @@ PaiRegistry.register({
   site: "issues",
   id: "summarize-comments",
   menuLabel: "Summarize comments",
+  icon: "chat",
   readOnly: true,
   // The summary is kept on the companion (summary-cache) like analyze-issue's
   // report: every click starts a run (instant when the saved one is current),

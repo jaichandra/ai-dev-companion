@@ -183,6 +183,7 @@ PaiRegistry.register({
   settingsGroups: ["git"],
   describePendingStart: PaiGit.prSummary,
   menuLabel: "Address review comments",
+  icon: "feedback",
   quietCompleted: true,
   // While running, the service may stop to ask where to work when the branch
   // is checked out in the main clone (job.data.pendingChoice).

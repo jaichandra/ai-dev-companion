@@ -184,6 +184,7 @@ PaiRegistry.register({
   id: "create-jira-subtasks", // internal id only — not shown to the user
   settingsGroups: ["jira"],
   menuLabel: "Create Subtasks",
+  icon: "view_tree",
   startLabel: "Create Subtasks",
 
   urlPattern: /\/browse\/([A-Z][A-Z0-9_]*-\d+)/,

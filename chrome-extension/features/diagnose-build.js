@@ -5,6 +5,7 @@ PaiRegistry.register({
   id: "diagnose-build",
   settingsGroups: ["git"],
   menuLabel: "Diagnose this failed build",
+  icon: "error",
   oneShot: true,
   urlPattern: PaiJenkins.JENKINS_BUILD_PAGE,
 

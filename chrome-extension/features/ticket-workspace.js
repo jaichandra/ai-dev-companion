@@ -33,9 +33,13 @@ function ticketWorkspaceRow(badgeText, tone, text, href) {
 }
 
 /** A digest-style section card: uppercase header with a count pill, then rows. */
-function ticketWorkspaceCard(title, rows) {
+function ticketWorkspaceCard(title, rows, icon) {
   const node = renderSection(title, rows);
   if (!node) return null;
+  if (icon) {
+    node.firstElementChild.dataset.icon = icon;
+    for (const row of rows) if (row.dataset && !row.dataset.icon) row.dataset.icon = icon;
+  }
   node.removeAttribute("style");
   node.classList.add("digest-section");
   const count = document.createElement("span");
@@ -85,13 +89,13 @@ function renderTicketWorkspacePanel(job, panelApi) {
     row.appendChild(a);
     return row;
   });
-  const worktreeSection = ticketWorkspaceCard("Worktrees", worktrees);
+  const worktreeSection = ticketWorkspaceCard("Worktrees", worktrees, "folder");
   if (worktreeSection) container.appendChild(worktreeSection);
 
   const branches = (ws.branches || []).map((b) =>
     ticketWorkspaceRow(b.remote ? (b.local ? "local + origin" : "origin") : "local only", "neutral", `${b.repoKey}: ${b.name}`),
   );
-  const branchSection = ticketWorkspaceCard("Branches", branches);
+  const branchSection = ticketWorkspaceCard("Branches", branches, "view_tree");
   if (branchSection) container.appendChild(branchSection);
 
   const prs = (ws.prs || []).map((p) => {
@@ -100,21 +104,21 @@ function renderTicketWorkspacePanel(job, panelApi) {
     for (const b of (p.build && p.build.builds) || []) row.appendChild(ticketWorkspaceBuildBadge(b));
     return row;
   });
-  const prSection = ticketWorkspaceCard("Pull requests", prs);
+  const prSection = ticketWorkspaceCard("Pull requests", prs, "copy_replicate");
   if (prSection) container.appendChild(prSection);
 
   const analyses = (ws.analyses || []).map((a) =>
     ticketWorkspaceRow(null, "neutral", `${a.title || a.key}${a.excerpt ? ` — ${a.excerpt}` : ""}`),
   );
-  const analysisSection = ticketWorkspaceCard("Analyses", analyses);
+  const analysisSection = ticketWorkspaceCard("Analyses", analyses, "file_search");
   if (analysisSection) container.appendChild(analysisSection);
 
   const sessions = (ws.sessions || []).map((s) => ticketWorkspaceRow(null, "neutral", `${s.permissionMode} session in ${s.cwd}`));
-  const sessionSection = ticketWorkspaceCard("Claude Code sessions", sessions);
+  const sessionSection = ticketWorkspaceCard("Claude Code sessions", sessions, "chat");
   if (sessionSection) container.appendChild(sessionSection);
 
   const notes = (ws.notes || []).map((n) => ticketWorkspaceRow(null, "warn", String(n)));
-  const noteSection = ticketWorkspaceCard("Couldn't check", notes);
+  const noteSection = ticketWorkspaceCard("Couldn't check", notes, "notice_triangle");
   if (noteSection) container.appendChild(noteSection);
 
   if (container.childNodes.length === 1) {
@@ -186,10 +190,14 @@ PaiRegistry.register({
   id: "ticket-workspace",
   settingsGroups: ["jira", "git"],
   menuLabel: "Ticket workspace",
+  icon: "workspace",
   readOnly: true,
   // The scan reflects live branches/PRs/builds, so a result is never kept:
   // every click runs it again and opens the panel when it finishes, and
   // the menu item never turns green (content.js).
+  // Opens the last report straight away and refreshes it behind the panel (content.js openLiveReport).
+  liveReport: true,
+  liveScope: (payload) => payload && payload.issueKey,
   alwaysFresh: true,
 
   // Every Jira ticket, and every pull request or build whose branch, title or job names one; the scan
