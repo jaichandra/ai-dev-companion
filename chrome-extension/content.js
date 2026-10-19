@@ -715,6 +715,16 @@
     // Collapsed rail or fully closed: show when features/jobs want the FAB.
     fabWrap.style.display = fabWantedVisible ? "block" : "none";
     if (!fabWantedVisible) setPopoverOpen(false);
+    else normalizeFabScale();
+  }
+
+  // Some pages scale their <body> (CSS zoom or a transform), which made the button and menu
+  // render larger or smaller from site to site. The wrap is FAB_SIZE CSS px wide, so any
+  // difference in its rendered width is the page's scale: cancel it on the host.
+  function normalizeFabScale() {
+    fabHost.style.zoom = "1";
+    const scale = fabWrap.getBoundingClientRect().width / FAB_SIZE;
+    if (scale > 0.2 && scale < 5 && Math.abs(scale - 1) > 0.01) fabHost.style.zoom = String(1 / scale);
   }
 
   function setOverlayUiState(next) {
@@ -2310,120 +2320,125 @@
       /* Settings panel (built by settings-panel.js): a searchable form with a
          left-hand page list, following the Settings design review. */
       .panel-body.settings-mode { padding:0; overflow:hidden; }
-      .panel-body.settings-mode > h2 { padding:8px 47px 8px 15.5px; margin:0; border-bottom:1px solid #e0e0e0; font-size:15px; font-weight:590; }
-      .settings-loading { margin:0; padding:13px 15.5px; font-size:10px; line-height:1.45; color:#6f6f6f; }
+      .panel-body.settings-mode > h2 { padding:12px 72px 12px 24px; margin:0; border-bottom:1px solid #e0e0e0; font-size:18px; font-weight:590; }
+      .panel-body.settings-mode > h2 { display:flex; align-items:center; gap:8px; }
+      .panel-body.settings-mode > h2::before {
+        content:''; flex:none; width:18px; height:18px; background-color:#0067c5;
+        -webkit-mask:url("data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%0A%3Cg%3E%0A%3Cpath%20d%3D%22M13.1132%2024H10.9685C10.5089%2024%2010.1209%2023.6531%2010.0698%2023.1939L9.70213%2021.0204C8.91574%2020.847%208.12936%2020.5306%207.39404%2020.1021L5.5966%2021.4082C5.46383%2021.5%205.31064%2021.551%205.14723%2021.551C5.08596%2021.551%204.93277%2021.5714%204.74894%2021.5204C4.6366%2021.4898%204.52426%2021.4286%204.43234%2021.347L2.84936%2019.847C2.84936%2019.847%202.78809%2019.7857%202.76766%2019.7551C2.52255%2019.4286%202.52255%2018.9796%202.76766%2018.6531L4.06468%2016.8368C3.58468%2016.1327%203.24766%2015.3266%203.02298%2014.4797L0.755745%2014.0919C0.347234%2014.0511%200%2013.6633%200%2013.2041V10.9695C0%2010.5103%200.347234%2010.1225%200.796596%2010.0715L2.95149%209.70417C3.10468%208.90825%203.42128%208.09193%203.85021%207.33684L2.58383%205.53073C2.35915%205.2246%202.35915%204.77563%202.59404%204.4491C2.61447%204.41849%202.63489%204.38788%202.66553%204.36747L4.24851%202.76544C4.32%202.69401%204.41191%202.63278%204.50383%202.59197C4.7183%202.50013%204.91234%202.53074%205.00426%202.53074C5.17787%202.53074%205.32085%202.59197%205.45362%202.69401L7.22043%204.10216C7.89447%203.60217%208.70128%203.25523%209.53872%203.03074L9.94723%200.755244C9.98808%200.561367%2010.1004%200.347083%2010.2332%200.224635C10.4272%200.0511664%2010.6723%20-0.0304657%2010.9277%200.0103504H13.0519C13.2357%200.0103504%2013.5115%200.102187%2013.6545%200.234839C13.8179%200.387899%2013.92%200.581775%2013.9506%200.79606L14.3183%202.96952C15.1353%203.13278%2015.9728%203.46951%2016.7489%203.91849L18.526%202.65319C18.6587%202.56136%2018.8119%202.51034%2018.9753%202.51034C19.0264%202.50013%2019.2306%202.47972%2019.4553%202.57156C19.5472%202.61238%2019.6289%202.6634%2019.7004%202.74503L21.2426%204.31645C21.2426%204.31645%2021.2936%204.36747%2021.314%204.39808C21.406%204.53073%2021.4877%204.77563%2021.4877%204.93889C21.4877%205.13277%2021.4264%205.32664%2021.314%205.4797L20.017%207.31643C20.497%208.0001%2020.834%208.81642%2021.0587%209.66335L23.234%2010.0001C23.234%2010.0001%2023.2545%2010.0001%2023.2647%2010.0001C23.4383%2010.0409%2023.6834%2010.1838%2023.7957%2010.3266C23.9285%2010.4899%2024%2010.694%2024%2010.898V13.1225C24%2013.245%2023.9694%2013.3572%2023.9183%2013.4695C23.7549%2013.796%2023.3974%2013.9694%2023.0502%2013.9592L20.9668%2014.3164C20.7932%2015.1327%2020.446%2015.9388%2019.9966%2016.6939L21.263%2018.4796C21.3651%2018.6327%2021.4468%2018.847%2021.4468%2019.0102C21.4468%2019.2653%2021.3345%2019.5102%2021.1506%2019.6735L19.6187%2021.2143C19.5268%2021.2959%2019.4247%2021.3674%2019.3021%2021.4082C19.1183%2021.4694%2018.914%2021.4694%2018.7302%2021.4082C18.6587%2021.3878%2018.5872%2021.347%2018.5157%2021.3061L16.6877%2020C15.9932%2020.4898%2015.1762%2020.8265%2014.3285%2021.051L13.9915%2023.2245C13.9506%2023.6327%2013.5626%2023.9796%2013.103%2023.9796L13.1132%2024ZM12.5004%2022.9592C12.5004%2022.9592%2012.4902%2023.0102%2012.4902%2023.0408V22.9592H12.5004ZM11.5915%2022.9286V22.9898C11.5915%2022.9898%2011.5915%2022.949%2011.5915%2022.9286ZM11.5098%2022.4694H12.5821L12.8681%2020.7653C12.9089%2020.4898%2013.0417%2020.2245%2013.2357%2020.0102C13.4298%2019.7959%2013.6851%2019.6531%2013.9609%2019.5817C14.6655%2019.398%2015.3396%2019.1123%2015.9728%2018.7347C16.4221%2018.449%2017.0757%2018.4388%2017.5557%2018.7347L18.9549%2019.7347L19.7311%2018.9592L18.72%2017.5307C18.5464%2017.2551%2018.4647%2016.9796%2018.4647%2016.7041C18.4647%2016.4286%2018.5464%2016.1531%2018.6894%2015.9082C19.057%2015.2858%2019.343%2014.6123%2019.5268%2013.898C19.5881%2013.6327%2019.7413%2013.3776%2019.9557%2013.1735C20.1702%2012.9797%2020.4357%2012.847%2020.7319%2012.8062L22.4783%2012.5103V11.4286L20.783%2011.1429C20.5072%2011.1021%2020.2417%2010.9695%2020.0272%2010.7756C19.8128%2010.5817%2019.6698%2010.3266%2019.5983%2010.0409C19.4145%209.34703%2019.1285%208.66336%2018.7506%208.03071C18.6179%207.81642%2018.5362%207.54092%2018.5362%207.2552C18.5362%206.96949%2018.6179%206.69398%2018.7711%206.45929L19.8026%205.01032L19.0162%204.2042L17.617%205.2042C17.0655%205.55113%2016.463%205.53072%2015.983%205.2246C15.36%204.86746%2014.6553%204.58175%2013.9302%204.40828C13.6545%204.34706%2013.3991%204.194%2013.2051%203.97971C13.0111%203.76543%2012.8783%203.50012%2012.8374%203.20421L12.5515%201.53075H11.3974L11.1013%203.25523C11.0809%203.51033%2010.9481%203.80625%2010.7438%204.04094C10.5294%204.27563%2010.2536%204.43889%209.94723%204.51032C9.27319%204.694%208.59915%204.97971%207.96596%205.35726C7.53702%205.63277%206.85277%205.65317%206.37277%205.33685L4.98383%204.23481L4.17702%205.05114L5.18809%206.4797C5.3617%206.75521%205.4434%207.03072%205.4434%207.30622C5.4434%207.58173%205.3617%207.85724%205.21872%208.10214C4.8817%208.70417%204.61617%209.38784%204.44255%2010.0919C4.38128%2010.3776%204.22809%2010.6327%204.01362%2010.8266C3.79915%2011.0307%203.53362%2011.1531%203.23745%2011.194L1.57277%2011.4797V12.6531L3.28851%2012.9388C3.55404%2012.9695%203.85021%2013.0919%204.08511%2013.3062C4.32%2013.5103%204.4834%2013.7858%204.55489%2014.1021C4.73872%2014.7858%205.02468%2015.4694%205.39234%2016.1021C5.53532%2016.3062%205.61702%2016.5919%205.61702%2016.8776C5.61702%2017.1633%205.53532%2017.449%205.37192%2017.6939L4.36085%2019.1123L5.15745%2019.8674L6.58723%2018.847C6.83234%2018.6633%207.15915%2018.5613%207.46553%2018.5715C7.73106%2018.5715%207.9966%2018.6429%208.23149%2018.7959C8.81362%2019.1327%209.47745%2019.4082%2010.1719%2019.5817C10.4374%2019.6429%2010.6928%2019.7959%2010.897%2020.0102C11.0911%2020.2245%2011.2238%2020.4898%2011.2647%2020.7755L11.5506%2022.4592L11.5098%2022.4694ZM4.03404%2019.5306L4.01362%2019.551C4.01362%2019.551%204.02383%2019.5408%204.03404%2019.5306ZM0.970213%2012.5715H1.05191C1.05191%2012.5715%201.00085%2012.5715%200.970213%2012.5715ZM1.07234%2011.5715H1.01106C1.01106%2011.5715%201.05191%2011.5715%201.07234%2011.5715ZM3.84%204.63277L3.86043%204.65318C3.86043%204.65318%203.85021%204.63277%203.84%204.63277ZM13.0009%201.55116C13.0519%201.55116%2013.103%201.55116%2013.1643%201.55116H13.0009ZM11.9898%2016.8368C11.04%2016.8368%2010.1209%2016.5613%209.32425%2016.0307C8.52766%2015.5001%207.91489%2014.7552%207.54723%2013.8674C7.17957%2012.9797%207.08766%2012.0205%207.27149%2011.0817C7.45532%2010.1429%207.91489%209.2858%208.58894%208.61234C9.26298%207.93887%2010.1209%207.47969%2011.0604%207.29602C12%207.11235%2012.96%207.20418%2013.8485%207.57153C14.7268%207.93887%2015.4723%208.55111%2016.0034%209.35723C16.5345%2010.1531%2016.8102%2011.0817%2016.8102%2012.0409C16.8102%2013.3164%2016.3098%2014.5205%2015.4009%2015.4286C14.5021%2016.3368%2013.297%2016.8368%2012.0204%2016.8368H12H11.9898ZM12%2015.3062C12.8681%2015.3062%2013.6851%2014.9592%2014.3081%2014.347C14.9311%2013.7348%2015.2681%2012.9082%2015.2681%2012.0409C15.2681%2011.3878%2015.0843%2010.7552%2014.7166%2010.2144C14.3591%209.67356%2013.8485%209.25519%2013.246%209.00009C12.6434%208.74499%2011.9898%208.68377%2011.3464%208.80622C10.703%208.92866%2010.1311%209.24499%209.66128%209.70417C9.2017%2010.1633%208.88511%2010.745%208.76255%2011.3878C8.64%2012.0307%208.70128%2012.6837%208.9566%2013.2858C9.21192%2013.8878%209.63064%2014.398%2010.1719%2014.7552C10.7132%2015.1123%2011.3362%2015.3062%2011.9796%2015.3062H11.9898H12Z%22%20class%3D%22base-layer%22%20fill%3D%22currentColor%22%3E%3C%2Fpath%3E%0A%3C%2Fg%3E%0A%3Cdefs%3E%0A%3CclipPath%20id%3D%22clip0_2_153%22%3E%0A%3Crect%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22white%22%3E%3C%2Frect%3E%0A%3C%2FclipPath%3E%0A%3C%2Fdefs%3E%0A%3C%2Fsvg%3E") center/contain no-repeat; mask:url("data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%0A%3Cg%3E%0A%3Cpath%20d%3D%22M13.1132%2024H10.9685C10.5089%2024%2010.1209%2023.6531%2010.0698%2023.1939L9.70213%2021.0204C8.91574%2020.847%208.12936%2020.5306%207.39404%2020.1021L5.5966%2021.4082C5.46383%2021.5%205.31064%2021.551%205.14723%2021.551C5.08596%2021.551%204.93277%2021.5714%204.74894%2021.5204C4.6366%2021.4898%204.52426%2021.4286%204.43234%2021.347L2.84936%2019.847C2.84936%2019.847%202.78809%2019.7857%202.76766%2019.7551C2.52255%2019.4286%202.52255%2018.9796%202.76766%2018.6531L4.06468%2016.8368C3.58468%2016.1327%203.24766%2015.3266%203.02298%2014.4797L0.755745%2014.0919C0.347234%2014.0511%200%2013.6633%200%2013.2041V10.9695C0%2010.5103%200.347234%2010.1225%200.796596%2010.0715L2.95149%209.70417C3.10468%208.90825%203.42128%208.09193%203.85021%207.33684L2.58383%205.53073C2.35915%205.2246%202.35915%204.77563%202.59404%204.4491C2.61447%204.41849%202.63489%204.38788%202.66553%204.36747L4.24851%202.76544C4.32%202.69401%204.41191%202.63278%204.50383%202.59197C4.7183%202.50013%204.91234%202.53074%205.00426%202.53074C5.17787%202.53074%205.32085%202.59197%205.45362%202.69401L7.22043%204.10216C7.89447%203.60217%208.70128%203.25523%209.53872%203.03074L9.94723%200.755244C9.98808%200.561367%2010.1004%200.347083%2010.2332%200.224635C10.4272%200.0511664%2010.6723%20-0.0304657%2010.9277%200.0103504H13.0519C13.2357%200.0103504%2013.5115%200.102187%2013.6545%200.234839C13.8179%200.387899%2013.92%200.581775%2013.9506%200.79606L14.3183%202.96952C15.1353%203.13278%2015.9728%203.46951%2016.7489%203.91849L18.526%202.65319C18.6587%202.56136%2018.8119%202.51034%2018.9753%202.51034C19.0264%202.50013%2019.2306%202.47972%2019.4553%202.57156C19.5472%202.61238%2019.6289%202.6634%2019.7004%202.74503L21.2426%204.31645C21.2426%204.31645%2021.2936%204.36747%2021.314%204.39808C21.406%204.53073%2021.4877%204.77563%2021.4877%204.93889C21.4877%205.13277%2021.4264%205.32664%2021.314%205.4797L20.017%207.31643C20.497%208.0001%2020.834%208.81642%2021.0587%209.66335L23.234%2010.0001C23.234%2010.0001%2023.2545%2010.0001%2023.2647%2010.0001C23.4383%2010.0409%2023.6834%2010.1838%2023.7957%2010.3266C23.9285%2010.4899%2024%2010.694%2024%2010.898V13.1225C24%2013.245%2023.9694%2013.3572%2023.9183%2013.4695C23.7549%2013.796%2023.3974%2013.9694%2023.0502%2013.9592L20.9668%2014.3164C20.7932%2015.1327%2020.446%2015.9388%2019.9966%2016.6939L21.263%2018.4796C21.3651%2018.6327%2021.4468%2018.847%2021.4468%2019.0102C21.4468%2019.2653%2021.3345%2019.5102%2021.1506%2019.6735L19.6187%2021.2143C19.5268%2021.2959%2019.4247%2021.3674%2019.3021%2021.4082C19.1183%2021.4694%2018.914%2021.4694%2018.7302%2021.4082C18.6587%2021.3878%2018.5872%2021.347%2018.5157%2021.3061L16.6877%2020C15.9932%2020.4898%2015.1762%2020.8265%2014.3285%2021.051L13.9915%2023.2245C13.9506%2023.6327%2013.5626%2023.9796%2013.103%2023.9796L13.1132%2024ZM12.5004%2022.9592C12.5004%2022.9592%2012.4902%2023.0102%2012.4902%2023.0408V22.9592H12.5004ZM11.5915%2022.9286V22.9898C11.5915%2022.9898%2011.5915%2022.949%2011.5915%2022.9286ZM11.5098%2022.4694H12.5821L12.8681%2020.7653C12.9089%2020.4898%2013.0417%2020.2245%2013.2357%2020.0102C13.4298%2019.7959%2013.6851%2019.6531%2013.9609%2019.5817C14.6655%2019.398%2015.3396%2019.1123%2015.9728%2018.7347C16.4221%2018.449%2017.0757%2018.4388%2017.5557%2018.7347L18.9549%2019.7347L19.7311%2018.9592L18.72%2017.5307C18.5464%2017.2551%2018.4647%2016.9796%2018.4647%2016.7041C18.4647%2016.4286%2018.5464%2016.1531%2018.6894%2015.9082C19.057%2015.2858%2019.343%2014.6123%2019.5268%2013.898C19.5881%2013.6327%2019.7413%2013.3776%2019.9557%2013.1735C20.1702%2012.9797%2020.4357%2012.847%2020.7319%2012.8062L22.4783%2012.5103V11.4286L20.783%2011.1429C20.5072%2011.1021%2020.2417%2010.9695%2020.0272%2010.7756C19.8128%2010.5817%2019.6698%2010.3266%2019.5983%2010.0409C19.4145%209.34703%2019.1285%208.66336%2018.7506%208.03071C18.6179%207.81642%2018.5362%207.54092%2018.5362%207.2552C18.5362%206.96949%2018.6179%206.69398%2018.7711%206.45929L19.8026%205.01032L19.0162%204.2042L17.617%205.2042C17.0655%205.55113%2016.463%205.53072%2015.983%205.2246C15.36%204.86746%2014.6553%204.58175%2013.9302%204.40828C13.6545%204.34706%2013.3991%204.194%2013.2051%203.97971C13.0111%203.76543%2012.8783%203.50012%2012.8374%203.20421L12.5515%201.53075H11.3974L11.1013%203.25523C11.0809%203.51033%2010.9481%203.80625%2010.7438%204.04094C10.5294%204.27563%2010.2536%204.43889%209.94723%204.51032C9.27319%204.694%208.59915%204.97971%207.96596%205.35726C7.53702%205.63277%206.85277%205.65317%206.37277%205.33685L4.98383%204.23481L4.17702%205.05114L5.18809%206.4797C5.3617%206.75521%205.4434%207.03072%205.4434%207.30622C5.4434%207.58173%205.3617%207.85724%205.21872%208.10214C4.8817%208.70417%204.61617%209.38784%204.44255%2010.0919C4.38128%2010.3776%204.22809%2010.6327%204.01362%2010.8266C3.79915%2011.0307%203.53362%2011.1531%203.23745%2011.194L1.57277%2011.4797V12.6531L3.28851%2012.9388C3.55404%2012.9695%203.85021%2013.0919%204.08511%2013.3062C4.32%2013.5103%204.4834%2013.7858%204.55489%2014.1021C4.73872%2014.7858%205.02468%2015.4694%205.39234%2016.1021C5.53532%2016.3062%205.61702%2016.5919%205.61702%2016.8776C5.61702%2017.1633%205.53532%2017.449%205.37192%2017.6939L4.36085%2019.1123L5.15745%2019.8674L6.58723%2018.847C6.83234%2018.6633%207.15915%2018.5613%207.46553%2018.5715C7.73106%2018.5715%207.9966%2018.6429%208.23149%2018.7959C8.81362%2019.1327%209.47745%2019.4082%2010.1719%2019.5817C10.4374%2019.6429%2010.6928%2019.7959%2010.897%2020.0102C11.0911%2020.2245%2011.2238%2020.4898%2011.2647%2020.7755L11.5506%2022.4592L11.5098%2022.4694ZM4.03404%2019.5306L4.01362%2019.551C4.01362%2019.551%204.02383%2019.5408%204.03404%2019.5306ZM0.970213%2012.5715H1.05191C1.05191%2012.5715%201.00085%2012.5715%200.970213%2012.5715ZM1.07234%2011.5715H1.01106C1.01106%2011.5715%201.05191%2011.5715%201.07234%2011.5715ZM3.84%204.63277L3.86043%204.65318C3.86043%204.65318%203.85021%204.63277%203.84%204.63277ZM13.0009%201.55116C13.0519%201.55116%2013.103%201.55116%2013.1643%201.55116H13.0009ZM11.9898%2016.8368C11.04%2016.8368%2010.1209%2016.5613%209.32425%2016.0307C8.52766%2015.5001%207.91489%2014.7552%207.54723%2013.8674C7.17957%2012.9797%207.08766%2012.0205%207.27149%2011.0817C7.45532%2010.1429%207.91489%209.2858%208.58894%208.61234C9.26298%207.93887%2010.1209%207.47969%2011.0604%207.29602C12%207.11235%2012.96%207.20418%2013.8485%207.57153C14.7268%207.93887%2015.4723%208.55111%2016.0034%209.35723C16.5345%2010.1531%2016.8102%2011.0817%2016.8102%2012.0409C16.8102%2013.3164%2016.3098%2014.5205%2015.4009%2015.4286C14.5021%2016.3368%2013.297%2016.8368%2012.0204%2016.8368H12H11.9898ZM12%2015.3062C12.8681%2015.3062%2013.6851%2014.9592%2014.3081%2014.347C14.9311%2013.7348%2015.2681%2012.9082%2015.2681%2012.0409C15.2681%2011.3878%2015.0843%2010.7552%2014.7166%2010.2144C14.3591%209.67356%2013.8485%209.25519%2013.246%209.00009C12.6434%208.74499%2011.9898%208.68377%2011.3464%208.80622C10.703%208.92866%2010.1311%209.24499%209.66128%209.70417C9.2017%2010.1633%208.88511%2010.745%208.76255%2011.3878C8.64%2012.0307%208.70128%2012.6837%208.9566%2013.2858C9.21192%2013.8878%209.63064%2014.398%2010.1719%2014.7552C10.7132%2015.1123%2011.3362%2015.3062%2011.9796%2015.3062H11.9898H12Z%22%20class%3D%22base-layer%22%20fill%3D%22currentColor%22%3E%3C%2Fpath%3E%0A%3C%2Fg%3E%0A%3Cdefs%3E%0A%3CclipPath%20id%3D%22clip0_2_153%22%3E%0A%3Crect%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22white%22%3E%3C%2Frect%3E%0A%3C%2FclipPath%3E%0A%3C%2Fdefs%3E%0A%3C%2Fsvg%3E") center/contain no-repeat;
+      }
+      .settings-loading { margin:0; padding:20px 24px; font-size:12.6px; line-height:1.45; color:#6f6f6f; }
       .panel-body.settings-mode .panel-body-content {
         flex:1 1 auto; min-height:0; display:flex; flex-direction:column;
       }
-      .panel-body.settings-mode .settings-banner { margin:0 13px 8px; }
+      .panel-body.settings-mode .settings-banner { margin:0 24px 12px; }
       .settings-form {
         flex:1 1 auto; min-height:0; display:flex; flex-direction:column;
         container-type:inline-size; color:#1c1c1c;
       }
       .settings-form [hidden], .settings-form .gated-off, .settings-form .is-off { display:none !important; }
-      .settings-search-row { padding:8px 15.5px; border-bottom:1px solid #e0e0e0; }
+      .settings-search-row { padding:12px 24px; border-bottom:1px solid #e0e0e0; }
       .settings-search {
-        width:100%; max-width:273px; box-sizing:border-box; height:21px; padding:0 5px 0 22px;
-        background:#fff url("data:image/svg+xml,%3Csvg viewBox=%220 0 24 24%22 fill=%22none%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath fill-rule=%22evenodd%22 clip-rule=%22evenodd%22 d=%22M15.5956 16.5403C14.1735 17.6046 12.4005 18.2361 10.4782 18.2361C5.79581 18.2361 2 14.4895 2 9.86803C2 5.24652 5.79581 1.5 10.4782 1.5C15.1606 1.5 18.9564 5.24652 18.9564 9.86803C18.9564 11.8796 18.2372 13.7254 17.0389 15.1686L21.7055 19.8168C22.0981 20.2024 22.0982 20.8268 21.7058 21.2117C21.3133 21.5966 20.677 21.596 20.2845 21.2105L15.5956 16.5403ZM17.4602 9.86803C17.4602 13.674 14.3343 16.7593 10.4782 16.7593C6.62211 16.7593 3.49615 13.674 3.49615 9.86803C3.49615 6.06208 6.62211 2.97671 10.4782 2.97671C14.3343 2.97671 17.4602 6.06208 17.4602 9.86803Z%22 fill=%22%231c1c1c%22%3E%3C/path%3E%3C/svg%3E") 7px 5px/11px 11px no-repeat;
-        font:inherit; font-size:10px; color:#1c1c1c; border:1px solid #a7a7a7; border-radius:2.5px;
+        width:100%; max-width:420px; box-sizing:border-box; height:32px; padding:0 8px 0 34px;
+        background:#fff url("data:image/svg+xml,%3Csvg viewBox=%220 0 24 24%22 fill=%22none%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath fill-rule=%22evenodd%22 clip-rule=%22evenodd%22 d=%22M15.5956 16.5403C14.1735 17.6046 12.4005 18.2361 10.4782 18.2361C5.79581 18.2361 2 14.4895 2 9.86803C2 5.24652 5.79581 1.5 10.4782 1.5C15.1606 1.5 18.9564 5.24652 18.9564 9.86803C18.9564 11.8796 18.2372 13.7254 17.0389 15.1686L21.7055 19.8168C22.0981 20.2024 22.0982 20.8268 21.7058 21.2117C21.3133 21.5966 20.677 21.596 20.2845 21.2105L15.5956 16.5403ZM17.4602 9.86803C17.4602 13.674 14.3343 16.7593 10.4782 16.7593C6.62211 16.7593 3.49615 13.674 3.49615 9.86803C3.49615 6.06208 6.62211 2.97671 10.4782 2.97671C14.3343 2.97671 17.4602 6.06208 17.4602 9.86803Z%22 fill=%22%231c1c1c%22%3E%3C/path%3E%3C/svg%3E") 10px 8.8px/14.4px 14.4px no-repeat;
+        font:inherit; font-size:12.6px; color:#1c1c1c; border:1px solid #a7a7a7; border-radius:4px;
       }
       .settings-search:focus, .settings-input:focus {
         outline:none; border-color:#0067c5; box-shadow:0 0 0 2px rgba(0,103,197,.2);
       }
       .settings-shell { flex:1 1 auto; min-height:0; display:flex; }
       .settings-nav {
-        width:140.5px; flex:none; box-sizing:border-box; padding:8px 5px; overflow:auto;
-        border-right:1px solid #e0e0e0; display:flex; flex-direction:column; gap:1.5px;
+        width:216px; flex:none; box-sizing:border-box; padding:12px 8px; overflow:auto;
+        border-right:1px solid #e0e0e0; display:flex; flex-direction:column; gap:2px;
       }
       .settings-nav-item {
-        display:flex; align-items:center; gap:5px; padding:5px 8px; cursor:pointer; border-radius:2.5px;
+        display:flex; align-items:center; gap:8px; padding:8px 12px; cursor:pointer; border-radius:4px;
         border-left:3px solid transparent; color:#1c1c1c;
       }
       .settings-nav-tile {
-        width:21px; height:21px; flex:none; border-radius:2.5px; background:#f5f5f5; color:#1c1c1c;
+        width:32px; height:32px; flex:none; border-radius:4px; background:#f5f5f5; color:#1c1c1c;
         display:flex; align-items:center; justify-content:center;
       }
       .settings-nav-tile::before {
-        content:''; width:10.5px; height:10.5px; background-color:currentColor;
+        content:''; width:14.4px; height:14.4px; background-color:currentColor;
         -webkit-mask:var(--pai-nav-icon) center/contain no-repeat; mask:var(--pai-nav-icon) center/contain no-repeat;
       }
       .settings-nav-item.on .settings-nav-tile { background:#fff; color:#0067c5; }
       .settings-nav-item:hover { background:#f4fbff; }
       .settings-nav-item.on { border-left-color:#0067c5; background:#f4fbff; }
       .settings-nav-text { flex:1; min-width:0; }
-      .settings-nav-title { font-size:10.5px; font-weight:590; }
-      .settings-nav-sub { margin-top:1px; font-size:10px; color:#6f6f6f; }
-      .settings-nav-dot { width:5px; height:5px; flex:none; border-radius:50%; background:#1c1c1c; }
-      .settings-main { flex:1; min-width:0; overflow:auto; padding:15.5px 21px; }
-      .settings-page { display:none; flex-direction:column; gap:15.5px; }
+      .settings-nav-title { font-size:12.6px; font-weight:590; }
+      .settings-nav-sub { margin-top:1px; font-size:10.8px; color:#6f6f6f; }
+      .settings-nav-dot { width:8px; height:8px; flex:none; border-radius:50%; background:#1c1c1c; }
+      .settings-main { flex:1; min-width:0; overflow:auto; padding:24px 32px; }
+      .settings-page { display:none; flex-direction:column; gap:24px; }
       .settings-page.on, .searching .settings-page { display:flex; }
-      .settings-page-title { font-size:15px; font-weight:590; color:#1c1c1c; }
-      .settings-page-intro { margin-top:2.5px; max-width:416px; font-size:10.5px; line-height:1.45; color:#6f6f6f; }
+      .settings-page-title { font-size:18px; font-weight:590; color:#1c1c1c; }
+      .settings-page-intro { margin-top:4px; max-width:640px; font-size:12.6px; line-height:1.45; color:#6f6f6f; }
       .searching .settings-page-head, .searching .settings-block-head, .searching .settings-page .settings-empty { display:none; }
-      .settings-results { margin:0 0 10.5px; font-size:12px; font-weight:600; }
+      .settings-results { margin:0 0 16px; font-size:16.2px; font-weight:590; }
       .settings-section {
-        margin:0; padding:10.5px 13px; border:1px solid #e0e0e0; background:#fff;
-        display:flex; flex-direction:column; gap:9px;
+        margin:0; padding:16px 20px; border:1px solid #e0e0e0; background:#fff;
+        display:flex; flex-direction:column; gap:16px;
       }
-      .settings-path { display:none; font-size:10px; color:#6f6f6f; }
+      .settings-path { display:none; font-size:10.8px; color:#6f6f6f; }
       .searching .settings-path, .searching .settings-feature-path { display:block; }
-      .settings-block-title-row { display:flex; align-items:center; gap:6.5px; flex-wrap:wrap; }
-      .settings-section-title { font-size:12px; font-weight:590; color:#1c1c1c; }
+      .settings-block-title-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+      .settings-section-title { font-size:14.4px; font-weight:590; color:#1c1c1c; }
       .settings-block-action { margin-left:auto; display:flex; align-items:center; gap:5px; }
-      .settings-note { margin-top:2.5px; max-width:442px; font-size:10px; line-height:1.45; color:#6f6f6f; }
-      .settings-used-by { margin-top:4px; font-size:10px; color:#6f6f6f; }
-      .settings-empty { padding:10.5px 0; font-size:10px; color:#6f6f6f; }
-      .settings-hint { display:block; margin:0; font-size:10px; line-height:1.45; color:#6f6f6f; }
+      .settings-note { margin-top:4px; max-width:680px; font-size:11.7px; line-height:1.45; color:#6f6f6f; }
+      .settings-used-by { margin-top:6px; font-size:10.8px; color:#6f6f6f; }
+      .settings-empty { padding:16px 0; font-size:12.6px; color:#6f6f6f; }
+      .settings-hint { display:block; margin:0; font-size:12px; line-height:1.45; color:#6f6f6f; }
       .settings-list { margin:0 0 5px; padding-left:11.5px; }
       .settings-list li { margin-bottom:2.5px; }
       .settings-form code {
-        font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:10px; padding:1px 2.5px; background:#f5f5f5; border-radius:2px; color:#1c1c1c;
+        font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11.7px; padding:1px 4px; background:#f5f5f5; border-radius:2px; color:#1c1c1c;
       }
       .settings-field { display:block; }
-      .settings-field .settings-hint { margin-top:2.5px; max-width:416px; }
-      .settings-label { display:block; font-size:10px; font-weight:600; color:#1c1c1c; margin-bottom:2.5px; }
+      .settings-field .settings-hint { margin-top:4px; max-width:640px; }
+      .settings-label { display:block; font-size:13px; font-weight:590; color:#1c1c1c; margin-bottom:4px; }
       .settings-input {
-        width:100%; max-width:338px; box-sizing:border-box; min-height:21px; padding:0 5px; font-size:10px;
-        color:#1c1c1c; border:1px solid #a7a7a7; border-radius:2.5px; background:#fff; font-family:inherit;
+        width:100%; max-width:520px; box-sizing:border-box; min-height:32px; padding:0 8px; font-size:14px;
+        color:#1c1c1c; border:1px solid #a7a7a7; border-radius:4px; background:#fff; font-family:inherit;
       }
-      select.settings-input { max-width:273px; }
+      select.settings-input { max-width:420px; }
       textarea.settings-input {
-        max-width:none; padding:4px 5px; resize:vertical;
-        font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:10px;
+        max-width:none; padding:6px 8px; resize:vertical;
+        font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:13px;
       }
       .settings-input[readonly], .settings-input:disabled { background:#f5f5f5; color:#6f6f6f; border-color:#e0e0e0; }
       .settings-input.invalid { border-color:#de350b; }
-      .settings-input.settings-narrow { width:67.5px; }
-      .settings-row { display:flex; flex-wrap:wrap; align-items:center; gap:5px; }
-      .settings-row-text { font-size:10px; font-weight:600; color:#1c1c1c; }
-      .settings-row .settings-time { width:91px; }
-      .settings-row-hint { margin:2.5px 0 0; }
-      .settings-indent { padding-left:31px; margin-top:-4px; }
-      .settings-toggle { display:flex; align-items:flex-start; gap:8px; cursor:pointer; }
+      .settings-input.settings-narrow { width:96px; }
+      .settings-row { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+      .settings-row-text { font-size:13px; font-weight:600; color:#1c1c1c; }
+      .settings-row .settings-time { width:140px; }
+      .settings-row-hint { margin:4px 0 0; }
+      .settings-indent { padding-left:48px; margin-top:-8px; }
+      .settings-toggle { display:flex; align-items:flex-start; gap:12px; cursor:pointer; }
       .settings-toggle-text { display:flex; flex-direction:column; gap:1.5px; min-width:0; }
       .settings-toggle-text .settings-label { margin:0; }
       .settings-switch {
-        appearance:none; -webkit-appearance:none; flex:none; margin:1px 0 0; width:26px; height:15.5px;
-        border-radius:8px; background:#a7a7a7; position:relative; cursor:pointer; transition:background .12s;
+        appearance:none; -webkit-appearance:none; flex:none; margin:0; width:40px; height:24px;
+        border-radius:12px; background:#a7a7a7; position:relative; cursor:pointer; transition:background .12s;
       }
       .settings-switch::after {
-        content:""; position:absolute; top:1.5px; left:1.5px; width:13px; height:13px; border-radius:50%;
+        content:""; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%;
         background:#fff; transition:transform .12s; box-shadow:0 1px 2px rgba(0,0,0,.3);
       }
       .settings-switch:checked { background:#0067c5; }
-      .settings-switch:checked::after { transform:translateX(10px); }
+      .settings-switch:checked::after { transform:translateX(16px); }
       .settings-switch:focus-visible { outline:2px solid #0067c5; outline-offset:2px; }
       .settings-switch:disabled { opacity:.5; cursor:default; }
-      .field-error { margin-top:2.5px; font-size:10px; line-height:1.4; color:#bf2600; white-space:pre-wrap; }
+      .field-error { margin-top:4px; font-size:12px; line-height:1.4; color:#bf2600; white-space:pre-wrap; }
       .settings-link-button {
-        border:none; background:none; padding:2.5px 5px; font:inherit; font-size:10px; font-weight:600;
+        border:none; background:none; padding:4px 8px; font:inherit; font-size:11.7px; font-weight:590;
         color:#0067c5; cursor:pointer; white-space:nowrap;
       }
       .settings-link-button:hover { background:#f4fbff; color:#1e4a93; }
-      .settings-link { font-size:10px; font-weight:600; color:#0067c5; }
+      .settings-link { font-size:11.7px; font-weight:590; color:#0067c5; }
       .settings-btn {
-        padding:2.5px 8px; font:inherit; font-size:10px; font-weight:600; color:#0067c5; cursor:pointer;
-        background:#fff; border:1px solid #0067c5; border-radius:2.5px; min-height:18px;
+        padding:4px 16px; font:inherit; font-size:12.6px; font-weight:590; color:#0067c5; cursor:pointer;
+        background:#fff; border:1px solid #0067c5; border-radius:4px; min-height:32px;
       }
       .settings-btn:hover:not(:disabled) { background:#f4fbff; }
       .settings-btn:disabled { color:#a7a7a7; border-color:#e0e0e0; cursor:default; }
@@ -2431,42 +2446,42 @@
       .settings-btn.go:hover:not(:disabled) { background:#1e4a93; border-color:#1e4a93; }
       .settings-btn.go:disabled { color:#fff; opacity:.6; }
       .settings-ok { color:#00875A; font-weight:600; }
-      .settings-advanced > summary { margin:0 0 5px; font-size:10px; font-weight:600; color:#0067c5; cursor:pointer; }
+      .settings-advanced > summary { margin:0 0 8px; font-size:12.6px; font-weight:600; color:#0067c5; cursor:pointer; }
       .settings-features { border:1px solid #e0e0e0; background:#fff; }
       .settings-feature { border-bottom:1px solid #e0e0e0; }
       .settings-feature:last-child { border-bottom:none; }
-      .settings-feature-head { display:flex; align-items:center; gap:8px; padding:8px 10.5px; }
-      .settings-feature-label { flex:1; min-width:0; display:flex; align-items:flex-start; gap:10.5px; cursor:pointer; }
-      .settings-feature-label .settings-switch { margin-top:1.5px; }
+      .settings-feature-head { display:flex; align-items:center; gap:16px; padding:12px 16px; }
+      .settings-feature-label { flex:1; min-width:0; display:flex; align-items:center; gap:16px; cursor:pointer; }
+      .settings-feature-label .settings-switch { margin-top:0; }
       .settings-feature-text { min-width:0; }
-      .settings-feature-title { font-size:10.5px; font-weight:590; color:#1c1c1c; }
+      .settings-feature-title { font-size:12.6px; font-weight:590; color:#1c1c1c; }
       .settings-feature-title .status-badge { margin-left:2.5px; vertical-align:1px; }
-      .settings-feature-desc { margin-top:1.5px; font-size:10px; line-height:1.45; color:#6f6f6f; }
-      .settings-feature-problem { margin-top:2.5px; font-size:10px; line-height:1.4; color:#974f0c; }
-      .settings-feature-path { display:none; padding:5px 10.5px 0; font-size:10px; color:#6f6f6f; }
-      .settings-feature-options { display:none; padding:8px 10.5px 13px 44px; background:#f5f5f5; flex-direction:column; gap:10.5px; }
+      .settings-feature-desc { margin-top:2px; font-size:11.7px; line-height:1.4; color:#6f6f6f; }
+      .settings-feature-problem { margin-top:4px; font-size:11.7px; line-height:1.4; color:#974f0c; }
+      .settings-feature-path { display:none; padding:8px 16px 0; font-size:10.8px; color:#6f6f6f; }
+      .settings-feature-options { display:none; padding:8px 16px 20px 72px; background:#f5f5f5; flex-direction:column; gap:16px; }
       .settings-feature.open .settings-feature-options, .searching .settings-feature.force-open .settings-feature-options { display:flex; }
       .searching .settings-feature:not(.force-open) .settings-feature-options { display:none; }
-      .searching .settings-feature.force-open .settings-feature-options { padding-left:10.5px; }
+      .searching .settings-feature.force-open .settings-feature-options { padding-left:16px; }
       .settings-repos.collapsed .settings-repo:nth-child(n+6) { display:none; }
       .settings-repo { margin:0; }
-      .settings-repo + .settings-repo { margin-top:5px; }
-      .settings-repo-line { display:flex; gap:5px; align-items:center; }
+      .settings-repo + .settings-repo { margin-top:8px; }
+      .settings-repo-line { display:flex; gap:12px; align-items:center; }
       .settings-repo-key { flex:0.6 1 0; min-width:0; }
       .settings-repo-path {
-        flex:1 1 0; min-width:0; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:10px;
+        flex:1 1 0; min-width:0; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:10.8px;
       }
       .settings-repo-line .status-badge { flex:0 0 auto; }
       .settings-repos-more { align-self:flex-start; padding-left:0; }
-      .settings-found > summary { margin:0 0 4px; font-size:10px; color:#0067c5; cursor:pointer; }
+      .settings-found > summary { margin:0 0 6px; font-size:11.7px; color:#0067c5; cursor:pointer; }
       .settings-found-item {
-        display:flex; gap:6.5px; align-items:center; justify-content:space-between;
-        padding:4px 0; border-bottom:1px solid #e0e0e0;
+        display:flex; gap:12px; align-items:center; justify-content:space-between;
+        padding:6px 0; border-bottom:1px solid #e0e0e0;
       }
       .settings-found-text { min-width:0; display:flex; flex-direction:column; }
-      .settings-found-key { font-size:10px; font-weight:600; color:#1c1c1c; }
+      .settings-found-key { font-size:12.6px; font-weight:590; color:#1c1c1c; }
       .settings-found-path {
-        font-size:10px; color:#6f6f6f; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+        font-size:10.8px; color:#6f6f6f; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
         font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
       }
       @container (max-width: 560px) {
