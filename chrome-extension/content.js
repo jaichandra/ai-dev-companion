@@ -898,6 +898,10 @@
       void openLiveReport(binding.opt);
       return;
     }
+    if (feature.panelWhileRunning) {
+      void openRunningReport(binding.opt);
+      return;
+    }
 
     // If a feature has an existing completed job, open it instead of starting new
     if (existingJob && existingJob.job && !feature.renderStartForm && !feature.oneShot) {
@@ -1490,12 +1494,15 @@
   async function runOneShotInPanel(opt) {
     const { feature, payload } = opt;
     setPopoverOpen(false);
-    const { body } = openOverlayPanel(feature.menuLabel, { icon: feature.icon || "AI" });
+    const { body, setHeader } = openOverlayPanel(feature.panelTitle || feature.menuLabel, { icon: feature.icon || "AI" });
     const thisPanel = panelHost;
     const render = (state) => {
       if (panelHost !== thisPanel) return false;
       body.textContent = "";
-      body.appendChild(feature.renderOneShotPanel({ payload, ...state }));
+      // A Node, or { node, header } as renderPanel may return.
+      const out = feature.renderOneShotPanel({ payload, ...state });
+      if (!(out instanceof Node) && out.header) setHeader(out.header);
+      body.appendChild(out instanceof Node ? out : out.node);
       return true;
     };
     render({ status: "running" });
@@ -2365,6 +2372,31 @@
       .digest-row.busy > .pai-tile { color:#0067c5; }
       .digest-row a { color:#0052a3; text-decoration:none; }
       .digest-row a:hover { text-decoration:underline; }
+      /* Report cards of the AI Assistant design (paiCard / paiRow in ui-kit.js). */
+      .pai-card { margin:0 0 20px; }
+      .pai-card-head { display:flex; align-items:center; gap:8px; margin:0 0 8px; color:#6f6f6f; }
+      .pai-card-title { font-size:12.6px; font-weight:590; color:#1c1c1c; }
+      .pai-card-count { font-size:10.8px; line-height:16px; color:#6f6f6f; }
+      .pai-card-rows { border:1px solid #e0e0e0; border-radius:4px; background:#fff; overflow:hidden; }
+      .pai-card-rows > * + * { border-top:1px solid #e0e0e0; }
+      .pai-row { display:flex; align-items:center; gap:12px; padding:10px 12px; font-size:12.6px; line-height:18px; color:#1c1c1c; }
+      .pai-row:hover { background:#f5f5f5; }
+      .pai-row-tile {
+        flex:none; display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px;
+        border-radius:4px; background:#f5f5f5; color:#6f6f6f;
+      }
+      .pai-row.ok .pai-row-tile { color:#2a8a4a; }
+      .pai-row.bad .pai-row-tile { color:#c9372c; }
+      .pai-row.warn .pai-row-tile { color:#b25e09; }
+      .pai-row.info .pai-row-tile { color:#0067c5; }
+      .pai-row-text { flex:1; min-width:0; }
+      .pai-row-title { font-weight:590; overflow-wrap:anywhere; }
+      a.pai-row-title { color:#0052a3; text-decoration:none; }
+      a.pai-row-title:hover { text-decoration:underline; }
+      .pai-row-sub { font-size:10.8px; line-height:16px; color:#6f6f6f; overflow-wrap:anywhere; }
+      .pai-row > .status-badge { flex:none; }
+      .pai-foot { display:flex; align-items:center; gap:8px; margin:4px 0 0; padding:12px 0 0; border-top:1px solid #e0e0e0; color:#6f6f6f; font-size:10.8px; line-height:16px; }
+      .pai-prose { margin:0; padding:10px 12px; font-size:12.6px; line-height:1.5; color:#1c1c1c; overflow-wrap:anywhere; }
       .digest-more {
         display:block; width:100%; margin:0; padding:9px 14px; border:none; border-top:1px solid #f0f0f0;
         background:#fafafa; color:#0052a3; font:inherit; font-size:12.5px; font-weight:600;
@@ -2879,7 +2911,9 @@
   // create-jira-subtasks' result after it's run) ----
 
   function showPanel(feature, job, jobKey, live = {}) {
-    const { body, footer, setHeader, setProgress, isOpen } = openOverlayPanel(feature.menuLabel, { icon: feature.icon || "AI" });
+    const { body, footer, setHeader, setProgress, isOpen } = openOverlayPanel(feature.panelTitle || feature.menuLabel, { icon: feature.icon || "AI" });
+    // What the report last said its header shows (rendered.header below), for a live refresh to build on.
+    let reportSubtitle = "";
 
     // Draws the whole panel (body + footer) for `job`. Called once below,
     // and again by a footerAction's api.rerender(job) — e.g. resolve-
@@ -2907,6 +2941,11 @@
       const isWrapped = !(rendered instanceof Node);
       const bodyNode = isWrapped ? rendered.node : rendered;
       const getApprovalPayload = isWrapped ? rendered.getApprovalPayload : undefined;
+      // A panel may also say what its header shows (subtitle, tag, tone), as the design's panels do.
+      if (isWrapped && rendered.header) {
+        setHeader(rendered.header);
+        reportSubtitle = rendered.header.subtitle || "";
+      }
       body.appendChild(bodyNode);
 
       // A failed Approve/Discard can carry a lot of text (e.g. a full lint
@@ -3047,12 +3086,13 @@
         // Optional secondary restart: clear this job and POST /start again
         // with force: true so the companion skips its on-disk cache. Same
         // poll + auto-open path as a fresh menu click (selectOption).
-        if (
-          feature.reanalyzeLabel &&
-          (job.status === "awaiting-approval" || job.status === "failed") &&
-          typeof job.data?.issueKey === "string" &&
-          job.data.issueKey
-        ) {
+        // What the restart sends: the feature's own (reanalyzePayload) or the ticket key.
+        const reanalyzePayload = feature.reanalyzePayload
+          ? feature.reanalyzePayload(job)
+          : typeof job.data?.issueKey === "string" && job.data.issueKey
+            ? { issueKey: job.data.issueKey, force: true }
+            : null;
+        if (feature.reanalyzeLabel && (job.status === "awaiting-approval" || job.status === "failed") && reanalyzePayload) {
           reanalyzeBtn = document.createElement("button");
           reanalyzeBtn.className = "cancel";
           reanalyzeBtn.textContent = feature.reanalyzeLabel;
@@ -3062,10 +3102,15 @@
             if (postCommentBtn) postCommentBtn.disabled = true;
             try {
               await clearStoredJob(jobKey);
+              // A report that opens its panel while it runs does so again, in this panel's place.
+              if (feature.panelWhileRunning) {
+                void openRunningReport({ feature, payload: reanalyzePayload }, jobKey);
+                return;
+              }
               const { job: startedJob } = await sendToBackground({
                 type: "start",
                 featureId: feature.id,
-                payload: { issueKey: job.data.issueKey, force: true },
+                payload: reanalyzePayload,
                 pageUrl: location.href,
               });
               await setStoredJob(jobKey, { jobId: startedJob.id, featureId: feature.id });
@@ -3390,7 +3435,7 @@
     } else {
       renderJob(job);
     }
-    return { renderJob, setHeader, setProgress, isOpen, body };
+    return { renderJob, setHeader, setProgress, isOpen, body, reportSubtitle: () => reportSubtitle };
   }
 
   // ---- Live reports (morning digest, ticket workspace) ----
@@ -3437,6 +3482,52 @@
     }
   }
 
+  // ---- Reports that take a while (diagnose-build: a headless Claude run) ----
+  // The panel opens at the click with a progress bar and a "running" tag, follows the job on the
+  // service, and swaps the report in when it finishes. The job isn't stored for the page, so the
+  // button never gets stuck on it; a second click on the same thing reaches the same job on the
+  // service (the feature's start() returns the one already running or finished).
+
+  const RUNNING_REPORT_POLL_MS = 1500;
+
+  async function openRunningReport(opt, jobKeyOverride) {
+    const { feature, payload } = opt;
+    const ctx = buildPageCtx();
+    const jobKey = jobKeyOverride || storageKey(feature, ctx, opt.match);
+    setPopoverOpen(false);
+    const view = showPanel(feature, { status: "running", data: {} }, jobKey, { loading: feature.runningLabel || "Working…" });
+    view.setProgress(true);
+    view.setHeader(feature.runningHeader ? feature.runningHeader(payload) : { subtitle: "", tag: "Running", tone: "busy" });
+    const showStep = (job) => {
+      const label = job && job.progress && job.progress.label;
+      const line = view.body.querySelector(".settings-loading");
+      if (label && line) line.textContent = label;
+    };
+    try {
+      const { job: started } = await sendToBackground({ type: "start", featureId: feature.id, payload, pageUrl: ctx.url });
+      let job = started;
+      while (view.isOpen() && job.status !== "awaiting-approval" && job.status !== "failed" && job.status !== "rejected") {
+        showStep(job);
+        await new Promise((resolve) => setTimeout(resolve, RUNNING_REPORT_POLL_MS));
+        job = (await sendToBackground({ type: "status", jobId: started.id })).job;
+      }
+      if (!view.isOpen()) return;
+      view.setProgress(false);
+      if (job.status === "rejected") {
+        closePanel();
+        return;
+      }
+      view.renderJob(job);
+      if (job.status === "failed") view.setHeader({ tag: "Couldn't finish", tone: "bad" });
+    } catch (err) {
+      if (isContextInvalidated(err)) return;
+      if (!view.isOpen()) return;
+      view.setProgress(false);
+      view.setHeader({ subtitle: err.message, tag: "Couldn't finish", tone: "bad" });
+      view.renderJob({ status: "failed", data: {}, error: err.message });
+    }
+  }
+
   async function openLiveReport(opt) {
     const { feature, payload } = opt;
     const ctx = buildPageCtx();
@@ -3451,7 +3542,7 @@
 
     const idleHeader = (extra = {}) =>
       view.setHeader({
-        subtitle: savedAt ? `Updated ${liveAgo(savedAt)}` : "",
+        subtitle: [view.reportSubtitle(), savedAt ? `Updated ${liveAgo(savedAt)}` : ""].filter(Boolean).join(" · "),
         tag: "Up to date",
         tone: "ok",
         ...extra,
@@ -3461,7 +3552,11 @@
       if (refreshing || !view.isOpen()) return;
       refreshing = true;
       view.setProgress(true);
-      view.setHeader({ subtitle: savedAt ? `Showing the report from ${liveAgo(savedAt)} · checking for changes…` : "Reading your data…", tag: "Refreshing", tone: "busy" });
+      view.setHeader({
+        subtitle: [view.reportSubtitle(), savedAt ? `Saved ${liveAgo(savedAt)} · checking for changes…` : "Reading your data…"].filter(Boolean).join(" · "),
+        tag: "Refreshing",
+        tone: "busy",
+      });
       try {
         const { job: started } = await sendToBackground({ type: "start", featureId: feature.id, payload, pageUrl: ctx.url });
         let job = started;

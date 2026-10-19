@@ -1126,13 +1126,22 @@ mapping, so only a Bitbucket page's own repo breaks ties. macOS only.
 On a failed or unstable Jenkins build the extension shows a ✨ **Diagnose
 this failed build** row and posts the build URL. The service does not trust
 it: the URL is re-validated (same origin as the configured Jenkins, a plain
-job path, a numeric build) and only the rebuilt URL is used. If a pack offers
-a diagnose command (its `diagnose` hook, usable when it reports itself
-available), Claude Code starts with that; otherwise a plain diagnosis prompt
-about the exact build is used, and Claude Code runs in plan (read-only) mode.
-Both open in a new terminal window (macOS only) with a header; when the shared
-test history is configured, the header lists which failing tests are known
-flaky. The diagnosis is not meant to write anything.
+job path, a numeric build) and only the rebuilt URL is used. The panel opens
+at the click with a progress bar (`panelWhileRunning`, content.js
+`openRunningReport`) and the diagnosis runs headless in the background: the
+analyze-issue run options (read tools, the user's read-only MCP servers, the
+mutating-tool deny list) in a per-build folder under `sessions/`, whose
+session is recorded on the job so **Continue in Claude Code** can reopen it.
+If a pack offers a diagnose command (its `diagnose` hook, usable when it
+reports itself available), its slash command is the prompt and a second,
+tool-less run puts its text into the report's shape; otherwise a plain
+prompt (`buildReportPrompt`) asks for that shape directly. The report
+(`data.report`: summary, likely causes, suspect changes, failing tests with
+flaky ones marked, stage results, next steps) is parsed by `parseReport`
+(plain text when the model ignored the shape) and shown as cards. A second
+click on a build reaches the job already running or finished; Re-diagnose
+sends `force`. When the shared test history is configured, the prompt lists
+which failing tests are known flaky. The diagnosis is read-only.
 
 ### Shared test history (`risk-facts/v1`)
 
@@ -2346,7 +2355,8 @@ Discard button (Ticket to PR uses "Stop tracking").
   configured repo root, so no path outside those repos is opened. The
   editor is launched with an argv array, never a shell string. Diagnose
   re-validates the build URL on the service and uses only the rebuilt URL;
-  the terminal command and prompt are built from argv words. Both routes
+  its report is built from the build's own output, which is data, not
+  instructions (the prompt says so, and the run has no write tools). Both routes
   sit behind the Host guard and the secret. The optional `riskFacts` feed
   is validated (size, types, no control characters) before it can reach a
   prompt.
@@ -2389,8 +2399,8 @@ Discard button (Ticket to PR uses "Stop tracking").
 
 ## Known limitations / open items
 
-- **Open in editor and Diagnose are macOS-only** (they use `open` and a
-  terminal window). Chrome may cut a long selection. A file name that
+- **Open in editor is macOS-only** (it uses `open`; Continue in Claude Code from a
+  diagnosis opens a terminal window). Chrome may cut a long selection. A file name that
   matches several files fails with a list, and only a Bitbucket page's repo
   breaks ties (no Jenkins-job-to-repo mapping).
 - **Background mode is macOS-only.** It's built on launchd, which other

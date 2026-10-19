@@ -15,7 +15,9 @@ function ticketWorkspaceBuildBadge(build) {
   badge.className = `status-badge ${tone}`;
   badge.textContent = label;
   badge.title = `${name || "build"} — ${state}`;
-  badge.style.marginLeft = "6px";
+  badge.style.marginTop = "4px";
+  badge.style.display = "inline-block";
+  badge.style.marginRight = "6px";
   if (href) {
     badge.href = href;
     badge.target = "_blank";
@@ -24,110 +26,91 @@ function ticketWorkspaceBuildBadge(build) {
   return badge;
 }
 
-/** A ticketWorkspaceLine styled as a digest-panel row (tone stripe, 13px). */
-function ticketWorkspaceRow(badgeText, tone, text, href) {
-  const row = ticketWorkspaceLine(badgeText, tone, text, href);
-  row.className = `digest-row ${tone || "neutral"}`;
-  row.removeAttribute("style");
-  return row;
-}
+// A tone of the scan's CI states -> the colour of a row's icon.
+const TICKET_WORKSPACE_ICON_TONES = { ok: "ok", bad: "bad", busy: "info", warn: "warn", neutral: "mute" };
 
-/** A digest-style section card: uppercase header with a count pill, then rows. */
-function ticketWorkspaceCard(title, rows, icon) {
-  const node = renderSection(title, rows);
-  if (!node) return null;
-  if (icon) {
-    node.firstElementChild.dataset.icon = icon;
-    for (const row of rows) if (row.dataset && !row.dataset.icon) row.dataset.icon = icon;
-  }
-  node.removeAttribute("style");
-  node.classList.add("digest-section");
-  const count = document.createElement("span");
-  count.className = "digest-count";
-  count.textContent = String(rows.length);
-  node.firstElementChild.appendChild(count);
-  return node;
+/** The most of a long excerpt a row shows. */
+function ticketWorkspaceClip(text, max) {
+  const flat = String(text || "").replace(/\s+/g, " ").trim();
+  return flat.length > max ? `${flat.slice(0, max - 1)}…` : flat;
 }
 
 function renderTicketWorkspacePanel(job, panelApi) {
-  const container = document.createElement("div");
-  container.className = "digest";
   const ws = job.data?.workspace;
   if (job.status === "failed" || !ws) {
-    const box = document.createElement("pre");
-    box.className = "action-error";
-    box.textContent = job.error || "The scan found nothing to show.";
-    container.appendChild(box);
-    return container;
+    return paiErrorBox(job.error || "The scan found nothing to show.");
   }
-  const headline = document.createElement("div");
-  headline.className = "digest-headline";
-  headline.textContent = job.result?.summary || ws.issueKey;
-  container.appendChild(headline);
 
   const worktrees = (ws.worktrees || []).map((w) => {
     const state = w.exists === false ? ["gone", "neutral"] : w.dirty ? [`${w.changed} changed`, "warn"] : ["clean", "ok"];
     const ahead = w.ahead ? `, ${w.ahead} ahead` : "";
-    const row = ticketWorkspaceRow(state[0], state[1], `${w.repoKey}: ${w.branch || "(detached)"}${ahead} — `);
-    if (w.exists === false || !panelApi) {
-      row.appendChild(document.createTextNode(w.dir));
-      return row;
-    }
-    // A folder isn't a URL: the link asks the service to open it in the editor.
-    const a = document.createElement("a");
-    a.href = "#";
-    a.textContent = w.dir;
-    a.title = "Open in your editor";
-    a.addEventListener("click", async (event) => {
-      event.preventDefault();
-      try {
-        await panelApi.action("open-worktree", { dir: w.dir });
-      } catch (err) {
-        panelApi.showError(err && err.message ? err.message : "Couldn't open the worktree.");
-      }
+    return paiRow({
+      icon: "folder",
+      tone: "info",
+      title: w.dir,
+      sub: `${w.repoKey}: ${w.branch || "(detached)"}${ahead}`,
+      tag: state[0],
+      tagTone: state[1],
+      // A folder isn't a URL: the link asks the service to open it in the editor.
+      ...(w.exists === false || !panelApi
+        ? {}
+        : {
+            hint: "Open in your editor",
+            async onClick() {
+              try {
+                await panelApi.action("open-worktree", { dir: w.dir });
+              } catch (err) {
+                panelApi.showError(err && err.message ? err.message : "Couldn't open the worktree.");
+              }
+            },
+          }),
     });
-    row.appendChild(a);
-    return row;
   });
-  const worktreeSection = ticketWorkspaceCard("Worktrees", worktrees, "folder");
-  if (worktreeSection) container.appendChild(worktreeSection);
 
   const branches = (ws.branches || []).map((b) =>
-    ticketWorkspaceRow(b.remote ? (b.local ? "local + origin" : "origin") : "local only", "neutral", `${b.repoKey}: ${b.name}`),
+    paiRow({
+      icon: "view_tree",
+      tone: b.local ? "info" : "mute",
+      title: b.name,
+      sub: b.repoKey,
+      tag: b.remote ? (b.local ? "local + origin" : "origin") : "local only",
+      tagTone: "neutral",
+    }),
   );
-  const branchSection = ticketWorkspaceCard("Branches", branches, "view_tree");
-  if (branchSection) container.appendChild(branchSection);
 
   const prs = (ws.prs || []).map((p) => {
     const tone = p.build && p.build.state ? TICKET_WORKSPACE_BUILD_TONES[p.build.state] || "neutral" : p.state === "OPEN" ? "ok" : "neutral";
-    const row = ticketWorkspaceRow((p.state || "seen").toLowerCase(), tone, `${p.repoKey} #${p.id} ${p.title || ""}`, p.url);
-    for (const b of (p.build && p.build.builds) || []) row.appendChild(ticketWorkspaceBuildBadge(b));
-    return row;
+    return paiRow({
+      icon: "copy_replicate",
+      tone: TICKET_WORKSPACE_ICON_TONES[tone] || "mute",
+      title: `#${p.id} ${p.title || ""}`.trim(),
+      href: ticketWorkspaceHttpsUrl(p.url) || undefined,
+      sub: p.repoKey,
+      tag: (p.state || "seen").toLowerCase(),
+      tagTone: tone,
+      extra: ((p.build && p.build.builds) || []).map(ticketWorkspaceBuildBadge),
+    });
   });
-  const prSection = ticketWorkspaceCard("Pull requests", prs, "copy_replicate");
-  if (prSection) container.appendChild(prSection);
 
   const analyses = (ws.analyses || []).map((a) =>
-    ticketWorkspaceRow(null, "neutral", `${a.title || a.key}${a.excerpt ? ` — ${a.excerpt}` : ""}`),
+    paiRow({ icon: "file_search", tone: "info", title: a.title || a.key, sub: ticketWorkspaceClip(a.excerpt, 220) }),
   );
-  const analysisSection = ticketWorkspaceCard("Analyses", analyses, "file_search");
-  if (analysisSection) container.appendChild(analysisSection);
+  const sessions = (ws.sessions || []).map((s) =>
+    paiRow({ icon: "chat", tone: "info", title: `${s.permissionMode} session`, sub: s.cwd }),
+  );
+  const notes = (ws.notes || []).map((n) => paiRow({ icon: "notice_triangle", tone: "warn", title: String(n) }));
 
-  const sessions = (ws.sessions || []).map((s) => ticketWorkspaceRow(null, "neutral", `${s.permissionMode} session in ${s.cwd}`));
-  const sessionSection = ticketWorkspaceCard("Claude Code sessions", sessions, "chat");
-  if (sessionSection) container.appendChild(sessionSection);
-
-  const notes = (ws.notes || []).map((n) => ticketWorkspaceRow(null, "warn", String(n)));
-  const noteSection = ticketWorkspaceCard("Couldn't check", notes, "notice_triangle");
-  if (noteSection) container.appendChild(noteSection);
-
-  if (container.childNodes.length === 1) {
-    const none = document.createElement("p");
-    none.className = "digest-when";
-    none.textContent = "Nothing on this machine mentions this ticket yet.";
-    container.appendChild(none);
-  }
-  return container;
+  const cards = [
+    paiCard("Worktrees", "folder", worktrees),
+    paiCard("Branches", "view_tree", branches),
+    paiCard("Pull requests", "copy_replicate", prs),
+    paiCard("Analyses", "file_search", analyses),
+    paiCard("Claude Code sessions", "chat", sessions),
+    paiCard("Couldn't check", "notice_triangle", notes),
+  ];
+  if (!cards.some(Boolean)) cards.push(paiProseCard("Workspace", "workspace", "Nothing on this machine mentions this ticket yet."));
+  // The live refresh adds its own status tag; this is the line under the title.
+  return { node: paiPage(cards, "Read-only. Nothing is changed until you start a fix."), header: { subtitle: job.result?.summary || ws.issueKey } };
 }
 
 const TICKET_WORKSPACE_JIRA_PAGE = /\/browse\/([A-Z][A-Z0-9_]*-\d+)/;

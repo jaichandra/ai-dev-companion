@@ -26,6 +26,7 @@
         "https://jenkins.example.com/*"
       ],
       "js": [
+        "icons.js",
         "diff-viewer.js",
         "open-in-editor.js",
         "settings-panel.js",

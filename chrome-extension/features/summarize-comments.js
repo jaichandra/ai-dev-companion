@@ -4,6 +4,7 @@ PaiRegistry.register({
   site: "issues",
   id: "summarize-comments",
   menuLabel: "Summarize comments",
+  panelTitle: "Comment summary",
   icon: "chat",
   readOnly: true,
   // The summary is kept on the companion (summary-cache) like analyze-issue's
@@ -51,68 +52,48 @@ PaiRegistry.register({
     { id: "summarize", label: "Summarize with Claude" },
   ],
 
-  // Read-only report, laid out like the analyze-issue report: headline,
-  // meta line, then titled sections. Every string is model output or ticket
-  // text — textContent only.
+  // Read-only report: the summary and its lists as cards, like the analyze-issue report. Every string is model
+  // output or ticket text — textContent only.
   renderPanel(job) {
-    const container = document.createElement("div");
     const data = job.data;
     const summary = data?.summary;
     if (job.status === "failed" || !summary || typeof summary !== "object") {
-      const box = document.createElement("pre");
-      box.className = "action-error";
-      box.textContent = job.error || "No summary was produced.";
-      container.appendChild(box);
-      return container;
+      return paiErrorBox(job.error || "No summary was produced.");
     }
 
-    const headline = document.createElement("div");
-    headline.className = "report-headline";
-    headline.textContent = [data.issueKey, data.title].filter(Boolean).join(" — ") || "Comment summary";
-    container.appendChild(headline);
-
-    const meta = document.createElement("div");
-    meta.className = "report-meta";
-    const bits = [`${data.commentCount} comment${data.commentCount === 1 ? "" : "s"}`];
-    if (Number(data.omitted) > 0) bits.push(`${data.omitted} older left out for length`);
-    meta.textContent = bits.join(" · ");
-    container.appendChild(meta);
-
-    if (data.fromCache) {
-      const saved = document.createElement("div");
-      saved.className = "report-meta";
-      saved.style.marginTop = "-8px";
-      const when = formatAnalysisSavedAt(data.completedAt);
-      saved.textContent = when ? `Saved summary · ${when}` : "Saved summary";
-      container.appendChild(saved);
-    }
+    const count = Number(data.commentCount) || 0;
+    const saved = data.fromCache ? formatAnalysisSavedAt(data.completedAt) || "earlier" : "";
+    const header = {
+      subtitle: [
+        [data.issueKey, data.title].filter(Boolean).join(" · "),
+        `${count} comment${count === 1 ? "" : "s"}${Number(data.omitted) > 0 ? ` (${data.omitted} older left out for length)` : ""}`,
+        saved ? `Saved summary · ${saved}` : "",
+      ]
+        .filter(Boolean)
+        .join(" · "),
+      tag: saved ? "Saved" : "Updated",
+      tone: saved ? "neutral" : "busy",
+    };
+    const foot = "Summary only. No comments are posted.";
 
     // The model didn't return the structured shape: show its text as is.
     if (typeof summary.raw === "string" && !summary.tldr) {
-      const pre = document.createElement("pre");
-      pre.className = "action-error";
-      pre.style.background = "#fafbfc";
-      pre.style.borderColor = "#dfe1e6";
-      pre.textContent = summary.raw;
-      container.appendChild(pre);
-      return container;
+      const text = paiProseCard("Summary", "chat", summary.raw);
+      text.querySelector(".pai-prose").style.whiteSpace = "pre-wrap";
+      return { node: paiPage([text], foot), header };
     }
 
-    const tldr = document.createElement("p");
-    tldr.style.lineHeight = "1.5";
-    tldr.style.margin = "0 0 16px";
-    tldr.textContent = summary.tldr || "";
-    const tldrSection = renderSection("Summary", tldr);
-    if (tldrSection) container.appendChild(tldrSection);
-
-    for (const [title, items] of [
-      ["Decisions", summary.decisions],
-      ["Open questions", summary.openQuestions],
-      ["Next steps", summary.nextSteps],
-    ]) {
-      const section = renderSection(title, renderList(items));
-      if (section) container.appendChild(section);
-    }
-    return container;
+    return {
+      node: paiPage(
+        [
+          paiProseCard("Summary", "light_bulb", summary.tldr),
+          paiListCard("Decisions", "check", summary.decisions, "check", "ok"),
+          paiListCard("Open questions", "info", summary.openQuestions, "chat", "warn"),
+          paiListCard("Next steps", "timeline", summary.nextSteps, "arrow_right", "info"),
+        ],
+        foot,
+      ),
+      header,
+    };
   },
 });
