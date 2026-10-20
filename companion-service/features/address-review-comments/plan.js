@@ -78,15 +78,18 @@ function isOpen(c) {
 }
 
 /** Anchored to something Claude can still act on in the PR's current
- * state? A comment on a removed line, the old (FROM) side, a single
- * commit's diff, or an orphaned anchor points at code that isn't in the
- * worktree as-is. An unanchored (general PR) comment is kept. */
+ * state? A comment on a removed line, a single commit's diff, or an
+ * orphaned anchor points at code that isn't in the worktree as-is. The old
+ * (FROM) side only does when the line was removed: Bitbucket also anchors
+ * a comment on an unchanged (CONTEXT) line to the left side when the
+ * reviewer clicked there, and that line is still in the file. An
+ * unanchored (general PR) comment is kept. */
 function isActionableAnchor(anchor) {
   if (!anchor) return true;
   return !(
     anchor.orphaned === true ||
     anchor.lineType === "REMOVED" ||
-    anchor.fileType === "FROM" ||
+    (anchor.fileType === "FROM" && anchor.lineType !== "CONTEXT") ||
     anchor.diffType === "COMMIT"
   );
 }
@@ -114,13 +117,35 @@ function compareComments(a, b) {
  * whoAmI), or null when unknown — then the self-authored drop is skipped
  * rather than guessed at.
  */
-function collectOpenComments(comments, me) {
-  return (Array.isArray(comments) ? comments : [])
-    .filter((c) => c && typeof c === "object" && typeof c.id === "number")
-    .filter(isOpen)
-    .filter((c) => isActionableAnchor(c.anchor))
-    .filter((c) => me == null || c.authorSlug !== me || hasReplyFromOthers(c.replies, me))
-    .sort(compareComments);
+function collectOpenComments(comments, me, onDrop) {
+  const kept = [];
+  for (const c of Array.isArray(comments) ? comments : []) {
+    if (!c || typeof c !== "object" || typeof c.id !== "number") continue;
+    const reason = dropReason(c, me);
+    if (reason) {
+      if (onDrop) onDrop(c, reason);
+    } else {
+      kept.push(c);
+    }
+  }
+  return kept.sort(compareComments);
+}
+
+/** Why `c` isn't one to address, or null if it is. `onDrop` in
+ * collectOpenComments surfaces this so a missing comment can be explained. */
+function dropReason(c, me) {
+  if (!isOpen(c)) return `not open (state ${c.state}, threadResolved ${c.threadResolved})`;
+  if (!isActionableAnchor(c.anchor)) {
+    const a = c.anchor;
+    if (a.orphaned === true) return "anchor is orphaned";
+    if (a.lineType === "REMOVED") return "anchored to a removed line";
+    if (a.fileType === "FROM") return "anchored to the old (FROM) side of the diff";
+    return "anchored to a single commit's diff (diffType COMMIT)";
+  }
+  if (me != null && c.authorSlug === me && !hasReplyFromOthers(c.replies, me)) {
+    return "my own comment with no reply from anyone else";
+  }
+  return null;
 }
 
 /** JSON with every `<`, `>` and backtick \u-escaped: still valid JSON that
@@ -159,6 +184,9 @@ function buildAddressCommentsPrompt(comments, pr, { checkCommands = [] } = {}) {
       author: c.authorName || c.authorSlug || null,
       file: c.anchor ? c.anchor.path || null : null,
       line: c.anchor && typeof c.anchor.line === "number" ? c.anchor.line : null,
+      // A left-side comment counts the old file's lines, which can sit a few
+      // lines off in the current file: find the code by what the comment says.
+      ...(c.anchor && c.anchor.fileType === "FROM" ? { lineIsInOldFile: true } : {}),
       text: c.text || "",
       replies: promptReplies(c.replies),
     })),
