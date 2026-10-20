@@ -130,8 +130,41 @@ test("collectOpenComments: anchor drops", () => {
   assert.equal(keep({ ...a, orphaned: true }), false);
   assert.equal(keep({ ...a, lineType: "REMOVED" }), false);
   assert.equal(keep({ ...a, fileType: "FROM" }), false);
+  assert.equal(
+    keep({ ...a, fileType: "FROM", lineType: "CONTEXT" }),
+    true,
+    "an unchanged line commented on the left side is still in the current file",
+  );
+  assert.equal(keep({ ...a, fileType: "FROM", lineType: "CONTEXT", orphaned: true }), false);
   assert.equal(keep({ ...a, diffType: "COMMIT" }), false);
   assert.equal(keep({ ...a, diffType: "RANGE", lineType: "CONTEXT" }), true);
+});
+
+test("collectOpenComments: onDrop reports each dropped comment and why", () => {
+  const a = comment().anchor;
+  const dropped = [];
+  const kept = collectOpenComments(
+    [
+      comment({ id: 1 }),
+      comment({ id: 2, state: "RESOLVED" }),
+      comment({ id: 3, anchor: { ...a, orphaned: true } }),
+      comment({ id: 4, anchor: { ...a, lineType: "REMOVED" } }),
+      comment({ id: 5, anchor: { ...a, fileType: "FROM" } }),
+      comment({ id: 6, anchor: { ...a, diffType: "COMMIT" } }),
+      comment({ id: 7, authorSlug: "me" }),
+    ],
+    "me",
+    (c, reason) => dropped.push([c.id, reason]),
+  );
+  assert.deepEqual(kept.map((c) => c.id), [1]);
+  assert.deepEqual(dropped, [
+    [2, "not open (state RESOLVED, threadResolved false)"],
+    [3, "anchor is orphaned"],
+    [4, "anchored to a removed line"],
+    [5, "anchored to the old (FROM) side of the diff"],
+    [6, "anchored to a single commit's diff (diffType COMMIT)"],
+    [7, "my own comment with no reply from anyone else"],
+  ]);
 });
 
 test("collectOpenComments: self-authored drop, and me=null skips it", () => {
@@ -185,6 +218,13 @@ test("buildAddressCommentsPrompt carries the instructions and the report format"
   assert.match(prompt, /commentId/);
   assert.match(prompt, /one fenced ```json block/i);
   assert.match(prompt, /PR #42/);
+});
+
+test("buildAddressCommentsPrompt flags a line number that counts the old file's lines", () => {
+  const a = comment().anchor;
+  const fromSide = buildAddressCommentsPrompt([comment({ id: 12, anchor: { ...a, fileType: "FROM", lineType: "CONTEXT" } })], PR);
+  assert.match(fromSide, /"lineIsInOldFile":\s*true/);
+  assert.doesNotMatch(buildAddressCommentsPrompt([comment({ id: 13 })], PR), /lineIsInOldFile/);
 });
 
 test("buildAddressCommentsPrompt lists the check commands it was given and says chaining is blocked", () => {

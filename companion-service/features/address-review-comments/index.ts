@@ -88,7 +88,11 @@ interface ReportEntry {
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const plan = require("./plan.js") as {
   validatePayload(body: unknown): Payload;
-  collectOpenComments(comments: ReviewComment[], me: string | null): ReviewComment[];
+  collectOpenComments(
+    comments: ReviewComment[],
+    me: string | null,
+    onDrop?: (c: ReviewComment, reason: string) => void,
+  ): ReviewComment[];
   buildAddressCommentsPrompt(
     comments: ReviewComment[],
     pr: { id: number; title?: string | null; fromBranch?: string | null; toBranch?: string | null },
@@ -611,7 +615,12 @@ async function runJob(
   checkpoint();
   jobStore.update(jobId, { progress: { stepId: "comments", label: "Collecting open review comments…" } });
   const all = (await host.listActivities(auth, payload.project, payload.repo, payload.prId)) as unknown as ReviewComment[];
-  const comments = plan.collectOpenComments(all, me);
+  const tag = `[address-review-comments] ${payload.project}/${payload.repo}#${payload.prId}`;
+  const comments = plan.collectOpenComments(all, me, (c: ReviewComment, reason: string) => {
+    const where = c.anchor ? ` ${c.anchor.path}:${c.anchor.line} anchor=${JSON.stringify(c.anchor)}` : "";
+    console.log(`${tag}: skipped comment ${c.id} by ${c.authorSlug}${where} — ${reason}`);
+  });
+  console.log(`${tag}: ${all.length} comment(s) fetched, ${comments.length} to address`);
   jobStore.patchData(jobId, { comments });
   if (comments.length === 0) {
     jobStore.update(jobId, {
