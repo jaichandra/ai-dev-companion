@@ -249,3 +249,16 @@ test("a refresh that becomes urgent is announced again; titles lose invisible an
   const clean = n.cleanItem(conflict({ title: "Fi‮x​ed\u0085 it" }), T0, "x");
   assert.equal(clean.title, "Fixed it");
 });
+
+test("eventAt is kept for display (never in the future), survives a refresh, and is absent when not given", () => {
+  const { s, tick } = store();
+  const before = T0 - 3 * 3600 * 1000;
+  assert.equal(s.add(conflict({ key: "a", eventAt: before })).eventAt, before);
+  assert.equal(s.add(conflict({ key: "b", eventAt: T0 + 99999 })).eventAt, T0);
+  assert.equal("eventAt" in s.add(conflict({ key: "c" })), false);
+  tick(1000);
+  const later = T0 - 1000;
+  const refreshed = s.add(conflict({ key: "a", eventAt: later }));
+  assert.equal(refreshed.eventAt, later);
+  assert.equal(refreshed.createdAt, T0);
+});

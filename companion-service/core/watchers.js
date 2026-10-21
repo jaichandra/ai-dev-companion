@@ -219,7 +219,9 @@ function notificationFor(event, outcome) {
     outcome.kind === "fetched"
       ? "The branch is fetched. Open the PR and use ✨ Review PR."
       : `Open the PR and use ✨ Review PR${outcome.reason ? ` (${why(outcome.reason)})` : ""}.`;
-  return { ...base, kind: "review-request", title, body };
+  // The PR's own last-update time, so rows differ by when the review came up, not by when the watcher polled.
+  const eventAt = Number.isFinite(event.pr.updatedAt) ? event.pr.updatedAt : undefined;
+  return { ...base, kind: "review-request", title, body, eventAt };
 }
 
 module.exports = {
