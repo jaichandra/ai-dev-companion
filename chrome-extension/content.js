@@ -923,111 +923,101 @@
     return box;
   }
 
-  /** The slideout: every inbox item with its full text, newest first. */
+  /** The slideout: every inbox item with its full text, newest first, as the design's cards (one per kind). */
   async function openInboxPanel() {
     await refreshInbox(true);
-    const { body, footer, close } = openOverlayPanel("Ready for you", { icon: "AI" });
+    const { body, footer, close, setHeader } = openOverlayPanel("Ready for you", { icon: "AI" });
     const root = document.createElement("div");
     const style = document.createElement("style");
     style.textContent = `
-      .inbox-list { display:flex; flex-direction:column; gap:10px; }
-      .inbox-card { border:1px solid #e0e0e0; border-radius:6px; padding:12px 14px; background:#fff; }
-      .inbox-card.unseen { border-left:3px solid #0067c5; }
-      .inbox-card.urgent { border-left:3px solid #DE350B; }
-      .inbox-meta { display:flex; align-items:center; gap:8px; font-size:11.7px; color:#6f6f6f; margin-bottom:4px; }
-      .inbox-kind { font-weight:590; text-transform:uppercase; letter-spacing:.05em; font-size:10.8px; color:#0067c5; }
-      .inbox-card.urgent .inbox-kind { color:#BF2600; }
-      .inbox-title { font-size:13.5px; line-height:20px; font-weight:590; color:#1c1c1c; overflow-wrap:anywhere; }
-      .inbox-body { margin-top:6px; font-size:12.6px; line-height:18px; color:#42526e; white-space:pre-wrap; overflow-wrap:anywhere; }
-      .inbox-actions { display:flex; gap:8px; margin-top:10px; }
-      .inbox-btn { font:inherit; font-size:12.6px; font-weight:590; padding:5px 12px; border-radius:4px; cursor:pointer; border:1px solid #a7a7a7; background:#fff; color:#1c1c1c; }
-      .inbox-btn:hover { background:#f4fbff; }
-      .inbox-btn.primary { background:#0067c5; border-color:#0067c5; color:#fff; }
-      .inbox-btn.primary:hover { background:#1e4a93; }
-      .inbox-empty { color:#6f6f6f; font-size:13px; padding:16px 0; }
-      .inbox-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-size:12.6px; color:#6f6f6f; }
+      .inbox-row-body { white-space:pre-wrap; margin-top:2px; }
+      .inbox-row-actions { display:flex; gap:12px; margin-top:4px; }
+      .inbox-link { font:inherit; font-size:10.8px; line-height:16px; font-weight:590; padding:0; border:none; background:none; color:#0052a3; cursor:pointer; }
+      .inbox-link:hover { text-decoration:underline; }
+      .inbox-empty { color:#6f6f6f; font-size:12.6px; padding:16px 0; }
     `;
     root.appendChild(style);
-    const top = document.createElement("div");
-    top.className = "inbox-top";
-    const summary = document.createElement("span");
-    const seenAll = document.createElement("button");
-    seenAll.className = "inbox-btn";
-    seenAll.type = "button";
-    seenAll.textContent = "Mark all seen";
-    top.append(summary, seenAll);
-    const list = document.createElement("div");
-    list.className = "inbox-list";
-    root.append(top, list);
     body.appendChild(root);
+
+    function inboxLink(label, onClick) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "inbox-link";
+      btn.textContent = label;
+      btn.addEventListener("click", onClick);
+      return btn;
+    }
+
+    function inboxRow(entry) {
+      const when = liveAgo(entry.updatedAt || entry.createdAt || Date.now());
+      const extra = [];
+      if (entry.body) {
+        const text = document.createElement("div");
+        text.className = "pai-row-sub inbox-row-body";
+        text.textContent = entry.body;
+        extra.push(text);
+      }
+      const actions = document.createElement("div");
+      actions.className = "inbox-row-actions";
+      if (entry.url) {
+        actions.appendChild(inboxLink("Open", () => {
+          close();
+          void openInboxItem(entry);
+        }));
+      }
+      if (!entry.seenAt) {
+        actions.appendChild(inboxLink("Mark seen", async () => {
+          await sendToBackground({ type: "notifications-seen", ids: [entry.id] }).catch(() => {});
+          await refreshInbox(true);
+          render();
+        }));
+      }
+      if (actions.childNodes.length) extra.push(actions);
+      return paiRow({
+        icon: INBOX_KIND_ICONS[entry.kind] || "bell",
+        tone: entry.urgent ? "bad" : entry.seenAt ? "mute" : "info",
+        title: entry.title,
+        sub: when,
+        extra,
+        tag: entry.urgent ? "Urgent" : entry.seenAt ? "" : "New",
+        tagTone: entry.urgent ? "bad" : "busy",
+      });
+    }
 
     function render() {
       const items = inboxItemsNewestFirst();
-      summary.textContent = `${items.length} item${items.length === 1 ? "" : "s"}, ${inboxState.unseen} unseen · newest first`;
-      seenAll.style.display = inboxState.unseen > 0 ? "" : "none";
-      list.textContent = "";
+      setHeader({
+        subtitle: `${items.length} item${items.length === 1 ? "" : "s"}, ${inboxState.unseen} unseen · newest first`,
+      });
+      root.querySelectorAll(":scope > :not(style)").forEach((node) => node.remove());
       if (!items.length) {
         const empty = document.createElement("div");
         empty.className = "inbox-empty";
         empty.textContent = "Nothing is waiting for you.";
-        list.appendChild(empty);
+        root.appendChild(empty);
         return;
       }
-      for (const entry of items) {
-        const card = document.createElement("div");
-        card.className = `inbox-card${entry.urgent ? " urgent" : ""}${entry.seenAt ? "" : " unseen"}`;
-        const meta = document.createElement("div");
-        meta.className = "inbox-meta";
-        const kind = document.createElement("span");
-        kind.className = "inbox-kind";
-        kind.textContent = entry.urgent ? `Urgent · ${INBOX_KIND_LABELS[entry.kind] || "Ready"}` : INBOX_KIND_LABELS[entry.kind] || "Ready";
-        const when = document.createElement("span");
-        when.textContent = liveAgo(entry.updatedAt || entry.createdAt || Date.now());
-        meta.append(kind, when);
-        const title = document.createElement("div");
-        title.className = "inbox-title";
-        title.textContent = entry.title;
-        card.append(meta, title);
-        if (entry.body) {
-          const text = document.createElement("div");
-          text.className = "inbox-body";
-          text.textContent = entry.body;
-          card.appendChild(text);
-        }
-        const actions = document.createElement("div");
-        actions.className = "inbox-actions";
-        if (entry.url) {
-          const open = document.createElement("button");
-          open.className = "inbox-btn primary";
-          open.type = "button";
-          open.textContent = "Open";
-          open.addEventListener("click", () => {
-            close();
-            void openInboxItem(entry);
-          });
-          actions.appendChild(open);
-        }
-        if (!entry.seenAt) {
-          const seen = document.createElement("button");
-          seen.className = "inbox-btn";
-          seen.type = "button";
-          seen.textContent = "Mark seen";
-          seen.addEventListener("click", async () => {
-            await sendToBackground({ type: "notifications-seen", ids: [entry.id] }).catch(() => {});
+      if (inboxState.unseen > 0) {
+        root.appendChild(paiActions([{
+          label: "Mark all seen",
+          icon: "check",
+          onClick: async () => {
+            await sendToBackground({ type: "notifications-seen", all: true }).catch(() => {});
             await refreshInbox(true);
             render();
-          });
-          actions.appendChild(seen);
-        }
-        if (actions.childNodes.length) card.appendChild(actions);
-        list.appendChild(card);
+          },
+        }]));
       }
+      // One card per kind, in the order each kind first appears (newest first).
+      const byKind = new Map();
+      for (const entry of items) {
+        if (!byKind.has(entry.kind)) byKind.set(entry.kind, []);
+        byKind.get(entry.kind).push(entry);
+      }
+      const cards = [...byKind].map(([kind, entries]) =>
+        paiCard(INBOX_KIND_LABELS[kind] || "Ready", INBOX_KIND_ICONS[kind] || "bell", entries.map(inboxRow)));
+      root.appendChild(paiPage(cards));
     }
-    seenAll.addEventListener("click", async () => {
-      await sendToBackground({ type: "notifications-seen", all: true }).catch(() => {});
-      await refreshInbox(true);
-      render();
-    });
     render();
 
     const closeBtn = document.createElement("button");
