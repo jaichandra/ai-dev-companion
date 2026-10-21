@@ -844,7 +844,12 @@
 
   /** The inbox, most recently updated first (urgent items are not pinned: "recent first"). */
   function inboxItemsNewestFirst() {
-    return inboxState.items.slice().sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0));
+    return inboxState.items.slice().sort((a, b) => inboxTime(b) - inboxTime(a));
+  }
+
+  /** The time an inbox row shows: when the PR (or ticket) last changed if the service knows, else when it was added. */
+  function inboxTime(entry) {
+    return entry.eventAt || entry.updatedAt || entry.createdAt || 0;
   }
 
   /** Marks one item opened and goes to its page; the page's own ✨ picks up a pre-warmed job through /jobs/lookup. */
@@ -907,7 +912,7 @@
       line.textContent = entry.title;
       const hint = document.createElement("span");
       hint.className = "row-hint";
-      hint.textContent = `${INBOX_KIND_LABELS[entry.kind] || "Ready"} · ${liveAgo(entry.updatedAt || entry.createdAt || Date.now())}`;
+      hint.textContent = `${INBOX_KIND_LABELS[entry.kind] || "Ready"} · ${liveAgo(inboxTime(entry) || Date.now())}`;
       text.append(line, hint);
       item.append(tile, text);
       if (entry.body) item.title = entry.body;
@@ -954,7 +959,7 @@
     }
 
     function inboxRow(entry) {
-      const when = liveAgo(entry.updatedAt || entry.createdAt || Date.now());
+      const when = liveAgo(inboxTime(entry) || Date.now());
       const extra = [];
       if (entry.body) {
         const text = document.createElement("div");
