@@ -163,5 +163,23 @@
     return box;
   }
 
+  /** Opens Claude Code on a job's worktree, from a button of the report's own (paiActions) rather than the widget
+   * above. `resume` continues the headless run; when that session has expired the service answers 410, and the
+   * user is asked whether to open a fresh terminal there instead. */
+  async function openInClaudeCode(jobId, resume) {
+    try {
+      await sendMessage({ type: "open-in-claude-code", jobId, ...(resume ? { body: { resume: true } } : {}) });
+    } catch (err) {
+      if (resume && err.details && err.details.status === 410) {
+        if (confirm(`${err.message}\n\nOpen a new Claude Code terminal in the worktree instead?`)) {
+          await openInClaudeCode(jobId, false);
+        }
+        return;
+      }
+      alert(`Could not open Claude Code: ${err.message}`);
+    }
+  }
+
   window.renderOpenInEditor = renderOpenInEditor;
+  window.openInClaudeCode = openInClaudeCode;
 })();

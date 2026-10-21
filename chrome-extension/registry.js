@@ -126,7 +126,14 @@
 //                starting (resolve-conflict) — a feature whose /start runs
 //                to completion before responding (create-jira-subtasks)
 //                has nothing to poll, so it has no progressSteps either.
+//   renderPanel's result may carry approveState() -> { label, enabled, hint } | null, which the panel applies to the
+//                Approve button (and again whenever the panel calls api.approvalChanged(), e.g. a ticked reply).
+//   autoRefreshDiff optional; true for a review whose service has a refresh-diff route: while its report lists changed
+//                files it is re-diffed quietly when the panel opens and when the tab regains focus, and redrawn only if
+//                the diff changed. Such a feature keeps no Refresh diff button for a finished review.
 //   panelTitle    optional; the panel's title when it should differ from menuLabel (the design's "Ticket analysis").
+//   hideFooter    optional; true for a read-only report whose renderPanel draws its own buttons (paiActions in ui-kit.js;
+//                the panel's second argument has restart(payload) to run the feature again): no Done/Re-analyze strip.
 //   panelWhileRunning optional; true for a read-only report that runs for a while: the click opens the panel at
 //                once with a progress bar and the tag runningHeader(payload) gives ({ subtitle, tag, tone }),
 //                runningLabel says what is running, and the report replaces it when the job finishes
