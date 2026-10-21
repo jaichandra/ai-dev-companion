@@ -296,6 +296,7 @@
       /* Blueprint tokens */
       --pai-sparkle:${SPARKLE_MASK};
       --pai-icon-digest:${PaiIcons.mask("clipboard")};
+      --pai-icon-settings:${PaiIcons.mask("settings")};
       --pai-accent:#0067c5; --pai-accent-dark:#1e4a93; --pai-accent-bg:#f4fbff;
       --pai-text:#1c1c1c; --pai-muted:#6f6f6f; --pai-border:#e0e0e0; --pai-surface:#f5f5f5; --pai-icon:#1c1c1c; --pai-chev:${PaiIcons.mask("chevron_right")};
       --pai-font:'Segoe UI',-apple-system,BlinkMacSystemFont,system-ui,Roboto,'Helvetica Neue',Arial,sans-serif;
@@ -483,10 +484,14 @@
     .pill-action.secondary:hover { background:var(--pai-accent-bg); }
     .pill-action:disabled { opacity:.6; cursor:default; }
     .flyout-item.completed .row-tile { background:#f2fcf9; color:#48a08b; }
-    .flyout-item.completed .row-tile::before, .flyout-item.saved .row-tile::before {
-      -webkit-mask:none; mask:none; background:none; width:auto; height:auto; content:'✓'; font-weight:700; font-size:11px;
+    /* Done/saved: keep the feature's own icon and pin a small ✓ badge to the tile's corner.
+       Absolutely positioned, so the tile, text and chevron columns never shift. */
+    .row-tile { position:relative; }
+    .flyout-item.completed .row-tile::after, .flyout-item.saved .row-tile::after {
+      content:'✓'; position:absolute; right:-4px; bottom:-4px; width:14px; height:14px; box-sizing:border-box;
+      border-radius:50%; background:#48a08b; color:#fff; border:1.5px solid #fff;
+      font-size:9px; line-height:11px; font-weight:700; text-align:center;
     }
-    .flyout-item.saved .row-tile { color:#48a08b; }
     .flyout-item.failed .row-tile { background:#fff5f5; color:#da1e21; }
     .flyout-item.failed .row-tile::before {
       -webkit-mask:none; mask:none; background:none; width:auto; height:auto; content:'!'; font-weight:700; font-size:11px;
