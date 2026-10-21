@@ -3,24 +3,7 @@
 // with zero build step; tsc still picks it up (allowJs) and copies it
 // into dist/ for index.ts's runtime use after a build.
 
-const fs = require("fs");
-const os = require("os");
 const path = require("path");
-
-const REVIEW_SKILL = "review-pr";
-
-// Where each editor's AI loads agent skills from, project-level first.
-// Only directories that editor actually reads: a skill it can't see would
-// just make the prompt name something the agent doesn't have.
-const SKILL_ROOTS = {
-  "claude-code": (dir, home) => [path.join(dir, ".claude/skills"), path.join(home, ".claude/skills")],
-  cursor: (dir, home) => [path.join(dir, ".cursor/skills"), path.join(home, ".cursor/skills")],
-  vscode: (dir, home) => [
-    path.join(dir, ".github/skills"),
-    path.join(dir, ".claude/skills"),
-    path.join(home, ".copilot/skills"),
-  ],
-};
 
 /**
  * Validates the extension's /start payload: project, repo, and
@@ -47,25 +30,21 @@ function assertPayload(body) {
   };
 }
 
-/** Whether `editor`'s AI can see a review-pr skill, checking the checked-out
- * worktree `dir` before the user's home directory. */
-function hasReviewSkill(editor, dir, { home = os.homedir(), exists = fs.existsSync } = {}) {
-  const roots = SKILL_ROOTS[editor];
-  if (!roots) return false;
-  return roots(dir, home).some((root) => exists(path.join(root, REVIEW_SKILL, "SKILL.md")));
-}
-
 /**
  * The prompt the editor's AI assistant starts the review with. Always a
  * single line: it's typed into a terminal for Claude Code and Cursor Agent,
- * where a newline would submit it early. With `useSkill` it hands the PR
- * URL to the review-pr skill, which needs that URL to fetch the PR, so
- * without a prUrl it falls back to the built-in instructions. Without a
- * target branch the diff is against origin/HEAD (the remote's default
- * branch).
+ * where a newline would submit it early. It names no particular skill: the
+ * agent knows which skills and commands it has (Claude Code lists them in
+ * its own context, so this costs nothing to look up), so it is told to use
+ * the best review one if there is one, given the PR URL when we have it,
+ * and to follow the built-in instructions otherwise. Without a target
+ * branch the diff is against origin/HEAD (the remote's default branch).
+ * With `since` (the sha of the last review) it starts from the new commits.
  */
-function buildReviewPrompt({ sourceBranch, targetBranch, prId, title, prUrl, useSkill, since }) {
+function buildReviewPrompt({ sourceBranch, targetBranch, prId, title, prUrl, since }) {
   const base = targetBranch ? `origin/${targetBranch}` : "origin/HEAD";
+  const pr = describePr(prId, title);
+  const where = `${prUrl ? `${prUrl}; ` : ""}branch ${sourceBranch}, merging into ${targetBranch || "the default branch"}`;
   const checkedOut =
     `The branch is checked out here; run \`git diff ${base}...HEAD\` to see exactly what it changes. ` +
     `Don't modify any files.` +
@@ -73,16 +52,12 @@ function buildReviewPrompt({ sourceBranch, targetBranch, prId, title, prUrl, use
       ? ` This PR was already reviewed at ${since.slice(0, 7)}: start with \`git diff ${since}..HEAD\` (the new commits) ` +
         `and read the rest of the PR only as far as you need to judge them.`
       : "");
-  if (useSkill && prUrl) {
-    return stripControlChars(`Use the ${REVIEW_SKILL} skill to review ${prUrl} . ${checkedOut}`)
-      .replace(/\s+/g, " ")
-      .trim();
-  }
-  const pr = describePr(prId, title);
   const text =
-    `Review pull request ${pr ? pr + " " : ""}(branch ${sourceBranch}, merging into ${targetBranch || "the default branch"}). ` +
+    `Review pull request ${pr ? pr + " " : ""}(${where}). ` +
     `${checkedOut} ` +
-    `Look for bugs, edge cases, security problems, missing tests, and anything hard to follow. ` +
+    `If you have a skill or command for reviewing pull requests or code, check your available skills and use the best match` +
+    `${prUrl ? ", passing it the PR URL if it needs one" : ""}. ` +
+    `Otherwise: look for bugs, edge cases, security problems, missing tests, and anything hard to follow. ` +
     `Report findings grouped by severity, each with a file:line reference.`;
   return stripControlChars(text).replace(/\s+/g, " ").trim();
 }
@@ -207,14 +182,13 @@ function parseDirtyFiles(porcelainStdout) {
 /** The one-shot job's result.summary — the only thing the extension shows
  * the user, since this feature has no review panel of its own (the whole
  * point is that you review it in your own editor instead). */
-function buildSummary({ branch, dir, editorLabel, stashedFiles, reviewNote, usedSkill }) {
+function buildSummary({ branch, dir, editorLabel, stashedFiles, reviewNote }) {
   const stashNote =
     stashedFiles && stashedFiles.length > 0
       ? ` Your uncommitted changes (${stashedFiles.length} file${stashedFiles.length === 1 ? "" : "s"}: ` +
         `${stashedFiles.join(", ")}) were stashed first — run \`git stash pop\` in ${dir} to get them back.`
       : "";
-  const skillNote = usedSkill ? ` It's using your ${REVIEW_SKILL} skill.` : "";
-  const review = reviewNote ? ` ${reviewNote}${skillNote}` : "";
+  const review = reviewNote ? ` ${reviewNote}` : "";
   const opened = editorLabel ? ` and opened it in ${editorLabel}` : "";
   return `Checked out ${branch} in ${dir}${opened}.${review}${stashNote}`;
 }
@@ -225,7 +199,7 @@ function buildSummary({ branch, dir, editorLabel, stashedFiles, reviewNote, used
  * no IDE); `agentLabel` is only set when a review actually started.
  * `tracked` says whether GET /status reports the review's live `session`
  * (terminal-based reviews only). */
-function buildReviewResult({ payload, dir, editor, reviewStarted, reviewNote, usedSkill, stashedFiles, tracked }) {
+function buildReviewResult({ payload, dir, editor, reviewStarted, reviewNote, stashedFiles, tracked }) {
   const known = EDITORS[editor] || { label: editor };
   return {
     prId: payload.prId,
@@ -240,7 +214,6 @@ function buildReviewResult({ payload, dir, editor, reviewStarted, reviewNote, us
     agentLabel: reviewStarted ? known.agent : undefined,
     reviewStarted: !!reviewStarted,
     reviewNote,
-    usedSkill: !!(reviewStarted && usedSkill),
     stashedFiles: stashedFiles || [],
     tracked: !!tracked,
   };
@@ -349,11 +322,9 @@ function decideReuse({ record, head, dir, transcriptExists, isAncestor }) {
 }
 
 module.exports = {
-  REVIEW_SKILL,
   prKey,
   decideReuse,
   assertPayload,
-  hasReviewSkill,
   buildReviewPrompt,
   stripControlChars,
   buildTerminalHeader,
