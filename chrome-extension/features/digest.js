@@ -78,7 +78,7 @@ PaiRegistry.register({
   id: "digest",
   settingsGroups: ["jira", "git"],
   menuLabel: "Morning digest",
-  icon: "light",
+  icon: "clipboard",
   // Not tied to a page: the menu shows it as a header shortcut, not a row.
   global: true,
   readOnly: true,
