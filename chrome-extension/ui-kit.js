@@ -177,3 +177,26 @@ function paiPage(cards, foot) {
   if (foot) page.appendChild(paiFootNote(foot));
   return page;
 }
+
+/** The row of buttons under a report's header: [{ label, icon, primary, onClick }]. */
+function paiActions(items) {
+  const row = document.createElement("div");
+  row.className = "pai-actions";
+  for (const item of items.filter(Boolean)) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `pai-btn${item.primary ? " primary" : ""}`;
+    if (item.icon) btn.appendChild(PaiIcons.el(item.icon, 14.4));
+    btn.appendChild(document.createTextNode(item.label));
+    btn.addEventListener("click", async () => {
+      btn.disabled = true;
+      try {
+        await item.onClick();
+      } finally {
+        btn.disabled = false;
+      }
+    });
+    row.appendChild(btn);
+  }
+  return row;
+}

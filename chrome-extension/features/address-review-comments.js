@@ -72,11 +72,19 @@ function defaultReplyChecked(action) {
   return action === "fixed";
 }
 
-/** "path:line" for an anchored comment, the bare path when Bitbucket gave
- * no line, or a label for a general (unanchored) PR comment. */
-function reviewCommentLocation(anchor) {
+/** A comment's one-line headline for its row: the first line, whitespace collapsed, cut at `max` characters. The
+ * full text is kept by the caller when this shortened it. */
+function reviewCommentHeadline(text, max = 90) {
+  const first = String(text || "").trim().split(/\r?\n/, 1)[0].replace(/\s+/g, " ");
+  return first.length > max ? `${first.slice(0, max - 1).trimEnd()}…` : first;
+}
+
+/** "file.js:42" — the design's subtitle shows the file's name, not its directories. A general (unanchored)
+ * comment says so. */
+function reviewCommentShortLocation(anchor) {
   if (!anchor || !anchor.path) return "General comment";
-  return typeof anchor.line === "number" ? `${anchor.path}:${anchor.line}` : anchor.path;
+  const name = anchor.path.slice(anchor.path.lastIndexOf("/") + 1);
+  return typeof anchor.line === "number" ? `${name}:${anchor.line}` : name;
 }
 
 /** Row-order groups for the review-comments table, first to last. A
@@ -186,6 +194,7 @@ PaiRegistry.register({
   panelTitle: "Review comments",
   icon: "feedback",
   quietCompleted: true,
+  autoRefreshDiff: true,
   // While running, the service may stop to ask where to work when the branch
   // is checked out in the main clone (job.data.pendingChoice).
   repoChoiceAction: "confirm-repo",
@@ -216,7 +225,7 @@ PaiRegistry.register({
     return reviewCommentsMenuPayload(pr, { project, repo, prId });
   },
 
-  renderPanel(job) {
+  renderPanel(job, api) {
     const el = (tag, className, text) => {
       const node = document.createElement(tag);
       if (className) node.className = className;
@@ -245,17 +254,37 @@ PaiRegistry.register({
 
     const prId = job.data?.payload?.prId;
     const prTitle = job.data?.pr?.title;
-    const open = comments.length;
+    // The design's two lists: what is still open (declined, needs discussion, or not reported on) and what
+    // Claude fixed, which it calls Resolved.
+    const isFixed = (comment) => reportById.get(comment.id)?.action === "fixed";
+    const open = comments.filter((comment) => !isFixed(comment)).length;
     const header = {
       subtitle: [prId ? `PR #${prId}` : "", prTitle || ""].filter(Boolean).join(" · "),
-      tag: job.status === "failed" ? "Couldn't finish" : open > 0 ? `${open} addressed` : "No comments",
-      tone: job.status === "failed" ? "bad" : open > 0 ? "warn" : "neutral",
+      tag:
+        job.status === "failed"
+          ? "Couldn't finish"
+          : open > 0
+            ? `${open} open`
+            : comments.length > 0
+              ? "All done"
+              : "No comments",
+      tone: job.status === "failed" ? "bad" : open > 0 ? "busy" : comments.length > 0 ? "ok" : "neutral",
     };
 
-    const rows = comments.map((comment) => {
+    const rowFor = (comment) => {
       const reportEntry = reportById.get(comment.id);
       const badgeInfo = reportEntry ? REVIEW_ACTION_BADGE[reportEntry.action] : null;
+      const fixed = isFixed(comment);
+      const headline = reviewCommentHeadline(comment.text);
       const extra = [];
+      // The title is one line; keep the whole comment one click away when that cut something off.
+      if (String(comment.text || "").trim() !== headline) {
+        const full = document.createElement("details");
+        full.className = "row-detail";
+        full.appendChild(el("summary", null, "Full comment"));
+        full.appendChild(el("pre", "reply-text", comment.text));
+        extra.push(full);
+      }
       if (reportEntry?.note) extra.push(el("div", "pai-row-sub", reportEntry.note));
 
       // Ruled: no replies entry for this comment (e.g. report is null) means no checkbox and no reply —
@@ -266,6 +295,7 @@ PaiRegistry.register({
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
         checkbox.checked = defaultReplyChecked(replyEntry.action);
+        checkbox.addEventListener("change", () => api && api.approvalChanged && api.approvalChanged());
         checkboxByCommentId.set(comment.id, checkbox);
         toggle.appendChild(checkbox);
         toggle.appendChild(document.createTextNode("Reply on push"));
@@ -291,24 +321,40 @@ PaiRegistry.register({
         extra.push(details);
       }
 
+      // Open ones keep what Claude concluded (Needs discussion, Declined); "Open" is the design's tag for a
+      // comment nothing was reported on.
       return paiRow({
-        icon: "chat",
-        tone: badgeInfo ? (badgeInfo.tone === "neutral" ? "mute" : badgeInfo.tone) : "mute",
-        title: comment.text || "",
-        sub: [reviewCommentLocation(comment.anchor), comment.authorName || comment.authorSlug || "Unknown"].join(" · "),
-        tag: badgeInfo ? badgeInfo.text : "No report",
-        tagTone: badgeInfo ? badgeInfo.tone : "neutral",
+        icon: fixed ? "success" : "chat",
+        tone: fixed ? "ok" : "warn",
+        title: headline,
+        sub: [reviewCommentShortLocation(comment.anchor), comment.authorName || comment.authorSlug || "Unknown"].join(" · "),
+        tag: fixed ? "Done" : badgeInfo ? badgeInfo.text : "Open",
+        tagTone: fixed || !badgeInfo ? "busy" : badgeInfo.tone,
         extra,
       });
-    });
+    };
+    const openRows = comments.filter((comment) => !isFixed(comment)).map(rowFor);
+    const resolvedRows = comments.filter(isFixed).map(rowFor);
 
-    // Same gate and widget as resolve-conflict's renderPanel: only while there's still a worktree on disk to
-    // open, and claudeSession swaps its button for "Continue in Claude Code" once set.
-    let worktreeBox = null;
+    // The design's button row. Claude Code opens the worktree (continuing Claude's own session when it can);
+    // only while there's still a worktree on disk to open. A Cursor user's default editor opens it there instead.
     const worktreeDir = job.data?.worktree?.dir;
-    if (worktreeDir && (job.status === "awaiting-approval" || job.status === "failed")) {
-      worktreeBox = window.renderOpenInEditor(worktreeDir, job.id, { claudeSession: job.data?.claudeSession, editor: job.data?.editor });
-    }
+    const canOpenWorktree = worktreeDir && (job.status === "awaiting-approval" || job.status === "failed");
+    const claudeSession = !!job.data?.claudeSession;
+    const prLink = prId && job.data?.payload ? PaiGit.prUrl({ origin: location.origin }, job.data.payload) : null;
+    const buttons = paiActions([
+      canOpenWorktree && job.data?.editor === "cursor"
+        ? { label: "Open in Cursor", icon: "code", primary: true, onClick: () => window.open(`cursor://file${encodeURI(worktreeDir)}`) }
+        : canOpenWorktree
+          ? {
+              label: claudeSession ? "Continue in Claude Code" : "Open in Claude Code",
+              icon: "code",
+              primary: true,
+              onClick: () => window.openInClaudeCode(job.id, claudeSession),
+            }
+          : null,
+      prLink ? { label: "Open PR", icon: "external_link", onClick: () => window.open(prLink, "_blank", "noopener,noreferrer") } : null,
+    ]);
 
     // Ruled: a banner above the diffs for any changed file on a hook, CI, tool-config or script path — approve
     // runs `git commit` with hooks on and unsandboxed. It's a pointer to the likeliest places, not a safety
@@ -344,11 +390,12 @@ PaiRegistry.register({
     });
     const fileCard = paiCard(diffsByCommentId.size > 0 ? "Other changed files" : "Changed files", "edit", fileNodes);
 
-    for (const loose of [worktreeBox, banner]) if (loose) loose.style.marginBottom = "20px";
+    if (banner) banner.style.marginBottom = "20px";
     const cards = [
+      buttons.childElementCount > 0 ? buttons : null,
+      paiCard("Open comments", "chat", openRows),
+      paiCard("Resolved", "check", resolvedRows),
       paiProseCard("Summary", "light_bulb", job.result?.summary),
-      paiCard("Review comments", "chat", rows),
-      worktreeBox,
       banner,
       fileCard,
     ];
@@ -363,6 +410,17 @@ PaiRegistry.register({
       // each with the exact text the table showed — the service itself
       // re-validates commentId against job.data.comments and trims/caps
       // the text, so nothing here needs to duplicate that.
+      // With no changed files, Approve commits and pushes nothing: all it does is post the ticked replies. Say so
+      // on the button, and leave it off while none is ticked.
+      approveState() {
+        if (files.length > 0) return null;
+        const ticked = [...checkboxByCommentId.values()].filter((checkbox) => checkbox.checked).length;
+        return {
+          label: "Post replies",
+          enabled: ticked > 0,
+          hint: ticked > 0 ? "" : "Nothing changed and no reply is ticked, so there is nothing to post. Discard closes this review.",
+        };
+      },
       getApprovalPayload() {
         const replies = [];
         for (const [commentId, checkbox] of checkboxByCommentId) {
@@ -385,8 +443,11 @@ PaiRegistry.register({
     {
       id: "refresh-diff",
       label: "Refresh diff",
+      // A review that lists changed files re-diffs itself (autoRefreshDiff); the button is for a failed one and
+      // for one with no changes listed yet, which don't.
       when(job) {
-        return job.status === "awaiting-approval" || job.status === "failed";
+        if (job.status === "failed") return true;
+        return job.status === "awaiting-approval" && !(job.result?.files?.length > 0);
       },
       async run(job, api) {
         const { job: updatedJob } = await api.send("refresh-diff");

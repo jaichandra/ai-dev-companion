@@ -434,34 +434,32 @@
       width:auto; min-width:18px; height:18px; padding:0 4px; top:-4px; right:-4px; border-radius:9px;
       font:700 11px/14px -apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif; color:#fff; text-align:center;
     }
-    .flyout-inbox {
-      margin:2px 0 8px; padding:2px 0 4px; background:#f7f8fa; border:1px solid var(--pai-border);
-      border-radius:6px;
-    }
+    .flyout-inbox { margin:4px 0 8px; padding:0 0 4px; border-bottom:1px solid var(--pai-border); }
     .flyout-inbox-title {
-      display:flex; align-items:center; justify-content:space-between; padding:6px 10px 4px;
-      font-size:10.5px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--pai-muted);
+      display:flex; align-items:center; justify-content:space-between; padding:8px 16px 6px;
+      font-size:10.8px; font-weight:590; letter-spacing:.06em; text-transform:uppercase; color:var(--pai-muted);
     }
     .flyout-inbox-count {
-      display:inline-block; min-width:16px; margin-left:6px; padding:0 5px; box-sizing:border-box; border-radius:8px;
-      background:var(--pai-accent); color:#fff; font-size:10px; line-height:16px; text-align:center; letter-spacing:0;
+      display:inline-block; min-width:18px; margin-left:8px; padding:0 6px; box-sizing:border-box; border-radius:9px;
+      background:var(--pai-accent); color:#fff; font-size:10.8px; line-height:18px; text-align:center; letter-spacing:0;
     }
-    .flyout-inbox-seen {
-      border:none; background:none; color:var(--pai-accent-dark); font-size:11px; font-weight:500;
-      text-transform:none; letter-spacing:0; cursor:pointer; padding:2px 4px; border-radius:3px;
+    .flyout-inbox-seen, .flyout-inbox-all {
+      border:none; background:none; color:var(--pai-accent); font:inherit; font-size:11.7px; font-weight:590;
+      text-transform:none; letter-spacing:0; cursor:pointer; padding:2px 6px; border-radius:4px;
     }
-    .flyout-inbox-seen:hover { background:#fff; text-decoration:underline; }
-    .flyout-inbox-item {
-      font-size:11px; line-height:1.4; padding:6px 10px; color:#42526e; overflow-wrap:anywhere;
-    }
+    .flyout-inbox-seen:hover, .flyout-inbox-all:hover { background:var(--pai-accent-bg); color:var(--pai-accent-dark); }
+    .flyout-inbox-item { align-items:flex-start; gap:10px; }
+    .flyout-inbox-item .row-tile { width:28px; height:28px; }
+    .flyout-inbox-item .row-text { font-size:12.2px; line-height:18px; font-weight:590; overflow-wrap:anywhere; }
+    .flyout-inbox-item .row-hint { margin-top:1px; }
     /* Clamp on an inner span: on the padded button itself, overflow clips at the padding
        edge and a third line shows through the bottom padding. */
     .flyout-inbox-text {
       display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
     }
-    .flyout-inbox-item + .flyout-inbox-item { border-top:1px solid #eceef1; border-radius:0; }
-    .flyout-inbox-item:hover { background:#fff; color:var(--pai-accent-dark); }
-    .flyout-inbox-item.urgent { font-weight:600; color:#BF2600; border-left-color:#DE350B; }
+    .flyout-inbox-item.urgent .row-tile { background:#ffe9e5; color:#BF2600; }
+    .flyout-inbox-item.urgent .flyout-inbox-text { color:#BF2600; }
+    .flyout-inbox-all { display:block; width:calc(100% - 16px); margin:0 8px; padding:8px; text-align:left; font-size:12.2px; }
 
     .pill-checklist { padding:2px 10px 10px; }
     .pill-step { display:flex; align-items:flex-start; gap:8px; padding:4px 0; font-size:12.5px; color:#42526e; }
@@ -790,7 +788,8 @@
     return JSON.stringify([
       updateOffer ? updateOffer.label : null,
       currentOptions.map((o) => o.feature.id),
-      inboxState.items.slice(0, INBOX_MENU_ITEMS).map((i) => i.id),
+      inboxState.items.length,
+      inboxItemsNewestFirst().slice(0, INBOX_MENU_ITEMS).map((i) => i.id),
       // The "Ready for you (n)" heading shows this count, so a change rebuilds the menu.
       inboxState.unseen,
       // Also rebuild when the set of completed jobs changes
@@ -835,7 +834,37 @@
     fabBadge.style.display = n > 0 || showDot ? "block" : "none";
   }
 
-  /** "Ready for you (N)": the newest inbox items, each opening its page. */
+  const INBOX_KIND_ICONS = { conflict: "code", analysis: "file_search", "review-request": "feedback", digest: "bell" };
+  const INBOX_KIND_LABELS = { conflict: "Merge conflict", analysis: "Analysis", "review-request": "Review requested", digest: "Digest" };
+
+  /** The inbox, most recently updated first (urgent items are not pinned: "recent first"). */
+  function inboxItemsNewestFirst() {
+    return inboxState.items.slice().sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0));
+  }
+
+  /** Marks one item opened and goes to its page; the page's own ✨ picks up a pre-warmed job through /jobs/lookup. */
+  async function openInboxItem(entry) {
+    setPopoverOpen(false);
+    await sendToBackground({ type: "notification-open", id: entry.id }).catch(() => {});
+    await refreshInbox(true);
+    let url = null;
+    try {
+      url = entry.url && new URL(entry.url).protocol === "https:" ? entry.url : null;
+    } catch {
+      url = null;
+    }
+    if (url && url !== location.href) window.open(url, "_blank", "noopener");
+    else scheduleRefresh();
+  }
+
+  async function markAllInboxSeen() {
+    await sendToBackground({ type: "notifications-seen", all: true }).catch(() => {});
+    await refreshInbox(true);
+    flyoutView = null;
+    renderFlyout();
+  }
+
+  /** "Ready for you (N)": the 5 most recent inbox items, each opening its page; "View all" opens the slideout. */
   function renderInboxSection() {
     const box = document.createElement("div");
     box.className = "flyout-inbox";
@@ -851,42 +880,161 @@
     seenAll.className = "flyout-inbox-seen";
     seenAll.type = "button";
     seenAll.textContent = "Mark all seen";
-    seenAll.addEventListener("click", async (event) => {
+    seenAll.addEventListener("click", (event) => {
       event.stopPropagation();
-      await sendToBackground({ type: "notifications-seen", all: true }).catch(() => {});
-      await refreshInbox(true);
-      flyoutView = null;
-      renderFlyout();
+      void markAllInboxSeen();
     });
     title.append(label, seenAll);
     box.appendChild(title);
-    for (const entry of inboxState.items.slice(0, INBOX_MENU_ITEMS)) {
+    const sorted = inboxItemsNewestFirst();
+    for (const entry of sorted.slice(0, INBOX_MENU_ITEMS)) {
       const item = document.createElement("button");
       item.className = `flyout-item flyout-inbox-item${entry.urgent ? " urgent" : ""}`;
       item.type = "button";
+      const tile = document.createElement("span");
+      tile.className = "row-tile";
+      tile.style.setProperty("--pai-row-icon", PaiIcons.mask(INBOX_KIND_ICONS[entry.kind] || "bell"));
       // Server text (PR titles, ticket summaries): textContent only.
       const text = document.createElement("span");
-      text.className = "flyout-inbox-text";
-      text.textContent = entry.title;
-      item.appendChild(text);
+      text.className = "row-text";
+      const line = document.createElement("span");
+      line.className = "row-title flyout-inbox-text";
+      line.textContent = entry.title;
+      const hint = document.createElement("span");
+      hint.className = "row-hint";
+      hint.textContent = `${INBOX_KIND_LABELS[entry.kind] || "Ready"} · ${liveAgo(entry.updatedAt || entry.createdAt || Date.now())}`;
+      text.append(line, hint);
+      item.append(tile, text);
       if (entry.body) item.title = entry.body;
-      item.addEventListener("click", async () => {
-        setPopoverOpen(false);
-        await sendToBackground({ type: "notification-open", id: entry.id }).catch(() => {});
-        await refreshInbox(true);
-        let url = null;
-        try {
-          url = entry.url && new URL(entry.url).protocol === "https:" ? entry.url : null;
-        } catch {
-          url = null;
-        }
-        // The page's own ✨ picks up a pre-warmed job through /jobs/lookup.
-        if (url && url !== location.href) window.open(url, "_blank", "noopener");
-        else scheduleRefresh();
-      });
+      item.addEventListener("click", () => void openInboxItem(entry));
       box.appendChild(item);
     }
+    if (sorted.length > INBOX_MENU_ITEMS) {
+      const all = document.createElement("button");
+      all.className = "flyout-inbox-all";
+      all.type = "button";
+      all.textContent = `View all ${sorted.length} →`;
+      all.addEventListener("click", () => {
+        setPopoverOpen(false);
+        void openInboxPanel();
+      });
+      box.appendChild(all);
+    }
     return box;
+  }
+
+  /** The slideout: every inbox item with its full text, newest first. */
+  async function openInboxPanel() {
+    await refreshInbox(true);
+    const { body, footer, close } = openOverlayPanel("Ready for you", { icon: "AI" });
+    const root = document.createElement("div");
+    const style = document.createElement("style");
+    style.textContent = `
+      .inbox-list { display:flex; flex-direction:column; gap:10px; }
+      .inbox-card { border:1px solid #e0e0e0; border-radius:6px; padding:12px 14px; background:#fff; }
+      .inbox-card.unseen { border-left:3px solid #0067c5; }
+      .inbox-card.urgent { border-left:3px solid #DE350B; }
+      .inbox-meta { display:flex; align-items:center; gap:8px; font-size:11.7px; color:#6f6f6f; margin-bottom:4px; }
+      .inbox-kind { font-weight:590; text-transform:uppercase; letter-spacing:.05em; font-size:10.8px; color:#0067c5; }
+      .inbox-card.urgent .inbox-kind { color:#BF2600; }
+      .inbox-title { font-size:13.5px; line-height:20px; font-weight:590; color:#1c1c1c; overflow-wrap:anywhere; }
+      .inbox-body { margin-top:6px; font-size:12.6px; line-height:18px; color:#42526e; white-space:pre-wrap; overflow-wrap:anywhere; }
+      .inbox-actions { display:flex; gap:8px; margin-top:10px; }
+      .inbox-btn { font:inherit; font-size:12.6px; font-weight:590; padding:5px 12px; border-radius:4px; cursor:pointer; border:1px solid #a7a7a7; background:#fff; color:#1c1c1c; }
+      .inbox-btn:hover { background:#f4fbff; }
+      .inbox-btn.primary { background:#0067c5; border-color:#0067c5; color:#fff; }
+      .inbox-btn.primary:hover { background:#1e4a93; }
+      .inbox-empty { color:#6f6f6f; font-size:13px; padding:16px 0; }
+      .inbox-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-size:12.6px; color:#6f6f6f; }
+    `;
+    root.appendChild(style);
+    const top = document.createElement("div");
+    top.className = "inbox-top";
+    const summary = document.createElement("span");
+    const seenAll = document.createElement("button");
+    seenAll.className = "inbox-btn";
+    seenAll.type = "button";
+    seenAll.textContent = "Mark all seen";
+    top.append(summary, seenAll);
+    const list = document.createElement("div");
+    list.className = "inbox-list";
+    root.append(top, list);
+    body.appendChild(root);
+
+    function render() {
+      const items = inboxItemsNewestFirst();
+      summary.textContent = `${items.length} item${items.length === 1 ? "" : "s"}, ${inboxState.unseen} unseen · newest first`;
+      seenAll.style.display = inboxState.unseen > 0 ? "" : "none";
+      list.textContent = "";
+      if (!items.length) {
+        const empty = document.createElement("div");
+        empty.className = "inbox-empty";
+        empty.textContent = "Nothing is waiting for you.";
+        list.appendChild(empty);
+        return;
+      }
+      for (const entry of items) {
+        const card = document.createElement("div");
+        card.className = `inbox-card${entry.urgent ? " urgent" : ""}${entry.seenAt ? "" : " unseen"}`;
+        const meta = document.createElement("div");
+        meta.className = "inbox-meta";
+        const kind = document.createElement("span");
+        kind.className = "inbox-kind";
+        kind.textContent = entry.urgent ? `Urgent · ${INBOX_KIND_LABELS[entry.kind] || "Ready"}` : INBOX_KIND_LABELS[entry.kind] || "Ready";
+        const when = document.createElement("span");
+        when.textContent = liveAgo(entry.updatedAt || entry.createdAt || Date.now());
+        meta.append(kind, when);
+        const title = document.createElement("div");
+        title.className = "inbox-title";
+        title.textContent = entry.title;
+        card.append(meta, title);
+        if (entry.body) {
+          const text = document.createElement("div");
+          text.className = "inbox-body";
+          text.textContent = entry.body;
+          card.appendChild(text);
+        }
+        const actions = document.createElement("div");
+        actions.className = "inbox-actions";
+        if (entry.url) {
+          const open = document.createElement("button");
+          open.className = "inbox-btn primary";
+          open.type = "button";
+          open.textContent = "Open";
+          open.addEventListener("click", () => {
+            close();
+            void openInboxItem(entry);
+          });
+          actions.appendChild(open);
+        }
+        if (!entry.seenAt) {
+          const seen = document.createElement("button");
+          seen.className = "inbox-btn";
+          seen.type = "button";
+          seen.textContent = "Mark seen";
+          seen.addEventListener("click", async () => {
+            await sendToBackground({ type: "notifications-seen", ids: [entry.id] }).catch(() => {});
+            await refreshInbox(true);
+            render();
+          });
+          actions.appendChild(seen);
+        }
+        if (actions.childNodes.length) card.appendChild(actions);
+        list.appendChild(card);
+      }
+    }
+    seenAll.addEventListener("click", async () => {
+      await sendToBackground({ type: "notifications-seen", all: true }).catch(() => {});
+      await refreshInbox(true);
+      render();
+    });
+    render();
+
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "cancel";
+    closeBtn.textContent = "Close";
+    closeBtn.addEventListener("click", close);
+    footer.appendChild(closeBtn);
   }
 
   /** What clicking a menu entry does; shared by the list rows and the header shortcut. */
@@ -2395,6 +2543,17 @@
       a.pai-row-title:hover { text-decoration:underline; }
       .pai-row-sub { font-size:10.8px; line-height:16px; color:#6f6f6f; overflow-wrap:anywhere; }
       .pai-row > .status-badge { flex:none; }
+      .pai-actions { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 20px; }
+      .pai-btn {
+        display:inline-flex; align-items:center; gap:8px; height:32px; padding:0 12px; border-radius:2px; box-sizing:border-box;
+        border:1px solid #0067c5; background:#fff; color:#0067c5; font:inherit; font-size:11.7px; font-weight:590; cursor:pointer;
+      }
+      .pai-btn:hover { background:#f4fbff; }
+      .pai-btn.primary { background:#0067c5; color:#fff; }
+      .pai-btn.primary:hover { filter:brightness(.9); }
+      .pai-btn:disabled { opacity:.6; cursor:default; }
+      .pai-row-sub a { color:#0052a3; text-decoration:none; }
+      .pai-row-sub a:hover { text-decoration:underline; }
       .pai-foot { display:flex; align-items:center; gap:8px; margin:4px 0 0; padding:12px 0 0; border-top:1px solid #e0e0e0; color:#6f6f6f; font-size:10.8px; line-height:16px; }
       .pai-prose { margin:0; padding:10px 12px; font-size:12.6px; line-height:1.5; color:#1c1c1c; overflow-wrap:anywhere; }
       .digest-more {
@@ -2914,6 +3073,34 @@
     const { body, footer, setHeader, setProgress, isOpen } = openOverlayPanel(feature.panelTitle || feature.menuLabel, { icon: feature.icon || "AI" });
     // What the report last said its header shows (rendered.header below), for a live refresh to build on.
     let reportSubtitle = "";
+    // The job the panel is showing now (renderJob keeps it), for the quiet re-diff below.
+    let shownJob = job;
+
+    // A review that lists changed files can be out of date by the time it is read (the worktree was edited in
+    // Claude Code or an editor). Features with autoRefreshDiff re-diff it in the background when the panel opens
+    // and when this tab is focused again, and redraw only if the diff really changed, so ticked replies and
+    // opened sections aren't lost. A refused or failed refresh (Claude still running, worktree gone) leaves the
+    // report as it was.
+    let refreshingDiff = false;
+    async function refreshDiffQuietly() {
+      if (refreshingDiff || !isOpen()) return;
+      const before = shownJob;
+      if (before.status !== "awaiting-approval" || !(before.result && before.result.files && before.result.files.length)) return;
+      refreshingDiff = true;
+      try {
+        const { job: next } = await sendToBackground({ type: "refresh-diff", featureId: feature.id, jobId: before.id, pageUrl: location.href });
+        if (isOpen() && shownJob === before && liveFingerprint(next.result && next.result.files) !== liveFingerprint(before.result && before.result.files)) renderJob(next);
+      } catch {
+        // keep what is shown
+      } finally {
+        refreshingDiff = false;
+      }
+    }
+    function watchDiff() {
+      refreshDiffQuietly();
+      const onFocus = () => (isOpen() ? refreshDiffQuietly() : window.removeEventListener("focus", onFocus));
+      window.addEventListener("focus", onFocus);
+    }
 
     // Draws the whole panel (body + footer) for `job`. Called once below,
     // and again by a footerAction's api.rerender(job) — e.g. resolve-
@@ -2924,6 +3111,7 @@
     // was already written against "the current job", which is exactly
     // what a rerender needs it to mean.
     function renderJob(job) {
+      shownJob = job;
       body.textContent = "";
       footer.textContent = "";
       footer.style.display = "none";
@@ -2934,9 +3122,22 @@
       // The second argument lets a panel's own links run the feature's
       // actions (e.g. the ticket workspace's worktree rows); footerApi and
       // showActionError are defined below and only used once clicked.
+      // Set below once the Approve button exists; a panel calls api.approvalChanged() when what Approve would do
+      // changes (a reply ticked), so the button's label and enabled state follow its approveState().
+      let syncApprove = () => {};
       const rendered = feature.renderPanel(job, {
+        approvalChanged: () => syncApprove(),
         action: (name, body) => footerApi.action(name, body),
         showError: (text) => showActionError(text),
+        // Starts the feature again with `payload` and hands the page to the new job (what Re-analyze does).
+        async restart(payload) {
+          await clearStoredJob(jobKey);
+          const { job: startedJob } = await sendToBackground({ type: "start", featureId: feature.id, payload, pageUrl: location.href });
+          await setStoredJob(jobKey, { jobId: startedJob.id, featureId: feature.id });
+          autoOpenPanelForJobId = startedJob.id;
+          closePanel();
+          setTimeout(scheduleRefresh, 300);
+        },
       });
       const isWrapped = !(rendered instanceof Node);
       const bodyNode = isWrapped ? rendered.node : rendered;
@@ -2947,6 +3148,8 @@
         reportSubtitle = rendered.header.subtitle || "";
       }
       body.appendChild(bodyNode);
+      // The panel carries its own buttons (and the X closes it): no footer strip.
+      if (feature.hideFooter) return;
 
       // A failed Approve/Discard can carry a lot of text (e.g. a full lint
       // report from a pre-commit hook) — a native alert() truncates/wraps
@@ -3337,7 +3540,18 @@
           const approveBtn = document.createElement("button");
           approveBtn.className = "approve";
           approveBtn.textContent = approveLabel;
+          // A panel can describe the button for what it would do now: { label, enabled, hint } from approveState().
+          let approving = false;
+          syncApprove = () => {
+            if (approving) return;
+            const state = isWrapped && typeof rendered.approveState === "function" ? rendered.approveState() : null;
+            approveBtn.textContent = (state && state.label) || approveLabel;
+            approveBtn.disabled = !!state && state.enabled === false;
+            approveBtn.title = (state && state.hint) || "";
+          };
+          syncApprove();
           approveBtn.addEventListener("click", async () => {
+            approving = true;
             approveBtn.disabled = true;
             const rejectBtn = actions.querySelector(".reject");
             if (rejectBtn) rejectBtn.disabled = true;
@@ -3387,8 +3601,8 @@
                 // fall through to the generic re-enable below.
               }
               showActionError(`${approveLabel} failed:\n\n${err.message}`);
-              approveBtn.disabled = false;
-              approveBtn.textContent = approveLabel;
+              approving = false;
+              syncApprove();
               if (rejectBtn) rejectBtn.disabled = false;
             }
           });
@@ -3434,6 +3648,7 @@
       body.appendChild(loading);
     } else {
       renderJob(job);
+      if (feature.autoRefreshDiff) watchDiff();
     }
     return { renderJob, setHeader, setProgress, isOpen, body, reportSubtitle: () => reportSubtitle };
   }
