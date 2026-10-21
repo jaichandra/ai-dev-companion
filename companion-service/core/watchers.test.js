@@ -135,6 +135,14 @@ test("notificationFor builds one inbox item per event and outcome", () => {
   assert.match(w.notificationFor(review, { kind: "fetch-failed", reason: "no local clone" }).body, /\(no local clone\)/);
 });
 
+test("a review-request item carries the PR's own last-update time, not the poll time", () => {
+  const at = Date.parse("2026-09-28T10:00:00Z");
+  const [review] = w.reviewEvents([PR], "me", {});
+  const item = w.notificationFor({ ...review, pr: { ...review.pr, updatedAt: at } }, { kind: "fetched" });
+  assert.equal(item.eventAt, at);
+  assert.equal(w.notificationFor({ ...review, pr: { ...review.pr, updatedAt: null } }, { kind: "fetched" }).eventAt, undefined);
+});
+
 const fenceCount = (body) => (body.match(/untrusted-event/gi) || []).length;
 const promptFor = (title) => w.triagePrompt(w.conflictEvents([{ ...PR, title }], { [KEY]: { conflicted: true } }, {})[0]).messages[0].content;
 

@@ -68,6 +68,8 @@ function cleanItem(input, now, id) {
     featureId: optionalString(input.featureId, 60),
     createdAt: now,
     updatedAt: now,
+    // When the thing the item is about happened (a PR's last update), if the producer knows; display only.
+    ...(Number.isFinite(input.eventAt) && input.eventAt > 0 ? { eventAt: Math.min(input.eventAt, now) } : {}),
     seenAt: null,
     openedAt: null,
     announcedAt: null,
@@ -178,7 +180,7 @@ function createNotificationStore({ file = null, now = Date.now, fsImpl = fs, idG
         if (existing.seenAt) return null;
         // A refresh that turns urgent (an approval landed) is worth telling again.
         if (item.urgent && !existing.urgent) existing.announcedAt = null;
-        Object.assign(existing, { title: item.title, body: item.body, url: item.url, urgent: item.urgent, jobId: item.jobId, featureId: item.featureId, updatedAt: at });
+        Object.assign(existing, { title: item.title, body: item.body, url: item.url, urgent: item.urgent, jobId: item.jobId, featureId: item.featureId, updatedAt: at, ...(item.eventAt ? { eventAt: item.eventAt } : {}) });
         save();
         return pub(existing);
       }
