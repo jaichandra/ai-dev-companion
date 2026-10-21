@@ -92,9 +92,23 @@ export async function openForReview(
   prompt: string,
   header: HeaderSegment[][] = [],
   options: TerminalOptions = {},
+  /** Claude Code only: `newId` names the new session (so it can be resumed
+   * later), `resumeId` reopens that session instead of starting one. */
+  session: { newId?: string; resumeId?: string } = {},
 ): Promise<ReviewLaunch> {
   if (editor === "claude-code") {
-    const terminal = await openClaudeCodeInTerminal(dir, ["--permission-mode", permissionModeFor("review-in-editor"), prompt], header, options);
+    const mode = ["--permission-mode", permissionModeFor("review-in-editor")];
+    if (session.resumeId) {
+      const terminal = await openClaudeCodeInTerminal(dir, ["--resume", session.resumeId, ...mode], header, options);
+      return {
+        openedEditor: false,
+        reviewStarted: true,
+        reviewNote: "Reopened the last review's Claude Code session in a new terminal window.",
+        terminal,
+      };
+    }
+    const id = session.newId ? ["--session-id", session.newId] : [];
+    const terminal = await openClaudeCodeInTerminal(dir, [...id, ...mode, prompt], header, options);
     return {
       openedEditor: false,
       reviewStarted: true,

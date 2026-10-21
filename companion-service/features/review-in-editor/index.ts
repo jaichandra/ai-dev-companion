@@ -1,4 +1,6 @@
+import * as crypto from "crypto";
 import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
 import type { Config } from "../../config";
 import { repoPath as resolveRepoPath } from "../../config";
@@ -63,7 +65,7 @@ const reviewWorktree = require("../../core/review-worktree.js") as {
 const plan = require("./plan.js") as {
   assertPayload(body: unknown): ReviewPayload;
   hasReviewSkill(editor: EditorId, dir: string): boolean;
-  buildReviewPrompt(args: ReviewPayload & { useSkill: boolean }): string;
+  buildReviewPrompt(args: ReviewPayload & { useSkill: boolean; since?: string }): string;
   buildTerminalHeader(args: ReviewPayload & { editor: EditorId; dir: string }): HeaderSegment[][];
   buildTerminalTitle(args: ReviewPayload): Required<Pick<TerminalOptions, "title" | "badge">>;
   parseDirtyFiles(porcelainStdout: string): string[];
@@ -96,6 +98,32 @@ const plan = require("./plan.js") as {
     state: string,
   ): { code: string; error: string; existing: Record<string, unknown> };
   buildSwitchedResult(live: SessionRecord, focus: string): { summary: string; review: Record<string, unknown> };
+  prKey(payload: ReviewPayload): string;
+  decideReuse(args: {
+    record: ReviewMemory | null;
+    head: string;
+    dir: string;
+    transcriptExists: boolean;
+    isAncestor: boolean;
+  }): { action: "resume"; sessionId: string; reviewedSha: string; reviewedAt: number } | { action: "review"; since?: string };
+};
+
+/** core/review-memory.js's record of a PR's last Claude Code review. */
+interface ReviewMemory {
+  sessionId: string;
+  cwd: string;
+  reviewedSha: string;
+  reviewedAt: number;
+}
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const reviewMemory = require("../../core/review-memory.js") as {
+  readReview(key: string): ReviewMemory | null;
+  writeReview(key: string, record: ReviewMemory): void;
+};
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const resumeHelpers = require("../../core/resume.js") as {
+  sessionTranscriptPath(home: string, cwd: string, id: string): string;
+  realCwdForTranscript(cwd: string): string;
 };
 
 interface ReviewPayload {
@@ -342,7 +370,31 @@ async function runReview(
         "Run `npm run setup` again to pick one.",
     );
   }
-  const useSkill = !!payload.prUrl && plan.hasReviewSkill(editor, dir);
+  // Claude Code reviews are remembered per PR (session id + head reviewed):
+  // an unchanged head reopens that session instead of reviewing again, a
+  // moved one starts a new session told where the last review stopped.
+  const head = remoteRef.stdout.trim();
+  const key = plan.prKey(payload);
+  let reuse: ReturnType<typeof plan.decideReuse> = { action: "review" };
+  if (editor === "claude-code") {
+    const record = reviewMemory.readReview(key);
+    reuse = plan.decideReuse({
+      record,
+      head,
+      dir,
+      transcriptExists:
+        !!record &&
+        fs.existsSync(dir) &&
+        fs.existsSync(resumeHelpers.sessionTranscriptPath(os.homedir(), resumeHelpers.realCwdForTranscript(dir), record.sessionId)),
+      isAncestor:
+        !!record &&
+        (await git(["merge-base", "--is-ancestor", record.reviewedSha, head], repoPath, { allowFailure: true })).code === 0,
+    });
+  }
+  const resumeId = reuse.action === "resume" ? reuse.sessionId : undefined;
+  const since = reuse.action === "review" ? reuse.since : undefined;
+  const newId = editor === "claude-code" && !resumeId ? crypto.randomUUID() : undefined;
+  const useSkill = !resumeId && !!payload.prUrl && plan.hasReviewSkill(editor, dir);
   // Only the Claude Code terminal review can be tracked; the IDE chats
   // (Copilot Chat, Cursor's Agent window) can't.
   const statusFile = editor === "vscode" || editor === "cursor" ? undefined : reviewSession.createStatusFile(job.id);
@@ -351,15 +403,27 @@ async function runReview(
     launch = await openForReview(
       dir,
       editor,
-      plan.buildReviewPrompt({ ...payload, useSkill }),
+      plan.buildReviewPrompt({ ...payload, useSkill, since }),
       plan.buildTerminalHeader({ ...payload, editor, dir }),
       { ...plan.buildTerminalTitle(payload), statusFile },
+      { newId, resumeId },
     );
   } catch (err) {
     if (statusFile) fs.rmSync(statusFile, { force: true });
     throw err;
   }
-  const { openedEditor, reviewStarted, reviewNote } = launch;
+  const { openedEditor, reviewStarted } = launch;
+  let { reviewNote } = launch;
+  if (resumeId && reuse.action === "resume") {
+    reviewNote =
+      `No new commits since your last review (${reuse.reviewedSha.slice(0, 7)}, ` +
+      `${new Date(reuse.reviewedAt).toLocaleString()}), so no new review was started. ${reviewNote}`;
+  } else if (since) {
+    reviewNote = `${reviewNote} It starts from the commits added since your last review (${since.slice(0, 7)}).`;
+  }
+  if (newId && reviewStarted) {
+    reviewMemory.writeReview(key, { sessionId: newId, cwd: dir, reviewedSha: head, reviewedAt: Date.now() });
+  }
   const tracked = !!statusFile && reviewStarted;
   if (!tracked && statusFile) fs.rmSync(statusFile, { force: true });
 
