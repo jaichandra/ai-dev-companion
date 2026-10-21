@@ -64,11 +64,15 @@ function hasReviewSkill(editor, dir, { home = os.homedir(), exists = fs.existsSy
  * target branch the diff is against origin/HEAD (the remote's default
  * branch).
  */
-function buildReviewPrompt({ sourceBranch, targetBranch, prId, title, prUrl, useSkill }) {
+function buildReviewPrompt({ sourceBranch, targetBranch, prId, title, prUrl, useSkill, since }) {
   const base = targetBranch ? `origin/${targetBranch}` : "origin/HEAD";
   const checkedOut =
     `The branch is checked out here; run \`git diff ${base}...HEAD\` to see exactly what it changes. ` +
-    `Don't modify any files.`;
+    `Don't modify any files.` +
+    (since
+      ? ` This PR was already reviewed at ${since.slice(0, 7)}: start with \`git diff ${since}..HEAD\` (the new commits) ` +
+        `and read the rest of the PR only as far as you need to judge them.`
+      : "");
   if (useSkill && prUrl) {
     return stripControlChars(`Use the ${REVIEW_SKILL} skill to review ${prUrl} . ${checkedOut}`)
       .replace(/\s+/g, " ")
@@ -314,8 +318,40 @@ function buildSwitchedResult(live, focus) {
   };
 }
 
+/** Key of a PR's remembered review: repo and PR id, or the branch when
+ * there is no id. */
+function prKey({ project, repo, prId, sourceBranch }) {
+  const hasId = prId !== undefined && prId !== null && prId !== "";
+  return hasId ? `${project}/${repo}#${prId}` : `${project}/${repo}@${sourceBranch}`;
+}
+
+/**
+ * What to do about this PR's last review (`record`: {sessionId, cwd,
+ * reviewedSha, reviewedAt}, or null) given the branch's `head` now:
+ * "resume" that session when the head hasn't moved and its transcript is
+ * still there, in the folder this review would use (`dir`); otherwise a new
+ * "review", told the sha to start from when that sha is still an ancestor
+ * of `head` (not after a force-push). Resuming an old session to review new
+ * commits is deliberately not an option: its whole transcript would be
+ * re-read, usually uncached, to review less than a fresh session would.
+ */
+function decideReuse({ record, head, dir, transcriptExists, isAncestor }) {
+  if (!record || !/^[0-9a-f]{7,64}$/i.test(String(record.reviewedSha))) return { action: "review" };
+  if (
+    record.reviewedSha === head &&
+    transcriptExists &&
+    UUID.test(String(record.sessionId)) &&
+    path.resolve(record.cwd) === path.resolve(dir)
+  ) {
+    return { action: "resume", sessionId: record.sessionId, reviewedSha: record.reviewedSha, reviewedAt: record.reviewedAt };
+  }
+  return record.reviewedSha !== head && isAncestor ? { action: "review", since: record.reviewedSha } : { action: "review" };
+}
+
 module.exports = {
   REVIEW_SKILL,
+  prKey,
+  decideReuse,
   assertPayload,
   hasReviewSkill,
   buildReviewPrompt,

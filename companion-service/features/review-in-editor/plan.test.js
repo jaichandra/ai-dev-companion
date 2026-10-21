@@ -15,6 +15,8 @@ const {
   decideStart,
   buildConflict,
   buildSwitchedResult,
+  prKey,
+  decideReuse,
 } = require("./plan.js");
 
 const PR_URL = "https://bitbucket.example.com/projects/ACME/repos/sample-app/pull-requests/42";
@@ -440,4 +442,44 @@ test("buildSwitchedResult marks the live review's result as switched", () => {
   assert.match(buildSwitchedResult(liveRecord(), "missing").summary, /couldn't be found/);
   assert.match(buildSwitchedResult(liveRecord(), "unknown").summary, /isn't known/);
   assert.match(buildSwitchedResult(liveRecord(), "osascript failed: x").summary, /front: osascript failed: x$/);
+});
+
+const ID = "0f8b2d0e-1c3a-4b5d-9e7f-123456789abc";
+const record = { sessionId: ID, cwd: "/wt/pr-review", reviewedSha: "a".repeat(40), reviewedAt: 1 };
+const base = { record, head: "a".repeat(40), dir: "/wt/pr-review", transcriptExists: true, isAncestor: true };
+
+test("prKey is stable per PR, falling back to the branch without an id", () => {
+  assert.equal(prKey({ project: "P", repo: "r", prId: 7, sourceBranch: "b" }), "P/r#7");
+  assert.equal(prKey({ project: "P", repo: "r", sourceBranch: "b" }), "P/r@b");
+});
+
+test("decideReuse resumes the recorded session when the head is unchanged", () => {
+  assert.deepEqual(decideReuse(base), { action: "resume", sessionId: ID, reviewedSha: record.reviewedSha, reviewedAt: 1 });
+});
+
+test("decideReuse starts a review with no record", () => {
+  assert.deepEqual(decideReuse({ ...base, record: null }), { action: "review" });
+});
+
+test("decideReuse reviews only the new commits when the head moved forward", () => {
+  assert.deepEqual(decideReuse({ ...base, head: "b".repeat(40) }), { action: "review", since: record.reviewedSha });
+});
+
+test("decideReuse does a full review after a force-push", () => {
+  assert.deepEqual(decideReuse({ ...base, head: "b".repeat(40), isAncestor: false }), { action: "review" });
+});
+
+test("decideReuse won't resume a gone transcript, another folder or a bad id", () => {
+  assert.equal(decideReuse({ ...base, transcriptExists: false }).action, "review");
+  assert.equal(decideReuse({ ...base, dir: "/elsewhere" }).action, "review");
+  assert.equal(decideReuse({ ...base, record: { ...record, sessionId: "not-a-uuid" } }).action, "review");
+});
+
+test("buildReviewPrompt points at the new commits when `since` is given", () => {
+  const sha = "abcdef1234567890".padEnd(40, "0");
+  const p = buildReviewPrompt({ sourceBranch: "f", targetBranch: "main", prId: 1, useSkill: false, since: sha });
+  assert.match(p, /already reviewed at abcdef1/);
+  assert.match(p, /git diff abcdef1234567890/);
+  assert.ok(!p.includes("\n"));
+  assert.ok(!buildReviewPrompt({ sourceBranch: "f", useSkill: false }).includes("already reviewed"));
 });
