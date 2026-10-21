@@ -2,7 +2,6 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
   assertPayload,
-  hasReviewSkill,
   buildReviewPrompt,
   buildTerminalHeader,
   buildTerminalTitle,
@@ -43,37 +42,21 @@ test("assertPayload keeps an http(s) prUrl and drops anything else", () => {
   assert.equal(assertPayload({ ...base, prUrl: "javascript:alert(1)" }).prUrl, undefined);
 });
 
-test("hasReviewSkill finds the skill in the editor's home skills directory", () => {
-  const exists = (p) => p === "/home/me/.cursor/skills/review-pr/SKILL.md";
-  assert.equal(hasReviewSkill("cursor", "/wt", { home: "/home/me", exists }), true);
-});
-
-test("hasReviewSkill finds a project-level skill in the checked-out worktree", () => {
-  const exists = (p) => p === "/wt/.claude/skills/review-pr/SKILL.md";
-  assert.equal(hasReviewSkill("claude-code", "/wt", { home: "/home/me", exists }), true);
-});
-
-test("hasReviewSkill ignores another editor's skills directory", () => {
-  const exists = (p) => p === "/home/me/.claude/skills/review-pr/SKILL.md";
-  assert.equal(hasReviewSkill("cursor", "/wt", { home: "/home/me", exists }), false);
-  assert.equal(hasReviewSkill("vscode", "/wt", { home: "/home/me", exists }), false);
-});
-
-test("hasReviewSkill is false for an unknown editor", () => {
-  assert.equal(hasReviewSkill("emacs", "/wt", { home: "/home/me", exists: () => true }), false);
-});
-
-test("buildReviewPrompt hands the PR URL to the review-pr skill when asked to", () => {
-  const prompt = buildReviewPrompt({ sourceBranch: "x", targetBranch: "master", prId: 42, prUrl: PR_URL, useSkill: true });
-  assert.match(prompt, /^Use the review-pr skill to review https:\S+\/pull-requests\/42 \./);
+test("buildReviewPrompt tells the agent to use whichever review skill it has, with the PR URL", () => {
+  const prompt = buildReviewPrompt({ sourceBranch: "x", targetBranch: "master", prId: 42, prUrl: PR_URL });
+  assert.match(prompt, /^Review pull request #42 \(https:\S+\/pull-requests\/42; branch x, merging into master\)\./);
   assert.match(prompt, /git diff origin\/master\.\.\.HEAD/);
   assert.match(prompt, /Don't modify any files/);
-  assert.doesNotMatch(prompt, /grouped by severity/);
+  assert.match(prompt, /If you have a skill or command for reviewing/);
+  assert.match(prompt, /available skills/);
+  assert.match(prompt, /Otherwise: look for bugs/);
+  assert.match(prompt, /grouped by severity/);
+  assert.doesNotMatch(prompt, /review-pr/);
 });
 
-test("buildReviewPrompt falls back to built-in instructions when the skill has no PR URL", () => {
-  const prompt = buildReviewPrompt({ sourceBranch: "x", targetBranch: "master", prId: 42, useSkill: true });
-  assert.doesNotMatch(prompt, /review-pr skill/);
+test("buildReviewPrompt works without a PR URL", () => {
+  const prompt = buildReviewPrompt({ sourceBranch: "x", targetBranch: "master", prId: 42 });
+  assert.match(prompt, /^Review pull request #42 \(branch x, merging into master\)\./);
   assert.match(prompt, /grouped by severity/);
 });
 
@@ -198,18 +181,6 @@ test("buildSummary doesn't claim an editor was opened when none was", () => {
   assert.doesNotMatch(summary, /opened it in/);
 });
 
-test("buildSummary says when the review-pr skill is being used", () => {
-  const summary = buildSummary({
-    branch: "feature/x",
-    dir: "/repo.worktrees/pr-review",
-    editorLabel: "Cursor",
-    stashedFiles: [],
-    reviewNote: "Cursor Agent is reviewing it.",
-    usedSkill: true,
-  });
-  assert.match(summary, /Cursor Agent is reviewing it\. It's using your review-pr skill\./);
-});
-
 test("assertPayload rejects a missing project", () => {
   assert.throws(() => assertPayload({ repo: "sample-app", sourceBranch: "x" }), /project, repo, sourceBranch/);
 });
@@ -331,7 +302,6 @@ test("buildReviewResult lays out a started Cursor review for the extension's pan
     editor: "cursor",
     reviewStarted: true,
     reviewNote: "Cursor Agent is reviewing it.",
-    usedSkill: true,
     stashedFiles: ["a.ts"],
     tracked: true,
   });
@@ -348,23 +318,21 @@ test("buildReviewResult lays out a started Cursor review for the extension's pan
     agentLabel: "Cursor Agent (Ask mode, read-only)",
     reviewStarted: true,
     reviewNote: "Cursor Agent is reviewing it.",
-    usedSkill: true,
     stashedFiles: ["a.ts"],
     tracked: true,
   });
 });
 
-test("buildReviewResult has no IDE link for Claude Code, and no agent or skill when the review didn't start", () => {
+test("buildReviewResult has no IDE link for Claude Code, and no agent when the review didn't start", () => {
   const payload = { sourceBranch: "x" };
-  const claude = buildReviewResult({ payload, dir: "/wt", editor: "claude-code", reviewStarted: true, usedSkill: false });
+  const claude = buildReviewResult({ payload, dir: "/wt", editor: "claude-code", reviewStarted: true });
   assert.equal(claude.openUrl, undefined);
   assert.equal(claude.agentLabel, "Claude Code");
   assert.deepEqual(claude.stashedFiles, []);
 
-  const failed = buildReviewResult({ payload, dir: "/wt", editor: "vscode", reviewStarted: false, usedSkill: true });
+  const failed = buildReviewResult({ payload, dir: "/wt", editor: "vscode", reviewStarted: false });
   assert.equal(failed.openUrl, "vscode://file/wt");
   assert.equal(failed.agentLabel, undefined);
-  assert.equal(failed.usedSkill, false);
   assert.equal(failed.tracked, false);
 });
 
@@ -477,9 +445,9 @@ test("decideReuse won't resume a gone transcript, another folder or a bad id", (
 
 test("buildReviewPrompt points at the new commits when `since` is given", () => {
   const sha = "abcdef1234567890".padEnd(40, "0");
-  const p = buildReviewPrompt({ sourceBranch: "f", targetBranch: "main", prId: 1, useSkill: false, since: sha });
+  const p = buildReviewPrompt({ sourceBranch: "f", targetBranch: "main", prId: 1, since: sha });
   assert.match(p, /already reviewed at abcdef1/);
   assert.match(p, /git diff abcdef1234567890/);
   assert.ok(!p.includes("\n"));
-  assert.ok(!buildReviewPrompt({ sourceBranch: "f", useSkill: false }).includes("already reviewed"));
+  assert.ok(!buildReviewPrompt({ sourceBranch: "f" }).includes("already reviewed"));
 });

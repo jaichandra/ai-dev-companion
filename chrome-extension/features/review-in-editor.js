@@ -173,7 +173,7 @@ PaiRegistry.register({
     const facts = [paiRow({ icon: "code", tone: "info", title: review.editorLabel || review.editor, sub: "Editor" })];
     if (review.agentLabel) facts.push(paiRow({ icon: "AI", tone: "info", title: review.agentLabel, sub: "Reviewer" }));
     if (review.reviewStarted) {
-      facts.push(paiRow({ icon: "file_search", tone: "info", title: review.usedSkill ? "Your review-pr skill" : "Built-in review prompt", sub: "Instructions" }));
+      facts.push(paiRow({ icon: "file_search", tone: "info", title: "Uses your review skills if you have any", sub: "Instructions" }));
     }
     rest.push(paiCard("Setup", "settings", facts));
 

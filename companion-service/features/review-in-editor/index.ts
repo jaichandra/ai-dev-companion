@@ -64,8 +64,7 @@ const reviewWorktree = require("../../core/review-worktree.js") as {
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const plan = require("./plan.js") as {
   assertPayload(body: unknown): ReviewPayload;
-  hasReviewSkill(editor: EditorId, dir: string): boolean;
-  buildReviewPrompt(args: ReviewPayload & { useSkill: boolean; since?: string }): string;
+  buildReviewPrompt(args: ReviewPayload & { since?: string }): string;
   buildTerminalHeader(args: ReviewPayload & { editor: EditorId; dir: string }): HeaderSegment[][];
   buildTerminalTitle(args: ReviewPayload): Required<Pick<TerminalOptions, "title" | "badge">>;
   parseDirtyFiles(porcelainStdout: string): string[];
@@ -75,7 +74,6 @@ const plan = require("./plan.js") as {
     editorLabel?: string;
     stashedFiles: string[];
     reviewNote?: string;
-    usedSkill?: boolean;
   }): string;
   buildReviewResult(args: {
     payload: ReviewPayload;
@@ -83,7 +81,6 @@ const plan = require("./plan.js") as {
     editor: EditorId;
     reviewStarted: boolean;
     reviewNote?: string;
-    usedSkill: boolean;
     stashedFiles: string[];
     tracked: boolean;
   }): Record<string, unknown>;
@@ -394,7 +391,6 @@ async function runReview(
   const resumeId = reuse.action === "resume" ? reuse.sessionId : undefined;
   const since = reuse.action === "review" ? reuse.since : undefined;
   const newId = editor === "claude-code" && !resumeId ? crypto.randomUUID() : undefined;
-  const useSkill = !resumeId && !!payload.prUrl && plan.hasReviewSkill(editor, dir);
   // Only the Claude Code terminal review can be tracked; the IDE chats
   // (Copilot Chat, Cursor's Agent window) can't.
   const statusFile = editor === "vscode" || editor === "cursor" ? undefined : reviewSession.createStatusFile(job.id);
@@ -403,7 +399,7 @@ async function runReview(
     launch = await openForReview(
       dir,
       editor,
-      plan.buildReviewPrompt({ ...payload, useSkill, since }),
+      plan.buildReviewPrompt({ ...payload, since }),
       plan.buildTerminalHeader({ ...payload, editor, dir }),
       { ...plan.buildTerminalTitle(payload), statusFile },
       { newId, resumeId },
@@ -433,7 +429,6 @@ async function runReview(
     editorLabel: openedEditor ? EDITOR_LABELS[editor] : undefined,
     stashedFiles: dirtyFiles,
     reviewNote,
-    usedSkill: reviewStarted && useSkill,
   });
   const review = plan.buildReviewResult({
     payload,
@@ -441,7 +436,6 @@ async function runReview(
     editor,
     reviewStarted,
     reviewNote,
-    usedSkill: useSkill,
     stashedFiles: dirtyFiles,
     tracked,
   });
