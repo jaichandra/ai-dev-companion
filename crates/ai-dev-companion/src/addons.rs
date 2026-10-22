@@ -52,6 +52,9 @@ pub trait JobAddon: Send + Sync {
     async fn stop(&self, job: &Value, config: &Value) -> Result<AddonView, String>;
     /// A page at `origin` says it is still open; whether that origin belongs to a running add-on.
     fn heartbeat(&self, origin: &str) -> bool;
+    /// The service is stopping: stop whatever this add-on runs. Called once, bounded by the
+    /// caller's timeout.
+    async fn shutdown(&self) {}
 }
 
 #[cfg(test)]
