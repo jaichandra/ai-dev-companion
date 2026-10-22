@@ -754,7 +754,7 @@ pub fn build(dist: Distribution) -> Result<Option<Running>, String> {
             handlers
         },
     };
-    let state = Arc::new(AppState::new(port, store.clone(), features.clone(), hooks).with_background(wiring.routes.clone()).with_mcp(Arc::new(McpAdapter { deps: mcp_deps })));
+    let state = Arc::new(AppState::new(port, store.clone(), features.clone(), hooks).with_background(wiring.routes.clone()).with_mcp(Arc::new(McpAdapter { deps: mcp_deps })).with_addons(packs.job_addons(), config.clone()));
     let _ = starter.state.set(state.clone());
     let running = Running {
         router: server::app(state.clone()),

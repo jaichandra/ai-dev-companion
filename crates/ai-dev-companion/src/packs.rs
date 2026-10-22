@@ -578,6 +578,34 @@ mod tests {
         assert!(err(p).contains("pageScripts"));
     }
 
+    struct StubAddon;
+
+    #[async_trait::async_trait]
+    impl crate::addons::JobAddon for StubAddon {
+        fn id(&self) -> &str {
+            "same"
+        }
+        async fn view(&self, _: &Value, _: &Value) -> Option<crate::addons::AddonView> {
+            None
+        }
+        async fn start(&self, _: &Value, _: &Value) -> Result<crate::addons::AddonView, String> {
+            Err("stub".into())
+        }
+        async fn stop(&self, _: &Value, _: &Value) -> Result<crate::addons::AddonView, String> {
+            Err("stub".into())
+        }
+        fn heartbeat(&self, _: &str) -> bool {
+            false
+        }
+    }
+
+    #[test]
+    fn two_add_ons_in_a_pack_cannot_share_an_id() {
+        let mut p = Pack::<()>::new("t", vec![]);
+        p.job_addons = vec![Arc::new(StubAddon), Arc::new(StubAddon)];
+        assert!(err(p).contains("share the id"));
+    }
+
     #[test]
     fn define_pack_checks_the_hooks_a_pack_contributes() {
         let mut p = P::new("p", vec![]);
