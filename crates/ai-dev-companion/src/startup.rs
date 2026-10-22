@@ -46,6 +46,9 @@ use std::time::{Duration, Instant};
 
 const CHECK_OK_TTL: Duration = Duration::from_secs(5 * 60);
 const SHUTDOWN_WAIT: Duration = Duration::from_millis(2000);
+/// How long shutdown waits for the job add-ons to stop what they run (launchd's default
+/// `ExitTimeOut` is 20 s).
+const ADDON_SHUTDOWN_WAIT: Duration = Duration::from_secs(12);
 
 /// What a test (or a dev build) swaps for the real thing.
 #[derive(Default)]
@@ -99,15 +102,34 @@ struct Shutdown {
     scheduler: Arc<crate::scheduler::Scheduler>,
     stop_background: Mutex<Vec<Box<dyn FnOnce() + Send>>>,
     shutting_down: Arc<std::sync::atomic::AtomicBool>,
+    /// The packs' job add-ons (the ones the routes serve), told to stop what they run.
+    addons: Vec<Arc<dyn crate::addons::JobAddon>>,
 }
 
 impl Running {
     /// Freezes job persistence and history first, so the jobs these kills fail are never saved as
     /// "failed: aborted" (their files keep "running" and the next start reconciles them), then stops
-    /// the scheduler and the features' background work and kills detached children.
+    /// the scheduler and the features' background work and kills detached children. The job
+    /// add-ons are told to stop what they run at the start, and waited for (at most 12 s) before
+    /// it returns.
     pub async fn shutdown(&self) {
+        self.shutdown_within(ADDON_SHUTDOWN_WAIT).await;
+    }
+
+    /// [`Running::shutdown`], waiting at most `addon_wait` for the add-ons. One that hangs or
+    /// panics stops neither the others nor the rest of shutdown.
+    pub async fn shutdown_within(&self, addon_wait: Duration) {
         let s = &self.shutdown;
         s.shutting_down.store(true, std::sync::atomic::Ordering::SeqCst);
+        let addons_deadline = tokio::time::Instant::now() + addon_wait;
+        let mut addons: Vec<(String, tokio::task::JoinHandle<()>)> = s
+            .addons
+            .iter()
+            .map(|a| {
+                let a = a.clone();
+                (a.id().to_string(), tokio::spawn(async move { a.shutdown().await }))
+            })
+            .collect();
         s.store.freeze_persistence();
         if let Some(r) = &s.recorder {
             r.freeze();
@@ -120,6 +142,22 @@ impl Running {
         let deadline = Instant::now() + SHUTDOWN_WAIT;
         while crate::exec::detached_child_count() > 0 && Instant::now() < deadline {
             tokio::time::sleep(Duration::from_millis(50)).await;
+        }
+        let waited = tokio::time::timeout_at(addons_deadline, async {
+            for (id, handle) in addons.iter_mut() {
+                if let Err(e) = handle.await {
+                    warn(&format!("add-on {id} failed while stopping: {e}"));
+                }
+            }
+        })
+        .await;
+        if waited.is_err() {
+            for (id, handle) in &addons {
+                if !handle.is_finished() {
+                    warn(&format!("add-on {id} did not stop within {}s", addon_wait.as_secs_f32()));
+                    handle.abort();
+                }
+            }
         }
     }
 
@@ -754,13 +792,14 @@ pub fn build(dist: Distribution) -> Result<Option<Running>, String> {
             handlers
         },
     };
-    let state = Arc::new(AppState::new(port, store.clone(), features.clone(), hooks).with_background(wiring.routes.clone()).with_mcp(Arc::new(McpAdapter { deps: mcp_deps })).with_addons(packs.job_addons(), config.clone()));
+    let addons = packs.job_addons();
+    let state = Arc::new(AppState::new(port, store.clone(), features.clone(), hooks).with_background(wiring.routes.clone()).with_mcp(Arc::new(McpAdapter { deps: mcp_deps })).with_addons(addons.clone(), config.clone()));
     let _ = starter.state.set(state.clone());
     let running = Running {
         router: server::app(state.clone()),
         state,
         port,
-        shutdown: Arc::new(Shutdown { store, recorder, scheduler: wiring.scheduler.clone(), stop_background: Mutex::new(vec![]), shutting_down }),
+        shutdown: Arc::new(Shutdown { store, recorder, scheduler: wiring.scheduler.clone(), stop_background: Mutex::new(vec![]), shutting_down, addons }),
     };
     running.start_background(persist_jobs, &features);
     if let Some(stop) = cfg.start_update_checks() {
@@ -911,6 +950,82 @@ mod tests {
         // No MCP token is saved in this temp home, so the endpoint is not available.
         assert!(matches!(res.status().as_u16(), 401 | 403 | 503), "{}", res.status());
         running.shutdown().await;
+    }
+
+    /// An add-on whose `shutdown` records that it ran, then takes `takes` (or panics).
+    struct StoppingAddon {
+        id: &'static str,
+        stopped: Arc<std::sync::atomic::AtomicUsize>,
+        takes: Duration,
+        panics: bool,
+    }
+
+    #[async_trait]
+    impl crate::addons::JobAddon for StoppingAddon {
+        fn id(&self) -> &str {
+            self.id
+        }
+        async fn view(&self, _: &Value, _: &Value) -> Option<crate::addons::AddonView> {
+            None
+        }
+        async fn start(&self, _: &Value, _: &Value) -> Result<crate::addons::AddonView, String> {
+            Err("stub".into())
+        }
+        async fn stop(&self, _: &Value, _: &Value) -> Result<crate::addons::AddonView, String> {
+            Err("stub".into())
+        }
+        fn heartbeat(&self, _: &str) -> bool {
+            false
+        }
+        async fn shutdown(&self) {
+            self.stopped.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            if self.panics {
+                panic!("an add-on that panics while stopping");
+            }
+            tokio::time::sleep(self.takes).await;
+        }
+    }
+
+    fn fx_with_addons(addons: Vec<Arc<dyn crate::addons::JobAddon>>) -> Fx {
+        let mut f = fx(base_config());
+        let mut pack = crate::packs::builtin::pack(&SetupContext { token_detector: None, token_tool: String::new() }).unwrap();
+        pack.job_addons = addons;
+        f.dist.packs = Arc::new(PackRegistry::new(vec![pack]).unwrap());
+        f
+    }
+
+    fn stopping(id: &'static str, takes: Duration, panics: bool) -> (Arc<StoppingAddon>, Arc<std::sync::atomic::AtomicUsize>) {
+        let stopped = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        (Arc::new(StoppingAddon { id, stopped: stopped.clone(), takes, panics }), stopped)
+    }
+
+    #[tokio::test]
+    async fn shutting_the_service_down_stops_every_job_add_on_once() {
+        let (a, a_stopped) = stopping("a", Duration::ZERO, false);
+        let (b, b_stopped) = stopping("b", Duration::ZERO, false);
+        let f = fx_with_addons(vec![a, b]);
+        let running = build(f.dist).unwrap().unwrap();
+        running.shutdown().await;
+        assert_eq!(a_stopped.load(std::sync::atomic::Ordering::SeqCst), 1);
+        assert_eq!(b_stopped.load(std::sync::atomic::Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn an_add_on_that_hangs_or_panics_while_stopping_neither_holds_up_shutdown_nor_skips_the_others() {
+        let (hangs, hangs_stopped) = stopping("hangs", Duration::from_secs(60), false);
+        let (panics, panics_stopped) = stopping("panics", Duration::ZERO, true);
+        let (fine, fine_stopped) = stopping("fine", Duration::ZERO, false);
+        let f = fx_with_addons(vec![hangs, panics, fine]);
+        let running = build(f.dist).unwrap().unwrap();
+        let started = Instant::now();
+        running.shutdown_within(Duration::from_millis(300)).await;
+        let took = started.elapsed();
+        assert!(took < Duration::from_secs(5), "shutdown waited {took:?} for a hung add-on");
+        for (name, n) in [("hangs", &hangs_stopped), ("panics", &panics_stopped), ("fine", &fine_stopped)] {
+            assert_eq!(n.load(std::sync::atomic::Ordering::SeqCst), 1, "{name}");
+        }
+        // The rest of shutdown still ran.
+        assert!(running.shutdown.shutting_down.load(std::sync::atomic::Ordering::SeqCst));
     }
 
     #[tokio::test]
