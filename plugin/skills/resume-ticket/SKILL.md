@@ -7,7 +7,7 @@ allowed-tools: Bash(companion status:*), Bash(companion history:*), Bash(compani
 # Resume a ticket
 
 1. Run `companion status`. If the service **isn't running** (or `companion` is not found),
-   tell the user **"companion service not running"**, suggest `companion doctor` (if `companion` is not found, `node ~/ai-dev-companion/companion-service/bin/companion.js doctor`), and stop.
+   tell the user **"companion service not running"**, suggest `companion doctor` (if `companion` is not found, the binary in the install folder's `bin/`, e.g. `~/ai-dev-companion/bin/<binary> doctor`), and stop.
 2. Call the `ticket_workspace` tool of the **ai-companion** MCP server with the issue key
    (e.g. `PROJ-1234`). If that tool isn't available, run `companion history PROJ-1234` instead.
 3. Report what exists on this machine: worktree and branch (uncommitted changes, commits

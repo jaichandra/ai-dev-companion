@@ -1,0 +1,63 @@
+{
+ "readOnly": [
+  "-p",
+  "p q",
+  "--model",
+  "m",
+  "--permission-mode",
+  "bypassPermissions",
+  "--allowedTools",
+  "Read Glob Grep WebFetch WebSearch Bash(git log:*) Bash(git blame:*) Bash(git show:*) mcp__wiki",
+  "--output-format",
+  "stream-json",
+  "--tools",
+  "Read,Glob,Grep,WebFetch,WebSearch,Bash",
+  "--verbose",
+  "--session-id",
+  "sid",
+  "--disallowedTools",
+  "d1 Read(//x)",
+  "--settings",
+  "{\"hooks\":{\"PreToolUse\":[{\"matcher\":\"mcp__.*\",\"hooks\":[{\"type\":\"command\",\"command\":\"<cmd>\"}]}]},\"sandbox\":{\"enabled\":true,\"allowUnsandboxedCommands\":false,\"failIfUnavailable\":true,\"filesystem\":{\"denyRead\":[\"/r\"],\"denyWrite\":[\"/w\",\"/c\"]}}}"
+ ],
+ "worktreeWrite": [
+  "-p",
+  "p",
+  "--permission-mode",
+  "bypassPermissions",
+  "--allowedTools",
+  "Read Edit Write Bash Glob Grep",
+  "--output-format",
+  "json",
+  "--tools",
+  "Read,Edit,Write,Bash,Glob,Grep",
+  "--settings",
+  "{\"hooks\":{\"PreToolUse\":[{\"matcher\":\"Edit|Write|MultiEdit|NotebookEdit\",\"hooks\":[{\"type\":\"command\",\"command\":\"<cmd>\"}]},{\"matcher\":\"Read|Glob|Grep\",\"hooks\":[{\"type\":\"command\",\"command\":\"<cmd>\"}]}]},\"sandbox\":{\"enabled\":true,\"allowUnsandboxedCommands\":false,\"failIfUnavailable\":true,\"filesystem\":{\"denyRead\":[],\"allowWrite\":[\"/a\"]}}}"
+ ],
+ "worktreeWriteNarrowBash": [
+  "-p",
+  "p",
+  "--permission-mode",
+  "bypassPermissions",
+  "--allowedTools",
+  "Read Edit Write Glob Grep Bash(git diff:*) Bash(git status:*) Bash(npm test:*)",
+  "--output-format",
+  "json",
+  "--tools",
+  "Read,Edit,Write,Glob,Grep,Bash",
+  "--settings",
+  "{\"hooks\":{\"PreToolUse\":[{\"matcher\":\"Edit|Write|MultiEdit|NotebookEdit\",\"hooks\":[{\"type\":\"command\",\"command\":\"<cmd>\"}]},{\"matcher\":\"Read|Glob|Grep\",\"hooks\":[{\"type\":\"command\",\"command\":\"<cmd>\"}]},{\"matcher\":\"Bash\",\"hooks\":[{\"type\":\"command\",\"command\":\"<cmd>\"}]}]},\"sandbox\":{\"enabled\":true,\"allowUnsandboxedCommands\":false,\"failIfUnavailable\":true,\"filesystem\":{\"denyRead\":[],\"denyWrite\":[\"/x\"]}}}"
+ ],
+ "noTools": [
+  "-p",
+  "p",
+  "--permission-mode",
+  "bypassPermissions",
+  "--allowedTools",
+  "",
+  "--output-format",
+  "json",
+  "--tools",
+  ""
+ ]
+}

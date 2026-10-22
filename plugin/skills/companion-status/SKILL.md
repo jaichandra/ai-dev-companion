@@ -9,7 +9,7 @@ allowed-tools: Bash(companion status:*), Bash(companion inbox:*), Bash(companion
 1. Run `companion status`.
    - If it says the service **isn't running**, or `companion` is not found, tell the user
      **"companion service not running"**, suggest `companion doctor` (if `companion` is not found, the same
-     check runs as `node ~/ai-dev-companion/companion-service/bin/companion.js doctor`; or install with `node install.js`), and stop. Never skip this or report success without an answer.
+     check runs as the binary in the install folder's `bin/`, e.g. `~/ai-dev-companion/bin/<binary> doctor`; or install with the distribution's `install` command), and stop. Never skip this or report success without an answer.
 2. Run `companion inbox` for what the background watchers prepared.
 3. Summarise: running jobs (feature, status, the PR or ticket), then unseen inbox items.
 

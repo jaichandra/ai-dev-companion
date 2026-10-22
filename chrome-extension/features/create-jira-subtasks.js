@@ -41,7 +41,7 @@ function attachAssigneeAutocomplete(input, issueKey) {
     }
   }
 
-  // "Jai Langoju (jlangoju)" — same format the dropdown itself renders
+  // "Jane Doe (jdoe)" — same format the dropdown itself renders
   // (as two separately styled spans there; here as one string, since an
   // <input> can't hold rich markup).
   function formatUserDisplay(user) {
@@ -119,7 +119,7 @@ function attachAssigneeAutocomplete(input, issueKey) {
         //
         // Deliberately /rest/api/2/user/picker, not .../user/assignable/search:
         // the latter's `query` only prefix-matches the *username*, so
-        // searching a real display name ("Jai" for "Jai Langoju") returns
+        // searching a real display name ("Jane" for "Jane Doe") returns
         // an unfiltered/default list instead of a match. /user/picker is
         // what Jira Server's own Assignee field calls while you type, and
         // does real substring matching across display name, username, and

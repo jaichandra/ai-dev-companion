@@ -1,0 +1,507 @@
+{
+  "pr:pull-request.json": {
+    "id": 42,
+    "version": null,
+    "title": "Fix the flaky login test",
+    "state": "OPEN",
+    "fromBranch": "fix/login-test",
+    "fromSha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+    "fromRepo": {
+      "projectKey": "Octo",
+      "slug": "hello"
+    },
+    "toBranch": "main",
+    "toSha": "0f1e2d3c4b5a69788796a5b4c3d2e1f001122334",
+    "toRepo": {
+      "projectKey": "Octo",
+      "slug": "hello"
+    },
+    "authorSlug": "hubot",
+    "commentCount": 8
+  },
+  "summary:pull-request.json": {
+    "id": 42,
+    "title": "Fix the flaky login test",
+    "state": "OPEN",
+    "fromBranch": "fix/login-test",
+    "fromSha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+    "toBranch": "main",
+    "url": "https://github.com/Octo/hello/pull/42",
+    "updatedAt": 1790771696000
+  },
+  "merge:pull-request.json": {
+    "conflicted": true,
+    "canMerge": false,
+    "outcome": "DIRTY"
+  },
+  "pr:pull-request-merged.json": {
+    "id": 45,
+    "version": null,
+    "title": "Done",
+    "state": "MERGED",
+    "fromBranch": "done",
+    "fromSha": "d1d2d3d4e5f60718293a4b5c6d7e8f9012345678",
+    "fromRepo": {
+      "projectKey": "Octo",
+      "slug": "hello"
+    },
+    "toBranch": "main",
+    "toSha": "0f1e2d3c4b5a69788796a5b4c3d2e1f001122334",
+    "toRepo": {
+      "projectKey": "Octo",
+      "slug": "hello"
+    },
+    "authorSlug": "hubot"
+  },
+  "summary:pull-request-merged.json": {
+    "id": 45,
+    "title": "Done",
+    "state": "MERGED",
+    "fromBranch": "done",
+    "fromSha": "d1d2d3d4e5f60718293a4b5c6d7e8f9012345678",
+    "toBranch": "main",
+    "url": "https://github.com/Octo/hello/pull/45",
+    "updatedAt": null
+  },
+  "merge:pull-request-merged.json": {
+    "conflicted": null,
+    "canMerge": null,
+    "outcome": "UNKNOWN"
+  },
+  "pr:pull-request-fork.json": {
+    "id": 43,
+    "version": null,
+    "title": "From a fork",
+    "state": "OPEN",
+    "fromBranch": "patch-1",
+    "fromSha": "b1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+    "fromRepo": {
+      "projectKey": "contributor",
+      "slug": "hello"
+    },
+    "toBranch": "main",
+    "toSha": "0f1e2d3c4b5a69788796a5b4c3d2e1f001122334",
+    "toRepo": {
+      "projectKey": "Octo",
+      "slug": "hello"
+    },
+    "authorSlug": "contributor"
+  },
+  "summary:pull-request-fork.json": {
+    "id": 43,
+    "title": "From a fork",
+    "state": "OPEN",
+    "fromBranch": "patch-1",
+    "fromSha": "b1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+    "toBranch": "main",
+    "url": "https://github.com/Octo/hello/pull/43",
+    "updatedAt": 1790773200000
+  },
+  "merge:pull-request-fork.json": {
+    "conflicted": null,
+    "canMerge": null,
+    "outcome": "UNKNOWN"
+  },
+  "pr:pull-request-deleted-fork.json": {
+    "id": 44,
+    "version": null,
+    "title": "Fork was deleted",
+    "state": "DECLINED",
+    "fromBranch": "x",
+    "fromSha": "c1c2c3d4e5f60718293a4b5c6d7e8f9012345678",
+    "fromRepo": {
+      "projectKey": null,
+      "slug": null
+    },
+    "toBranch": "main",
+    "toSha": "0f1e2d3c4b5a69788796a5b4c3d2e1f001122334",
+    "toRepo": {
+      "projectKey": "Octo",
+      "slug": "hello"
+    },
+    "authorSlug": "gone"
+  },
+  "summary:pull-request-deleted-fork.json": {
+    "id": 44,
+    "title": "Fork was deleted",
+    "state": "DECLINED",
+    "fromBranch": "x",
+    "fromSha": "c1c2c3d4e5f60718293a4b5c6d7e8f9012345678",
+    "toBranch": "main",
+    "url": "https://github.com/Octo/hello/pull/44",
+    "updatedAt": null
+  },
+  "merge:pull-request-deleted-fork.json": {
+    "conflicted": null,
+    "canMerge": null,
+    "outcome": null
+  },
+  "list": [
+    {
+      "id": 42,
+      "title": "Fix the flaky login test",
+      "state": "OPEN",
+      "fromBranch": "fix/login-test",
+      "fromSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "toBranch": "main",
+      "url": "https://github.com/Octo/hello/pull/42",
+      "updatedAt": 1790771696000
+    },
+    {
+      "id": 40,
+      "title": "Older",
+      "state": "MERGED",
+      "fromBranch": "fix/login-test",
+      "fromSha": "cccccccccccccccccccccccccccccccccccccccc",
+      "toBranch": "main",
+      "url": "https://github.com/Octo/hello/pull/40",
+      "updatedAt": 1785542400000
+    }
+  ],
+  "repo": {
+    "id": 101,
+    "slug": "hello",
+    "projectKey": "Octo"
+  },
+  "defaultBranch": "main",
+  "threads1": [
+    {
+      "id": 1001,
+      "version": null,
+      "text": "Please handle the empty token.",
+      "authorSlug": "reviewer-one",
+      "authorName": "Reviewer-One",
+      "createdAt": 1790676000000,
+      "severity": "NORMAL",
+      "state": "OPEN",
+      "threadResolved": false,
+      "anchor": {
+        "path": "src/login.js",
+        "line": 42,
+        "lineType": "unknown",
+        "fileType": "TO",
+        "diffType": "EFFECTIVE",
+        "orphaned": false
+      },
+      "replies": [
+        {
+          "id": 1002,
+          "version": null,
+          "text": "Good point, will do.",
+          "authorSlug": "hubot",
+          "authorName": "Hubot",
+          "createdAt": 1790676300000,
+          "severity": "NORMAL",
+          "state": "OPEN",
+          "threadResolved": null,
+          "anchor": null,
+          "replies": []
+        }
+      ]
+    },
+    {
+      "id": 1003,
+      "version": null,
+      "text": "Nit: rename this.",
+      "authorSlug": "reviewer-one",
+      "authorName": "Reviewer-One",
+      "createdAt": 1790676600000,
+      "severity": "NORMAL",
+      "state": "RESOLVED",
+      "threadResolved": true,
+      "anchor": {
+        "path": "src/util.js",
+        "line": 7,
+        "lineType": "unknown",
+        "fileType": "TO",
+        "diffType": "EFFECTIVE",
+        "orphaned": false
+      },
+      "replies": []
+    },
+    {
+      "id": 1004,
+      "version": null,
+      "text": "This moved.",
+      "authorSlug": "reviewer-two",
+      "authorName": "Reviewer-Two",
+      "createdAt": 1790677200000,
+      "severity": "NORMAL",
+      "state": "OPEN",
+      "threadResolved": false,
+      "anchor": {
+        "path": "src/old.js",
+        "line": 12,
+        "lineType": "unknown",
+        "fileType": "TO",
+        "diffType": "EFFECTIVE",
+        "orphaned": true
+      },
+      "replies": []
+    }
+  ],
+  "threads2": [
+    {
+      "id": 1005,
+      "version": null,
+      "text": "Why was this removed?",
+      "authorSlug": "reviewer-two",
+      "authorName": "Reviewer-Two",
+      "createdAt": 1790679600000,
+      "severity": "NORMAL",
+      "state": "OPEN",
+      "threadResolved": false,
+      "anchor": {
+        "path": "src/login.js",
+        "line": 10,
+        "lineType": "REMOVED",
+        "fileType": "FROM",
+        "diffType": "EFFECTIVE",
+        "orphaned": false
+      },
+      "replies": []
+    },
+    {
+      "id": 1001,
+      "version": null,
+      "text": "Please handle the empty token.",
+      "authorSlug": "reviewer-one",
+      "authorName": "Reviewer-One",
+      "createdAt": 1790676000000,
+      "severity": "NORMAL",
+      "state": "OPEN",
+      "threadResolved": false,
+      "anchor": {
+        "path": "src/login.js",
+        "line": 42,
+        "lineType": "unknown",
+        "fileType": "TO",
+        "diffType": "EFFECTIVE",
+        "orphaned": false
+      },
+      "replies": []
+    }
+  ],
+  "threads12": [
+    {
+      "id": 1001,
+      "version": null,
+      "text": "Please handle the empty token.",
+      "authorSlug": "reviewer-one",
+      "authorName": "Reviewer-One",
+      "createdAt": 1790676000000,
+      "severity": "NORMAL",
+      "state": "OPEN",
+      "threadResolved": false,
+      "anchor": {
+        "path": "src/login.js",
+        "line": 42,
+        "lineType": "unknown",
+        "fileType": "TO",
+        "diffType": "EFFECTIVE",
+        "orphaned": false
+      },
+      "replies": [
+        {
+          "id": 1002,
+          "version": null,
+          "text": "Good point, will do.",
+          "authorSlug": "hubot",
+          "authorName": "Hubot",
+          "createdAt": 1790676300000,
+          "severity": "NORMAL",
+          "state": "OPEN",
+          "threadResolved": null,
+          "anchor": null,
+          "replies": []
+        }
+      ]
+    },
+    {
+      "id": 1003,
+      "version": null,
+      "text": "Nit: rename this.",
+      "authorSlug": "reviewer-one",
+      "authorName": "Reviewer-One",
+      "createdAt": 1790676600000,
+      "severity": "NORMAL",
+      "state": "RESOLVED",
+      "threadResolved": true,
+      "anchor": {
+        "path": "src/util.js",
+        "line": 7,
+        "lineType": "unknown",
+        "fileType": "TO",
+        "diffType": "EFFECTIVE",
+        "orphaned": false
+      },
+      "replies": []
+    },
+    {
+      "id": 1004,
+      "version": null,
+      "text": "This moved.",
+      "authorSlug": "reviewer-two",
+      "authorName": "Reviewer-Two",
+      "createdAt": 1790677200000,
+      "severity": "NORMAL",
+      "state": "OPEN",
+      "threadResolved": false,
+      "anchor": {
+        "path": "src/old.js",
+        "line": 12,
+        "lineType": "unknown",
+        "fileType": "TO",
+        "diffType": "EFFECTIVE",
+        "orphaned": true
+      },
+      "replies": []
+    },
+    {
+      "id": 1005,
+      "version": null,
+      "text": "Why was this removed?",
+      "authorSlug": "reviewer-two",
+      "authorName": "Reviewer-Two",
+      "createdAt": 1790679600000,
+      "severity": "NORMAL",
+      "state": "OPEN",
+      "threadResolved": false,
+      "anchor": {
+        "path": "src/login.js",
+        "line": 10,
+        "lineType": "REMOVED",
+        "fileType": "FROM",
+        "diffType": "EFFECTIVE",
+        "orphaned": false
+      },
+      "replies": []
+    }
+  ],
+  "builds": {
+    "state": "FAILED",
+    "counts": {
+      "SUCCESSFUL": 2,
+      "FAILED": 1,
+      "INPROGRESS": 2,
+      "unknown": 0
+    },
+    "builds": [
+      {
+        "state": "SUCCESSFUL",
+        "key": "11",
+        "name": "build",
+        "url": "https://github.com/Octo/hello/runs/11",
+        "at": 1790762700000
+      },
+      {
+        "state": "FAILED",
+        "key": "12",
+        "name": "lint",
+        "url": "https://github.com/Octo/hello/runs/12",
+        "at": 1790762520000
+      },
+      {
+        "state": "INPROGRESS",
+        "key": "13",
+        "name": "e2e",
+        "url": "https://github.com/Octo/hello/runs/13",
+        "at": 1790762460000
+      },
+      {
+        "state": "INPROGRESS",
+        "key": "ci/legacy",
+        "name": "ci/legacy",
+        "url": "https://ci.example.com/1",
+        "at": 1790762580000
+      },
+      {
+        "state": "SUCCESSFUL",
+        "key": "ci/ok",
+        "name": "ci/ok",
+        "url": null,
+        "at": 1790762640000
+      }
+    ]
+  },
+  "dashboard": [
+    {
+      "id": 7,
+      "title": "Add retries",
+      "state": "OPEN",
+      "fromBranch": "feat/retries",
+      "fromSha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "toBranch": "main",
+      "url": "https://github.com/Octo/hello/pull/7",
+      "updatedAt": 1790769600000,
+      "project": "Octo",
+      "repo": "hello",
+      "toSha": "ffffffffffffffffffffffffffffffffffffffff",
+      "fromRepo": {
+        "projectKey": "Octo",
+        "slug": "hello"
+      },
+      "authorSlug": "hubot",
+      "reviewers": [
+        {
+          "name": "reviewer-three",
+          "status": "UNAPPROVED"
+        },
+        {
+          "name": "reviewer-one",
+          "status": "APPROVED"
+        },
+        {
+          "name": "reviewer-two",
+          "status": "NEEDS_WORK"
+        }
+      ],
+      "approvals": 1
+    },
+    {
+      "id": 8,
+      "title": "From a fork",
+      "state": "OPEN",
+      "fromBranch": "patch-2",
+      "fromSha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "toBranch": "main",
+      "url": "https://github.com/Octo/hello/pull/8",
+      "updatedAt": 1790769600000,
+      "project": "Octo",
+      "repo": "hello",
+      "toSha": "ffffffffffffffffffffffffffffffffffffffff",
+      "fromRepo": {
+        "projectKey": "someone",
+        "slug": "hello"
+      },
+      "authorSlug": "hubot",
+      "reviewers": [],
+      "approvals": 0
+    },
+    {
+      "id": 10,
+      "title": "Team review request",
+      "state": "OPEN",
+      "fromBranch": "t",
+      "fromSha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "toBranch": "main",
+      "url": "https://github.com/Octo/hello/pull/10",
+      "updatedAt": 1790769600000,
+      "project": "Octo",
+      "repo": "hello",
+      "toSha": "ffffffffffffffffffffffffffffffffffffffff",
+      "fromRepo": {
+        "projectKey": "Octo",
+        "slug": "hello"
+      },
+      "authorSlug": "hubot",
+      "reviewers": [
+        {
+          "name": "reviewer-one",
+          "status": "UNAPPROVED"
+        }
+      ],
+      "approvals": 0
+    }
+  ]
+}

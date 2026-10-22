@@ -22,7 +22,6 @@
     conn: "data:image/svg+xml,%3Csvg viewBox=%220 0 24 24%22 fill=%22none%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath fill-rule=%22evenodd%22 clip-rule=%22evenodd%22 d=%22M23.4013 11.3499L16.9106 4.76929C16.7359 4.59676 16.501 4.5 16.2555 4.5C16.0099 4.5 15.7742 4.59676 15.5995 4.76929C15.4284 4.94747 15.3325 5.18486 15.3325 5.43184C15.3325 5.67882 15.4284 5.91625 15.5995 6.09442L21.4448 12L15.5995 17.9056C15.4284 18.0838 15.3325 18.3212 15.3325 18.5682C15.3325 18.8151 15.4284 19.0525 15.5995 19.2307C15.7742 19.4032 16.0099 19.5 16.2555 19.5C16.501 19.5 16.7359 19.4032 16.9106 19.2307L23.4013 12.6734C23.5719 12.4953 23.6675 12.2583 23.6675 12.0117C23.6675 11.7651 23.5719 11.528 23.4013 11.3499Z%22 fill=%22%23000%22%3E%3C/path%3E%3Cpath fill-rule=%22evenodd%22 clip-rule=%22evenodd%22 d=%22M0.598659 12.6501L7.08937 19.2307C7.26407 19.4032 7.499 19.5 7.74454 19.5C7.99009 19.5 8.22583 19.4032 8.40053 19.2307C8.57157 19.0525 8.66749 18.8151 8.66749 18.5682C8.66749 18.3212 8.57157 18.0838 8.40053 17.9056L2.55523 12L8.40053 6.09442C8.57157 5.91625 8.66749 5.67882 8.66749 5.43184C8.66749 5.18486 8.57157 4.94747 8.40053 4.76929C8.22583 4.59676 7.99009 4.5 7.74454 4.5C7.499 4.5 7.26407 4.59676 7.08937 4.76929L0.598659 11.3266C0.428115 11.5047 0.33252 11.7417 0.33252 11.9883C0.33252 12.2349 0.428115 12.472 0.598659 12.6501Z%22 fill=%22%23000%22%3E%3C/path%3E%3C/svg%3E",
     auto: "data:image/svg+xml,%3Csvg viewBox=%220 0 24 24%22 fill=%22none%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M16.0365 9.38051C16.3253 9.70994 16.2924 10.2111 15.963 10.4999L12.5548 13.488C12.2253 13.7768 11.7241 13.7439 11.4353 13.4145C11.1465 13.085 11.1794 12.5838 11.5089 12.295L14.9171 9.30697C15.2465 9.01816 15.7477 9.05108 16.0365 9.38051Z%22 fill=%22%23000%22%3E%3C/path%3E%3Cpath fill-rule=%22evenodd%22 clip-rule=%22evenodd%22 d=%22M13.5817 1.19995C14.0198 1.19995 14.3749 1.55511 14.3749 1.99322C14.3749 2.43133 14.0198 2.78649 13.5817 2.78649L12.0481 2.78649V4.17598C17.0594 4.45038 21.0384 8.60089 21.0384 13.6807C21.0384 18.9381 16.7765 23.2 11.5192 23.2C6.26189 23.2 2 18.9381 2 13.6807C2 8.78094 5.70197 4.74577 10.4615 4.21963V2.78649L8.82205 2.78649C8.38394 2.78649 8.02878 2.43133 8.02878 1.99322C8.02878 1.55511 8.38394 1.19995 8.82205 1.19995H13.5817ZM11.5192 21.6134C15.9003 21.6134 19.4519 18.0618 19.4519 13.6807C19.4519 9.29965 15.9003 5.74807 11.5192 5.74807C7.13811 5.74807 3.58653 9.29965 3.58653 13.6807C3.58653 18.0618 7.13811 21.6134 11.5192 21.6134Z%22 fill=%22%23000%22%3E%3C/path%3E%3Cpath d=%22M22.0916 7.92024C22.3278 8.43778 21.9127 8.98699 21.3442 8.96714C21.0168 8.9557 20.7307 8.74964 20.5896 8.45397C19.8881 6.98431 18.7464 5.75998 17.3293 4.95771C17.0442 4.79631 16.8586 4.49659 16.87 4.16916C16.8899 3.60065 17.4667 3.22492 17.9665 3.49657C19.7815 4.48305 21.2342 6.04083 22.0916 7.92024Z%22 fill=%22%23000%22%3E%3C/path%3E%3C/svg%3E",
     data: "data:image/svg+xml,%3Csvg viewBox=%220 0 24 24%22 fill=%22none%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath fill-rule=%22evenodd%22 clip-rule=%22evenodd%22 d=%22M2 0.5C1.44772 0.5 1 0.947715 1 1.5V22.5C1 23.0523 1.44772 23.5 2 23.5H22C22.5523 23.5 23 23.0523 23 22.5V1.5C23 0.947715 22.5523 0.5 22 0.5H2ZM2.5 10.5V15.7H8V10.5H2.5ZM2.5 9H21.5V2H2.5V9ZM21.5 10.5H16.5V15.7H21.5V10.5ZM15 10.5H9.5V15.7H15V10.5ZM9.5 17.2H15V22H9.5V17.2ZM21.5 22H16.5V17.2H21.5V22ZM8 17.2H2.5V22H8V17.2Z%22 fill=%22%23000%22%3E%3C/path%3E%3C/svg%3E",
-    proxy: "data:image/svg+xml,%3Csvg viewBox=%220 0 24 24%22 fill=%22none%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M11.228 15.9401L12.263 16.9751C12.3751 17.0921 12.5103 17.1846 12.6601 17.2466C12.8099 17.3086 12.9709 17.3387 13.133 17.3351H14.357V18.3701C14.357 18.7414 14.5045 19.0975 14.767 19.36C15.0296 19.6226 15.3857 19.7701 15.757 19.7701H16.798V20.9911C16.7995 21.3132 16.9264 21.622 17.152 21.8521L17.964 22.6641C18.1792 22.878 18.4705 22.9978 18.774 22.9971H21.998C22.2645 22.9963 22.5199 22.89 22.7084 22.7015C22.8969 22.513 23.0032 22.2576 23.004 21.9911V18.7701C23.0045 18.6188 22.975 18.469 22.9171 18.3292C22.8593 18.1895 22.7742 18.0627 22.667 17.9561L15.941 11.2271C16.5176 9.5831 16.5188 7.79203 15.9443 6.14732C15.3698 4.5026 14.2538 3.10176 12.779 2.17432C11.3042 1.24688 9.5582 0.847842 7.82696 1.04258C6.09572 1.23731 4.48196 2.01427 3.25007 3.24616C2.01818 4.47805 1.24121 6.09182 1.04648 7.82305C0.851748 9.55429 1.25079 11.3003 2.17823 12.7751C3.10567 14.2499 4.50651 15.3659 6.15122 15.9404C7.79594 16.5149 9.587 16.5137 11.231 15.9371L11.228 15.9401ZM4.24596 4.24105C5.27633 3.2091 6.63363 2.56776 8.08511 2.42702C9.53659 2.28627 10.9918 2.65489 12.2013 3.46966C13.4107 4.28443 14.299 5.49459 14.7139 6.89263C15.1287 8.29066 15.0442 9.78948 14.475 11.1321C14.4202 11.2607 14.4052 11.4028 14.432 11.54C14.4587 11.6773 14.5259 11.8034 14.625 11.9021L21.595 18.8751V21.5961H18.875L18.19 20.9111V19.2561C18.19 19.0174 18.0951 18.7884 17.9264 18.6197C17.7576 18.4509 17.5287 18.3561 17.29 18.3561H15.762V16.8341C15.762 16.5954 15.6671 16.3664 15.4984 16.1977C15.3296 16.0289 15.1007 15.9341 14.862 15.9341H13.208L11.903 14.6271C11.8043 14.528 11.6782 14.4608 11.5409 14.4341C11.4037 14.4073 11.2616 14.4223 11.133 14.4771C9.79033 15.0459 8.29164 15.1299 6.89382 14.7148C5.49601 14.2997 4.28615 13.4112 3.47167 12.2017C2.65719 10.9922 2.28882 9.53706 2.42973 8.08572C2.57064 6.63439 3.21203 5.27728 4.24396 4.24705L4.24596 4.24105ZM7.18496 9.76105C7.69413 9.76125 8.19193 9.61043 8.61537 9.32767C9.03882 9.04492 9.36889 8.64292 9.56384 8.17254C9.75878 7.70217 9.80984 7.18454 9.71055 6.68514C9.61126 6.18574 9.36609 5.727 9.00605 5.36696C8.64601 5.00692 8.18728 4.76175 7.68788 4.66246C7.18848 4.56318 6.67085 4.61424 6.20047 4.80918C5.73009 5.00412 5.3281 5.3342 5.04534 5.75764C4.76258 6.18109 4.61176 6.67888 4.61196 7.18805C4.61223 7.87064 4.8835 8.52519 5.36616 9.00786C5.84882 9.49052 6.50338 9.76179 7.18596 9.76205L7.18496 9.76105ZM7.18496 6.03605C7.45431 6.03708 7.71498 6.1314 7.92262 6.30298C8.13025 6.47455 8.27202 6.71277 8.3238 6.9771C8.37558 7.24143 8.33416 7.51553 8.2066 7.75276C8.07905 7.99 7.87322 8.1757 7.62417 8.27827C7.37511 8.38084 7.09821 8.39394 6.84058 8.31534C6.58295 8.23675 6.36051 8.0713 6.21113 7.84718C6.06174 7.62305 5.99463 7.35408 6.02122 7.08604C6.04781 6.81801 6.16645 6.56747 6.35696 6.37705C6.57688 6.15818 6.87468 6.03553 7.18496 6.03605Z%22 fill=%22%23000%22%3E%3C/path%3E%3C/svg%3E",
     adv: "data:image/svg+xml,%3Csvg viewBox=%220 0 24 24%22 fill=%22none%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg%3E%3Cpath d=%22M13.1132 24H10.9685C10.5089 24 10.1209 23.6531 10.0698 23.1939L9.70213 21.0204C8.91574 20.847 8.12936 20.5306 7.39404 20.1021L5.5966 21.4082C5.46383 21.5 5.31064 21.551 5.14723 21.551C5.08596 21.551 4.93277 21.5714 4.74894 21.5204C4.6366 21.4898 4.52426 21.4286 4.43234 21.347L2.84936 19.847C2.84936 19.847 2.78809 19.7857 2.76766 19.7551C2.52255 19.4286 2.52255 18.9796 2.76766 18.6531L4.06468 16.8368C3.58468 16.1327 3.24766 15.3266 3.02298 14.4797L0.755745 14.0919C0.347234 14.0511 0 13.6633 0 13.2041V10.9695C0 10.5103 0.347234 10.1225 0.796596 10.0715L2.95149 9.70417C3.10468 8.90825 3.42128 8.09193 3.85021 7.33684L2.58383 5.53073C2.35915 5.2246 2.35915 4.77563 2.59404 4.4491C2.61447 4.41849 2.63489 4.38788 2.66553 4.36747L4.24851 2.76544C4.32 2.69401 4.41191 2.63278 4.50383 2.59197C4.7183 2.50013 4.91234 2.53074 5.00426 2.53074C5.17787 2.53074 5.32085 2.59197 5.45362 2.69401L7.22043 4.10216C7.89447 3.60217 8.70128 3.25523 9.53872 3.03074L9.94723 0.755244C9.98808 0.561367 10.1004 0.347083 10.2332 0.224635C10.4272 0.0511664 10.6723 -0.0304657 10.9277 0.0103504H13.0519C13.2357 0.0103504 13.5115 0.102187 13.6545 0.234839C13.8179 0.387899 13.92 0.581775 13.9506 0.79606L14.3183 2.96952C15.1353 3.13278 15.9728 3.46951 16.7489 3.91849L18.526 2.65319C18.6587 2.56136 18.8119 2.51034 18.9753 2.51034C19.0264 2.50013 19.2306 2.47972 19.4553 2.57156C19.5472 2.61238 19.6289 2.6634 19.7004 2.74503L21.2426 4.31645C21.2426 4.31645 21.2936 4.36747 21.314 4.39808C21.406 4.53073 21.4877 4.77563 21.4877 4.93889C21.4877 5.13277 21.4264 5.32664 21.314 5.4797L20.017 7.31643C20.497 8.0001 20.834 8.81642 21.0587 9.66335L23.234 10.0001C23.234 10.0001 23.2545 10.0001 23.2647 10.0001C23.4383 10.0409 23.6834 10.1838 23.7957 10.3266C23.9285 10.4899 24 10.694 24 10.898V13.1225C24 13.245 23.9694 13.3572 23.9183 13.4695C23.7549 13.796 23.3974 13.9694 23.0502 13.9592L20.9668 14.3164C20.7932 15.1327 20.446 15.9388 19.9966 16.6939L21.263 18.4796C21.3651 18.6327 21.4468 18.847 21.4468 19.0102C21.4468 19.2653 21.3345 19.5102 21.1506 19.6735L19.6187 21.2143C19.5268 21.2959 19.4247 21.3674 19.3021 21.4082C19.1183 21.4694 18.914 21.4694 18.7302 21.4082C18.6587 21.3878 18.5872 21.347 18.5157 21.3061L16.6877 20C15.9932 20.4898 15.1762 20.8265 14.3285 21.051L13.9915 23.2245C13.9506 23.6327 13.5626 23.9796 13.103 23.9796L13.1132 24ZM12.5004 22.9592C12.5004 22.9592 12.4902 23.0102 12.4902 23.0408V22.9592H12.5004ZM11.5915 22.9286V22.9898C11.5915 22.9898 11.5915 22.949 11.5915 22.9286ZM11.5098 22.4694H12.5821L12.8681 20.7653C12.9089 20.4898 13.0417 20.2245 13.2357 20.0102C13.4298 19.7959 13.6851 19.6531 13.9609 19.5817C14.6655 19.398 15.3396 19.1123 15.9728 18.7347C16.4221 18.449 17.0757 18.4388 17.5557 18.7347L18.9549 19.7347L19.7311 18.9592L18.72 17.5307C18.5464 17.2551 18.4647 16.9796 18.4647 16.7041C18.4647 16.4286 18.5464 16.1531 18.6894 15.9082C19.057 15.2858 19.343 14.6123 19.5268 13.898C19.5881 13.6327 19.7413 13.3776 19.9557 13.1735C20.1702 12.9797 20.4357 12.847 20.7319 12.8062L22.4783 12.5103V11.4286L20.783 11.1429C20.5072 11.1021 20.2417 10.9695 20.0272 10.7756C19.8128 10.5817 19.6698 10.3266 19.5983 10.0409C19.4145 9.34703 19.1285 8.66336 18.7506 8.03071C18.6179 7.81642 18.5362 7.54092 18.5362 7.2552C18.5362 6.96949 18.6179 6.69398 18.7711 6.45929L19.8026 5.01032L19.0162 4.2042L17.617 5.2042C17.0655 5.55113 16.463 5.53072 15.983 5.2246C15.36 4.86746 14.6553 4.58175 13.9302 4.40828C13.6545 4.34706 13.3991 4.194 13.2051 3.97971C13.0111 3.76543 12.8783 3.50012 12.8374 3.20421L12.5515 1.53075H11.3974L11.1013 3.25523C11.0809 3.51033 10.9481 3.80625 10.7438 4.04094C10.5294 4.27563 10.2536 4.43889 9.94723 4.51032C9.27319 4.694 8.59915 4.97971 7.96596 5.35726C7.53702 5.63277 6.85277 5.65317 6.37277 5.33685L4.98383 4.23481L4.17702 5.05114L5.18809 6.4797C5.3617 6.75521 5.4434 7.03072 5.4434 7.30622C5.4434 7.58173 5.3617 7.85724 5.21872 8.10214C4.8817 8.70417 4.61617 9.38784 4.44255 10.0919C4.38128 10.3776 4.22809 10.6327 4.01362 10.8266C3.79915 11.0307 3.53362 11.1531 3.23745 11.194L1.57277 11.4797V12.6531L3.28851 12.9388C3.55404 12.9695 3.85021 13.0919 4.08511 13.3062C4.32 13.5103 4.4834 13.7858 4.55489 14.1021C4.73872 14.7858 5.02468 15.4694 5.39234 16.1021C5.53532 16.3062 5.61702 16.5919 5.61702 16.8776C5.61702 17.1633 5.53532 17.449 5.37192 17.6939L4.36085 19.1123L5.15745 19.8674L6.58723 18.847C6.83234 18.6633 7.15915 18.5613 7.46553 18.5715C7.73106 18.5715 7.9966 18.6429 8.23149 18.7959C8.81362 19.1327 9.47745 19.4082 10.1719 19.5817C10.4374 19.6429 10.6928 19.7959 10.897 20.0102C11.0911 20.2245 11.2238 20.4898 11.2647 20.7755L11.5506 22.4592L11.5098 22.4694ZM4.03404 19.5306L4.01362 19.551C4.01362 19.551 4.02383 19.5408 4.03404 19.5306ZM0.970213 12.5715H1.05191C1.05191 12.5715 1.00085 12.5715 0.970213 12.5715ZM1.07234 11.5715H1.01106C1.01106 11.5715 1.05191 11.5715 1.07234 11.5715ZM3.84 4.63277L3.86043 4.65318C3.86043 4.65318 3.85021 4.63277 3.84 4.63277ZM13.0009 1.55116C13.0519 1.55116 13.103 1.55116 13.1643 1.55116H13.0009ZM11.9898 16.8368C11.04 16.8368 10.1209 16.5613 9.32425 16.0307C8.52766 15.5001 7.91489 14.7552 7.54723 13.8674C7.17957 12.9797 7.08766 12.0205 7.27149 11.0817C7.45532 10.1429 7.91489 9.2858 8.58894 8.61234C9.26298 7.93887 10.1209 7.47969 11.0604 7.29602C12 7.11235 12.96 7.20418 13.8485 7.57153C14.7268 7.93887 15.4723 8.55111 16.0034 9.35723C16.5345 10.1531 16.8102 11.0817 16.8102 12.0409C16.8102 13.3164 16.3098 14.5205 15.4009 15.4286C14.5021 16.3368 13.297 16.8368 12.0204 16.8368H12H11.9898ZM12 15.3062C12.8681 15.3062 13.6851 14.9592 14.3081 14.347C14.9311 13.7348 15.2681 12.9082 15.2681 12.0409C15.2681 11.3878 15.0843 10.7552 14.7166 10.2144C14.3591 9.67356 13.8485 9.25519 13.246 9.00009C12.6434 8.74499 11.9898 8.68377 11.3464 8.80622C10.703 8.92866 10.1311 9.24499 9.66128 9.70417C9.2017 10.1633 8.88511 10.745 8.76255 11.3878C8.64 12.0307 8.70128 12.6837 8.9566 13.2858C9.21192 13.8878 9.63064 14.398 10.1719 14.7552C10.7132 15.1123 11.3362 15.3062 11.9796 15.3062H11.9898H12Z%22 fill=%22%23000%22%3E%3C/path%3E%3C/g%3E%3C/svg%3E",
     about: "data:image/svg+xml,%3Csvg viewBox=%220 0 24 24%22 fill=%22none%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath fill-rule=%22evenodd%22 clip-rule=%22evenodd%22 d=%22M12.0012 13.993C13.1057 13.993 14.0012 13.0975 14.0012 11.993C14.0012 10.8884 13.1057 9.99295 12.0012 9.99295C10.8966 9.99295 10.0012 10.8884 10.0012 11.993C10.0012 13.0975 10.8966 13.993 12.0012 13.993ZM12.0012 15.493C13.9342 15.493 15.5012 13.9259 15.5012 11.993C15.5012 10.06 13.9342 8.49295 12.0012 8.49295C10.0682 8.49295 8.50116 10.06 8.50116 11.993C8.50116 13.9259 10.0682 15.493 12.0012 15.493Z%22 fill=%22%23000%22%3E%3C/path%3E%3Cpath fill-rule=%22evenodd%22 clip-rule=%22evenodd%22 d=%22M12.0012 2.58105C12.4154 2.58105 12.7512 2.91684 12.7512 3.33105V6.32623C12.7512 6.74044 12.4154 7.07623 12.0012 7.07623C11.5869 7.07623 11.2512 6.74044 11.2512 6.32623V3.33105C11.2512 2.91684 11.5869 2.58105 12.0012 2.58105Z%22 fill=%22%23000%22%3E%3C/path%3E%3Cpath fill-rule=%22evenodd%22 clip-rule=%22evenodd%22 d=%22M12.0012 16.9144C12.4154 16.9144 12.7512 17.2502 12.7512 17.6644V20.6691C12.7512 21.0833 12.4154 21.4191 12.0012 21.4191C11.5869 21.4191 11.2512 21.0833 11.2512 20.6691V17.6644C11.2512 17.2502 11.5869 16.9144 12.0012 16.9144Z%22 fill=%22%23000%22%3E%3C/path%3E%3Cpath fill-rule=%22evenodd%22 clip-rule=%22evenodd%22 d=%22M2.57007 11.9929C2.57007 11.5787 2.90585 11.2429 3.32007 11.2429H6.32976C6.74397 11.2429 7.07976 11.5787 7.07976 11.9929C7.07976 12.4071 6.74397 12.7429 6.32976 12.7429H3.32007C2.90585 12.7429 2.57007 12.4071 2.57007 11.9929Z%22 fill=%22%23000%22%3E%3C/path%3E%3Cpath fill-rule=%22evenodd%22 clip-rule=%22evenodd%22 d=%22M16.9226 11.9929C16.9226 11.5787 17.2584 11.2429 17.6726 11.2429H20.6798C21.0941 11.2429 21.4298 11.5787 21.4298 11.9929C21.4298 12.4071 21.0941 12.7429 20.6798 12.7429H17.6726C17.2584 12.7429 16.9226 12.4071 16.9226 11.9929Z%22 fill=%22%23000%22%3E%3C/path%3E%3Cpath fill-rule=%22evenodd%22 clip-rule=%22evenodd%22 d=%22M5.33185 18.6623C5.03896 18.3694 5.03896 17.8946 5.33185 17.6017L7.4606 15.4729C7.75349 15.18 8.22836 15.18 8.52126 15.4729C8.81415 15.7658 8.81415 16.2407 8.52126 16.5336L6.39251 18.6623C6.09962 18.9552 5.62475 18.9552 5.33185 18.6623Z%22 fill=%22%23000%22%3E%3C/path%3E%3Cpath fill-rule=%22evenodd%22 clip-rule=%22evenodd%22 d=%22M15.4812 8.51296C15.1883 8.22007 15.1883 7.74519 15.4812 7.4523L17.6019 5.33161C17.8948 5.03872 18.3697 5.03872 18.6626 5.33161C18.9555 5.6245 18.9555 6.09938 18.6626 6.39227L16.5419 8.51296C16.249 8.80585 15.7741 8.80585 15.4812 8.51296Z%22 fill=%22%23000%22%3E%3C/path%3E%3Cpath fill-rule=%22evenodd%22 clip-rule=%22evenodd%22 d=%22M18.6566 18.6485C18.3638 18.9414 17.8889 18.9414 17.596 18.6485L15.4811 16.5336C15.1882 16.2407 15.1882 15.7658 15.4811 15.4729C15.774 15.1801 16.2488 15.1801 16.5417 15.4729L18.6566 17.5879C18.9495 17.8808 18.9495 18.3556 18.6566 18.6485Z%22 fill=%22%23000%22%3E%3C/path%3E%3Cpath fill-rule=%22evenodd%22 clip-rule=%22evenodd%22 d=%22M8.5211 8.51298C8.2282 8.80587 7.75333 8.80587 7.46044 8.51298L5.33448 6.38702C5.04158 6.09413 5.04158 5.61925 5.33448 5.32636C5.62737 5.03347 6.10224 5.03347 6.39514 5.32636L8.5211 7.45232C8.81399 7.74521 8.81399 8.22009 8.5211 8.51298Z%22 fill=%22%23000%22%3E%3C/path%3E%3C/svg%3E",
   };
@@ -147,7 +146,6 @@
     { id: "conn", title: "Code and accounts", sub: "Repos, Claude, Jira, Jenkins", intro: "Connections shared by several features. Jira, Jenkins and Bitbucket use your browser login unless you add a token." },
     { id: "auto", title: "Background work", sub: "Watchers, limits, quiet hours", intro: "Off unless you turn it on. Results appear under ✨ → Ready for you, as Chrome notifications and in `companion inbox`." },
     { id: "data", title: "Privacy and history", sub: "Stored on this machine only", intro: "What the assistant keeps on this machine. Nothing leaves your computer." },
-    { id: "proxy", title: "LLM proxy", sub: "Optional", intro: "" },
     { id: "adv", title: "Advanced", sub: "MCP server, connection", intro: "Rarely changed." },
     { id: "about", title: "About", sub: "Version, support", intro: "" },
   ];
@@ -181,16 +179,12 @@
     shell.append(nav, main);
     root.append(searchRow, shell);
 
-    // The proxy page is named and described by the distribution's branding (GET /settings `branding`).
+    // A page a pack registered (PaiSettingsPages) names and describes itself, usually from the distribution's branding.
+    const extraDefs = new Map((self.PaiSettingsPages || []).map((def) => [def.id, def]));
     function pageMeta(id) {
-      const meta = PAGES.find((p) => p.id === id);
-      const proxy = branding.llmProxy;
-      if (id !== "proxy" || !proxy) return meta;
-      return {
-        ...meta,
-        title: proxy.name,
-        intro: `A free, ${proxy.operator}-hosted AI model service. Adding your key lets the companion do small jobs itself, keeps ticket and PR text inside ${proxy.operator}, and saves Claude for real work. Everything works without it.`,
-      };
+      const def = extraDefs.get(id);
+      if (def) return { id, title: def.title(branding), sub: def.sub || "", intro: def.intro ? def.intro(branding) : "" };
+      return PAGES.find((p) => p.id === id);
     }
 
     function page(id) {
@@ -210,7 +204,8 @@
       const dot = el("span", "settings-nav-dot");
       dot.hidden = true;
       const tile = el("span", "settings-nav-tile");
-      if (PAGE_ICONS[id]) tile.style.setProperty("--pai-nav-icon", `url("${PAGE_ICONS[id]}")`);
+      const icon = (extraDefs.get(id) && extraDefs.get(id).icon) || PAGE_ICONS[id];
+      if (icon) tile.style.setProperty("--pai-nav-icon", `url("${icon}")`);
       navItem.append(tile, text, dot);
       const go = () => showPage(id);
       navItem.addEventListener("click", go);
@@ -374,7 +369,15 @@
     const connPage = page("conn");
     const autoPage = settings.watchers ? page("auto") : null;
     const dataPage = page("data");
-    const proxyPage = settings.llmProxy && branding.llmProxy ? page("proxy") : null;
+    // Pages a pack's extension script registered, between the data page and Advanced.
+    const extraPages = [];
+    for (const def of self.PaiSettingsPages || []) {
+      try {
+        if (def.visible(view)) extraPages.push({ def, page: page(def.id) });
+      } catch (err) {
+        console.warn(`[settings] the "${def.id}" page failed to show:`, err);
+      }
+    }
     const advPage = page("adv");
     const aboutPage = page("about");
 
@@ -539,7 +542,7 @@
       `Comma-separated project keys. Blank = ${defaultProjects.length ? defaultProjects.join(", ") : "every project"}.`,
     );
     const typesInput = textInput((analyzeView.issueTypes || []).join(", "), "Any type");
-    field(analyzeOptions, "Issue types", typesInput, "analyzeIssue.issueTypes", "Comma-separated to limit to some types (e.g. Bug, Customer Issue). Blank = any type.");
+    field(analyzeOptions, "Issue types", typesInput, "analyzeIssue.issueTypes", "Comma-separated to limit to some types (e.g. Bug, Incident). Blank = any type.");
     const componentsInput = textArea(
       Object.entries(analyzeView.componentRepoMap || {})
         .map(([component, repo]) => `${component} = ${repo}`)
@@ -564,7 +567,7 @@
         analyzeOptions,
         "Add similar past tickets",
         similarCheck,
-        "From this machine's history, marked as earlier AI output. With the LLM proxy key saved, matches by meaning (on-prem model); otherwise by shared words.",
+        "From this machine's history, marked as earlier AI output. When an LLM is set up (see its page), matches by meaning; otherwise by shared words.",
         "similar.enabled",
       );
     }
@@ -1016,100 +1019,17 @@
       });
     });
 
-    // ---- LLM proxy (named by the distribution's branding) ----
-    // The proxy's on-prem models (companion-service/core/llm-proxy.ts), used for
-    // the watchers' quick "worth a Claude run?" triage. Optional: without a
-    // key everything works on rule-based filters. Only the on-prem models the
-    // service allows are offered; the key is shown only as saved or not.
-    let llmUpdate = null;
-    if (proxyPage) {
-      const p = settings.llmProxy;
-      const state = background.llmProxy ? background.llmProxy.label : "not checked";
-      const signIn = block(proxyPage, "Sign-in", {
-        status: { kind: /ready/i.test(state) ? "ok" : "neutral", text: state.charAt(0).toUpperCase() + state.slice(1) },
-        note: "Your key is stored encrypted on this machine and never shown again.",
-      });
-      let keyPage = null;
+    // ---- Pages and settings sections a pack's extension script registers (PaiSettingsPages) ----
+    // Each one builds its own page from the same helpers the built-in pages use and returns a function
+    // giving its part of the update (see PaiSettingsPages at the end of this file).
+    const extraUpdates = [];
+    for (const { def, page: pg } of extraPages) {
       try {
-        keyPage = new URL(p.keyPageUrl).protocol === "https:" ? p.keyPageUrl : null;
-      } catch {
-        keyPage = null;
+        const collect = def.build({ page: pg, view, settings, branding, background, el, block, field, toggleRow, textInput });
+        if (typeof collect === "function") extraUpdates.push(collect);
+      } catch (err) {
+        console.warn(`[settings] the "${def.id}" page failed to build:`, err);
       }
-      if (keyPage) {
-        const link = el("a", "settings-link", `Get your key on the ${branding.llmProxy.name} site`);
-        link.href = keyPage;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        signIn.appendChild(link);
-      }
-      const keyInput = el("input", "settings-input");
-      keyInput.type = "password";
-      keyInput.autocomplete = "new-password";
-      keyInput.spellcheck = false;
-      keyInput.placeholder = p.apiKeySet ? "Saved — leave blank to keep it" : "Not set";
-      field(signIn, "API key", keyInput, "llmProxy.apiKey", "Paste the key you created on the proxy site. Status should turn to “ready” after you save.");
-      const clearKey = el("input");
-      if (p.apiKeySet) {
-        toggleRow(signIn, "Remove the saved key", clearKey, null);
-        clearKey.addEventListener("change", () => {
-          keyInput.disabled = clearKey.checked;
-          if (clearKey.checked) keyInput.value = "";
-        });
-      }
-      const userInput = textInput(p.user, "your sign-on name (blank: your computer's user name)");
-      field(signIn, "Sign-on user name", userInput, "llmProxy.user", "The proxy asks who is calling. Leave blank to use your computer's user name.");
-      const agentInput = textInput(p.userAgent, p.defaultUserAgent);
-      field(
-        signIn,
-        "Client name (User-Agent)",
-        agentInput,
-        "llmProxy.userAgent",
-        "The proxy ties each key to the application it was created for (QwenCode, Cline, OpenCode…) and checks the client name on every request. This tool isn't in that list, so if the status says your key is for another application, enter that application's name here (for example QwenCode/1.0) — or ask the proxy team to add one for this tool. Blank uses the default.",
-      );
-      const advanced = el("details", "settings-advanced");
-      advanced.appendChild(el("summary", null, "Advanced"));
-      signIn.appendChild(advanced);
-      const baseInput = textInput(p.baseUrl, p.defaultBaseUrl);
-      field(advanced, "API URL", baseInput, "llmProxy.baseUrl", "Blank for the default.");
-
-      const modelsCard = block(proxyPage, "Models", { note: `Only ${branding.llmProxy.operator} on-prem models are listed.` });
-      const modelSelect = (current, models) => {
-        const select = el("select", "settings-input");
-        for (const m of models) select.appendChild(new Option(m, m, false, m === current));
-        return select;
-      };
-      const chatSelect = modelSelect(p.chatModel, p.chatModels || p.allowedModels);
-      field(modelsCard, "Chat model", chatSelect, "llmProxy.chatModel", "Used for the watchers' quick checks.");
-      const embedSelect = modelSelect(p.embeddingModel, p.embeddingModels || p.allowedModels);
-      field(modelsCard, "Embedding model", embedSelect, "llmProxy.embeddingModel", "Used to match similar past tickets by meaning.");
-
-      const what = block(proxyPage, "What the proxy does");
-      const gains = el("ul", "settings-hint settings-list");
-      for (const line of [
-        `Background watchers: before spending one of your daily Claude runs, a ${branding.llmProxy.operator} model checks quickly whether a new conflict, bug or review request is worth it. Without a key, simple built-in rules decide, so a few more runs may be wasted.`,
-        "Similar past tickets: finds earlier tickets that mean the same thing even when the words differ, and gives them to Claude when it analyses a ticket. Without a key, matching uses shared words only.",
-      ]) {
-        gains.appendChild(el("li", null, line));
-      }
-      const gainsItem = el("div", "settings-item");
-      gainsItem.dataset.search = "what the proxy does background watchers similar past tickets outside ai vendors";
-      gainsItem.append(
-        gains,
-        el("p", "settings-hint", `It never sends anything to outside AI vendors: only ${branding.llmProxy.operator}'s own on-prem models are allowed, and only over https to a ${branding.llmProxy.operator} address.`),
-      );
-      what.appendChild(gainsItem);
-
-      llmUpdate = () => ({
-        llmProxy: {
-          baseUrl: baseInput.value.trim(),
-          user: userInput.value.trim(),
-          userAgent: agentInput.value.trim(),
-          chatModel: chatSelect.value,
-          embeddingModel: embedSelect.value,
-          apiKey: keyInput.value.trim(),
-          clearApiKey: clearKey.checked,
-        },
-      });
     }
 
     // ---- Advanced: MCP server, connection ----
@@ -1476,7 +1396,7 @@
         ...(reviewTransitionInput ? { ticketToPr: { reviewTransitionName: reviewTransitionInput.value.trim(), ...(autoMoveCheck ? { autoMoveToReview: autoMoveCheck.checked } : {}), ...(createWorktreeCheck ? { createWorktreeWithoutAsking: createWorktreeCheck.checked } : {}) } } : {}),
         ...(digestBox ? { digest: { enabled: digestBox.checked, time: digestTime.value.trim() || "08:30" } } : {}),
         ...(backgroundUpdate ? backgroundUpdate() : {}),
-        ...(llmUpdate ? llmUpdate() : {}),
+        ...Object.assign({}, ...extraUpdates.map((collect) => collect())),
       };
     }
 
@@ -1512,4 +1432,13 @@
   }
 
   window.renderSettingsForm = renderSettingsForm;
+
+  // A pack's extension script adds a page to this panel by pushing a definition onto self.PaiSettingsPages
+  // (the panel reads the list each time it opens, so load order doesn't matter):
+  //   { id, icon?: dataUri, title(branding), sub?, intro?(branding), visible(view) -> bool,
+  //     build({ page, view, settings, branding, background, el, block, field, toggleRow, textInput })
+  //       -> () => the part of the PUT /settings body this page owns }
+  // `settings.<key>` is what a SettingsSection of that pack returns from GET /settings; the server validates
+  // and saves what the returned function gives.
+  self.PaiSettingsPages = self.PaiSettingsPages || [];
 })();

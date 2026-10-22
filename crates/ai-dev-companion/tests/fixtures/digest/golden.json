@@ -1,0 +1,631 @@
+{
+ "full": {
+  "input": {
+   "now": 1790670600000,
+   "myPrs": [
+    {
+     "pr": {
+      "id": 1,
+      "title": "PR 1",
+      "project": "CI",
+      "repo": "sample-app",
+      "url": "https://bb.example/projects/CI/repos/sample-app/pull-requests/1",
+      "approvals": 2,
+      "reviewers": []
+     },
+     "conflicted": false,
+     "build": {
+      "state": "SUCCESSFUL"
+     }
+    },
+    {
+     "pr": {
+      "id": 2,
+      "title": "PR 2",
+      "project": "CI",
+      "repo": "sample-app",
+      "url": "https://bb.example/projects/CI/repos/sample-app/pull-requests/2",
+      "approvals": 0,
+      "reviewers": []
+     },
+     "conflicted": true,
+     "build": {
+      "state": "FAILED"
+     }
+    },
+    {
+     "pr": {
+      "id": 3,
+      "title": "PR 3",
+      "project": "CI",
+      "repo": "sample-app",
+      "url": "https://bb.example/projects/CI/repos/sample-app/pull-requests/3",
+      "approvals": 0,
+      "reviewers": [
+       {
+        "name": "ann",
+        "status": "NEEDS_WORK"
+       },
+       {
+        "name": "bo",
+        "status": "NEEDS_WORK"
+       }
+      ]
+     },
+     "conflicted": false,
+     "build": null
+    },
+    {
+     "pr": {
+      "id": 4,
+      "title": "tttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt",
+      "project": "CI",
+      "repo": "sample-app",
+      "url": "https://bb.example/projects/CI/repos/sample-app/pull-requests/4",
+      "approvals": 0,
+      "reviewers": []
+     },
+     "conflicted": false,
+     "build": {
+      "state": "INPROGRESS"
+     }
+    }
+   ],
+   "reviewPrs": [
+    {
+     "id": 10,
+     "title": "PR 10",
+     "project": "CI",
+     "repo": "sample-app",
+     "approvals": 0,
+     "reviewers": [],
+     "authorSlug": "bob"
+    },
+    {
+     "id": 11,
+     "title": "PR 11",
+     "project": "CI",
+     "repo": "sample-app",
+     "url": "javascript:x",
+     "approvals": 0,
+     "reviewers": [],
+     "authorSlug": "bob"
+    },
+    {
+     "id": 12,
+     "title": "PR 12",
+     "project": "CI",
+     "repo": "sample-app",
+     "approvals": 0,
+     "reviewers": [],
+     "authorSlug": "bob"
+    },
+    {
+     "id": 13,
+     "title": "PR 13",
+     "project": "CI",
+     "repo": "sample-app",
+     "url": "javascript:x",
+     "approvals": 0,
+     "reviewers": [],
+     "authorSlug": "bob"
+    },
+    {
+     "id": 14,
+     "title": "PR 14",
+     "project": "CI",
+     "repo": "sample-app",
+     "approvals": 0,
+     "reviewers": [],
+     "authorSlug": "bob"
+    },
+    {
+     "id": 15,
+     "title": "PR 15",
+     "project": "CI",
+     "repo": "sample-app",
+     "url": "javascript:x",
+     "approvals": 0,
+     "reviewers": [],
+     "authorSlug": "bob"
+    },
+    {
+     "id": 16,
+     "title": "PR 16",
+     "project": "CI",
+     "repo": "sample-app",
+     "approvals": 0,
+     "reviewers": [],
+     "authorSlug": "bob"
+    },
+    {
+     "id": 17,
+     "title": "PR 17",
+     "project": "CI",
+     "repo": "sample-app",
+     "url": "javascript:x",
+     "approvals": 0,
+     "reviewers": [],
+     "authorSlug": "bob"
+    },
+    {
+     "id": 18,
+     "title": "PR 18",
+     "project": "CI",
+     "repo": "sample-app",
+     "approvals": 0,
+     "reviewers": [],
+     "authorSlug": "bob"
+    },
+    {
+     "id": 19,
+     "title": "PR 19",
+     "project": "CI",
+     "repo": "sample-app",
+     "url": "javascript:x",
+     "approvals": 0,
+     "reviewers": [],
+     "authorSlug": "bob"
+    },
+    {
+     "id": 20,
+     "title": "PR 20",
+     "project": "CI",
+     "repo": "sample-app",
+     "approvals": 0,
+     "reviewers": [],
+     "authorSlug": "bob"
+    },
+    {
+     "id": 21,
+     "title": "PR 21",
+     "project": "CI",
+     "repo": "sample-app",
+     "url": "javascript:x",
+     "approvals": 0,
+     "reviewers": [],
+     "authorSlug": "bob"
+    },
+    {
+     "id": 22,
+     "title": "PR 22",
+     "project": "CI",
+     "repo": "sample-app",
+     "approvals": 0,
+     "reviewers": [],
+     "authorSlug": "bob"
+    }
+   ],
+   "tickets": [
+    {
+     "key": "PROJ-7",
+     "summary": "Login broken",
+     "status": "Open",
+     "priority": "High",
+     "url": "https://jira.example/browse/PROJ-7"
+    },
+    {
+     "key": "PROJ-8",
+     "summary": "Typo",
+     "status": "In Progress",
+     "priority": "Low"
+    }
+   ],
+   "prewarmed": [
+    {
+     "featureId": "resolve-conflict",
+     "status": "awaiting-approval",
+     "scopeKey": "bitbucket:CI/sample-app#2",
+     "summary": "Resolved 2 files"
+    },
+    {
+     "featureId": "analyze-issue",
+     "status": "failed",
+     "scopeKey": "jira:PROJ-7",
+     "error": "Claude exited"
+    },
+    {
+     "featureId": "other",
+     "status": "awaiting-approval",
+     "scopeKey": "github:o/r#1"
+    }
+   ],
+   "notes": [
+    "Couldn't read your review queue: HTTP 500"
+   ]
+  },
+  "digest": {
+   "generatedAt": "2026-09-29T08:30:00.000Z",
+   "headline": "Needs you: 1 conflict, 1 failing build, 1 PR needing work, 13 PRs to review, 2 ready for you, 1 background run failed.",
+   "counts": {
+    "conflicts": 1,
+    "failingBuilds": 1,
+    "needsWork": 1,
+    "approved": 1,
+    "toReview": 13,
+    "tickets": 2,
+    "ready": 2,
+    "failedRuns": 1
+   },
+   "sections": [
+    {
+     "id": "my-prs",
+     "title": "Your pull requests",
+     "items": [
+      {
+       "text": "CI/sample-app #2 PR 2 — conflicts, build failing",
+       "tone": "bad",
+       "url": "https://bb.example/projects/CI/repos/sample-app/pull-requests/2"
+      },
+      {
+       "text": "CI/sample-app #3 PR 3 — needs work (ann, bo)",
+       "tone": "warn",
+       "url": "https://bb.example/projects/CI/repos/sample-app/pull-requests/3"
+      },
+      {
+       "text": "CI/sample-app #4 ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt… — build running",
+       "tone": "busy",
+       "url": "https://bb.example/projects/CI/repos/sample-app/pull-requests/4"
+      },
+      {
+       "text": "CI/sample-app #1 PR 1 — approved by 2",
+       "tone": "ok",
+       "url": "https://bb.example/projects/CI/repos/sample-app/pull-requests/1"
+      }
+     ]
+    },
+    {
+     "id": "to-review",
+     "title": "Waiting on your review",
+     "items": [
+      {
+       "text": "CI/sample-app #10 PR 10 — by bob",
+       "tone": "neutral",
+       "url": null
+      },
+      {
+       "text": "CI/sample-app #11 PR 11 — by bob",
+       "tone": "neutral",
+       "url": null
+      },
+      {
+       "text": "CI/sample-app #12 PR 12 — by bob",
+       "tone": "neutral",
+       "url": null
+      },
+      {
+       "text": "CI/sample-app #13 PR 13 — by bob",
+       "tone": "neutral",
+       "url": null
+      },
+      {
+       "text": "CI/sample-app #14 PR 14 — by bob",
+       "tone": "neutral",
+       "url": null
+      },
+      {
+       "text": "CI/sample-app #15 PR 15 — by bob",
+       "tone": "neutral",
+       "url": null
+      },
+      {
+       "text": "CI/sample-app #16 PR 16 — by bob",
+       "tone": "neutral",
+       "url": null
+      },
+      {
+       "text": "CI/sample-app #17 PR 17 — by bob",
+       "tone": "neutral",
+       "url": null
+      },
+      {
+       "text": "CI/sample-app #18 PR 18 — by bob",
+       "tone": "neutral",
+       "url": null
+      },
+      {
+       "text": "CI/sample-app #19 PR 19 — by bob",
+       "tone": "neutral",
+       "url": null
+      },
+      {
+       "text": "…and 3 more",
+       "tone": "neutral",
+       "url": null
+      }
+     ],
+     "more": [
+      {
+       "text": "CI/sample-app #20 PR 20 — by bob",
+       "tone": "neutral",
+       "url": null
+      },
+      {
+       "text": "CI/sample-app #21 PR 21 — by bob",
+       "tone": "neutral",
+       "url": null
+      },
+      {
+       "text": "CI/sample-app #22 PR 22 — by bob",
+       "tone": "neutral",
+       "url": null
+      }
+     ]
+    },
+    {
+     "id": "tickets",
+     "title": "Your open tickets",
+     "items": [
+      {
+       "text": "PROJ-7 Login broken (Open)",
+       "tone": "warn",
+       "url": "https://jira.example/browse/PROJ-7"
+      },
+      {
+       "text": "PROJ-8 Typo (In Progress)",
+       "tone": "neutral",
+       "url": null
+      }
+     ]
+    },
+    {
+     "id": "ready",
+     "title": "Ready for you",
+     "items": [
+      {
+       "text": "A background analyze-issue run for PROJ-7 failed: Claude exited",
+       "tone": "bad",
+       "url": null
+      },
+      {
+       "text": "Conflict resolution ready to review: CI/sample-app#2 — Resolved 2 files",
+       "tone": "ok",
+       "url": null
+      },
+      {
+       "text": "other ready: o/r#1",
+       "tone": "ok",
+       "url": null
+      }
+     ]
+    },
+    {
+     "id": "notes",
+     "title": "Couldn't check",
+     "items": [
+      {
+       "text": "Couldn't read your review queue: HTTP 500",
+       "tone": "warn",
+       "url": null
+      }
+     ]
+    }
+   ]
+  },
+  "notification": {
+   "key": "digest:2026-09-29",
+   "kind": "digest",
+   "title": "Morning digest — Needs you: 1 conflict, 1 failing build, 1 PR needing work, 13 PRs to review, 2 ready for you, 1 background run failed.",
+   "body": "CI/sample-app #2 PR 2 — conflicts, build failing\nCI/sample-app #3 PR 3 — needs work (ann, bo)\nCI/sample-app #10 PR 10 — by bob\nCouldn't read your review queue: HTTP 500",
+   "url": null,
+   "urgent": false
+  }
+ },
+ "nasty": {
+  "input": {
+   "now": 1790670600000,
+   "myPrs": [
+    {
+     "pr": {
+      "id": 1,
+      "title": "x\u001b[2Jy‮z​w",
+      "project": "x\u001b[2Jy‮z​w",
+      "repo": "x\u001b[2Jy‮z​w",
+      "url": "https://bb.example/projects/CI/repos/sample-app/pull-requests/1",
+      "approvals": 0,
+      "reviewers": [
+       {
+        "name": "x\u001b[2Jy‮z​w",
+        "status": "NEEDS_WORK"
+       }
+      ]
+     },
+     "conflicted": true,
+     "build": null
+    }
+   ],
+   "reviewPrs": [
+    {
+     "id": 2,
+     "title": "PR 2",
+     "project": "x\u001b[2Jy‮z​w",
+     "repo": "sample-app",
+     "url": "https://bb.example/projects/CI/repos/sample-app/pull-requests/2",
+     "approvals": 0,
+     "reviewers": [],
+     "authorSlug": "x\u001b[2Jy‮z​w"
+    }
+   ],
+   "tickets": [
+    {
+     "key": "x\u001b[2Jy‮z​w",
+     "summary": "<script>alert(1)</script>",
+     "status": "x\u001b[2Jy‮z​w",
+     "priority": "High"
+    }
+   ],
+   "prewarmed": [
+    {
+     "featureId": "x\u001b[2Jy‮z​w",
+     "status": "awaiting-approval",
+     "scopeKey": "bitbucket:x\u001b[2Jy‮z​w",
+     "summary": "x\u001b[2Jy‮z​w"
+    },
+    {
+     "featureId": "x\u001b[2Jy‮z​w",
+     "status": "failed",
+     "scopeKey": "jira:x\u001b[2Jy‮z​w",
+     "error": "x\u001b[2Jy‮z​w"
+    }
+   ],
+   "notes": [
+    "x\u001b[2Jy‮z​w"
+   ]
+  },
+  "digest": {
+   "generatedAt": "2026-09-29T08:30:00.000Z",
+   "headline": "Needs you: 1 conflict, 1 PR needing work, 1 PR to review, 1 ready for you, 1 background run failed.",
+   "counts": {
+    "conflicts": 1,
+    "failingBuilds": 0,
+    "needsWork": 1,
+    "approved": 0,
+    "toReview": 1,
+    "tickets": 1,
+    "ready": 1,
+    "failedRuns": 1
+   },
+   "sections": [
+    {
+     "id": "my-prs",
+     "title": "Your pull requests",
+     "items": [
+      {
+       "text": "x[2Jyzw/x[2Jyzw #1 x[2Jyzw — conflicts, needs work (x[2Jyzw)",
+       "tone": "bad",
+       "url": "https://bb.example/projects/CI/repos/sample-app/pull-requests/1"
+      }
+     ]
+    },
+    {
+     "id": "to-review",
+     "title": "Waiting on your review",
+     "items": [
+      {
+       "text": "x[2Jyzw/sample-app #2 PR 2 — by x[2Jyzw",
+       "tone": "neutral",
+       "url": "https://bb.example/projects/CI/repos/sample-app/pull-requests/2"
+      }
+     ]
+    },
+    {
+     "id": "tickets",
+     "title": "Your open tickets",
+     "items": [
+      {
+       "text": "x[2Jyzw <script>alert(1)</script> (x[2Jyzw)",
+       "tone": "warn",
+       "url": null
+      }
+     ]
+    },
+    {
+     "id": "ready",
+     "title": "Ready for you",
+     "items": [
+      {
+       "text": "A background x[2Jyzw run for x[2Jyzw failed: x[2Jyzw",
+       "tone": "bad",
+       "url": null
+      },
+      {
+       "text": "x[2Jyzw ready: x[2Jyzw — x[2Jyzw",
+       "tone": "ok",
+       "url": null
+      }
+     ]
+    },
+    {
+     "id": "notes",
+     "title": "Couldn't check",
+     "items": [
+      {
+       "text": "x[2Jyzw",
+       "tone": "warn",
+       "url": null
+      }
+     ]
+    }
+   ]
+  },
+  "notification": {
+   "key": "digest:2026-09-29",
+   "kind": "digest",
+   "title": "Morning digest — Needs you: 1 conflict, 1 PR needing work, 1 PR to review, 1 ready for you, 1 background run failed.",
+   "body": "x[2Jyzw/x[2Jyzw #1 x[2Jyzw — conflicts, needs work (x[2Jyzw)\nx[2Jyzw/sample-app #2 PR 2 — by x[2Jyzw\nx[2Jyzw <script>alert(1)</script> (x[2Jyzw)\nx[2Jyzw",
+   "url": null,
+   "urgent": false
+  }
+ },
+ "empty": {
+  "input": {
+   "now": 1790670600000
+  },
+  "digest": {
+   "generatedAt": "2026-09-29T08:30:00.000Z",
+   "headline": "Nothing needs you right now.",
+   "counts": {
+    "conflicts": 0,
+    "failingBuilds": 0,
+    "needsWork": 0,
+    "approved": 0,
+    "toReview": 0,
+    "tickets": 0,
+    "ready": 0,
+    "failedRuns": 0
+   },
+   "sections": []
+  },
+  "notification": {
+   "key": "digest:2026-09-29",
+   "kind": "digest",
+   "title": "Morning digest — Nothing needs you right now.",
+   "body": "Open ✨ Morning digest for the details.",
+   "url": null,
+   "urgent": false
+  }
+ },
+ "onlyNotes": {
+  "input": {
+   "now": 1790670600000,
+   "notes": [
+    "Couldn't read your pull requests: HTTP 500."
+   ]
+  },
+  "digest": {
+   "generatedAt": "2026-09-29T08:30:00.000Z",
+   "headline": "Some sources couldn't be checked — see below.",
+   "counts": {
+    "conflicts": 0,
+    "failingBuilds": 0,
+    "needsWork": 0,
+    "approved": 0,
+    "toReview": 0,
+    "tickets": 0,
+    "ready": 0,
+    "failedRuns": 0
+   },
+   "sections": [
+    {
+     "id": "notes",
+     "title": "Couldn't check",
+     "items": [
+      {
+       "text": "Couldn't read your pull requests: HTTP 500.",
+       "tone": "warn",
+       "url": null
+      }
+     ]
+    }
+   ]
+  },
+  "notification": {
+   "key": "digest:2026-09-29",
+   "kind": "digest",
+   "title": "Morning digest — couldn't read some sources in the background",
+   "body": "Open ✨ Morning digest to read them with your browser sign-in, or save tokens in ⚙ Settings so the background run can sign in.",
+   "url": null,
+   "urgent": false
+  }
+ }
+}

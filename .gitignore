@@ -9,3 +9,6 @@ companion-service/*.log
 chrome-extension/companion-config.js
 .assembled/
 .DS_Store
+
+# Rust
+target/
