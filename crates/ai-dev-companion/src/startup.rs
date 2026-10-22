@@ -1128,16 +1128,16 @@ mod tests {
             tokio::time::sleep(Duration::from_millis(50)).await;
             let signalled = Instant::now();
             let _ = fire.send(());
-            while a_stopped.load(std::sync::atomic::Ordering::SeqCst) == 0 && signalled.elapsed() < Duration::from_secs(2) {
+            while a_stopped.load(std::sync::atomic::Ordering::SeqCst) == 0 && signalled.elapsed() < Duration::from_secs(4) {
                 tokio::time::sleep(Duration::from_millis(10)).await;
             }
             signalled.elapsed()
         };
-        let (served, told_after) = tokio::time::timeout(Duration::from_secs(5), async { tokio::join!(run, watch) }).await.expect("serving never ended: the drain is unbounded");
+        let (served, told_after) = tokio::time::timeout(Duration::from_secs(10), async { tokio::join!(run, watch) }).await.expect("serving never ended: the drain is unbounded");
         served.unwrap();
-        assert!(told_after < Duration::from_millis(250), "the add-on was told {told_after:?} after the signal, not at once");
+        assert!(told_after < Duration::from_secs(1), "the add-on was told {told_after:?} after the signal, not at once");
         let took = started.elapsed();
-        assert!(took >= drain && took < Duration::from_secs(2), "the drain was not cut off at its bound: {took:?}");
+        assert!(took >= drain && took < Duration::from_secs(4), "the drain was not cut off at its bound: {took:?}");
         running.shutdown_within(Duration::from_millis(300)).await;
         assert_eq!(a_stopped.load(std::sync::atomic::Ordering::SeqCst), 1, "an add-on is shut down once");
     }

@@ -561,10 +561,6 @@ fn build_resume_header(label: &str, job: &Value) -> Vec<Vec<HeaderSegment>> {
     vec![vec![HeaderSegment::styled(&rule, HeaderStyle::Rule)], title, vec![HeaderSegment::styled(&rule, HeaderStyle::Rule)], vec![HeaderSegment::styled("Resuming Claude Code\u{2026}", HeaderStyle::Status)], vec![]]
 }
 
-/// Generic (not per feature): "open a terminal at this job's worktree and run claude" doesn't
-/// depend on which feature created it, only on the `data.worktree.dir` convention. The path is
-/// never client-supplied. A body of `{resume: true}` instead resumes the job's headless Claude
-/// session, read only from the server-held job data.
 async fn addons_list(State(state): State<Shared>, Path(job_id): Path<String>) -> Response {
     let Some(job) = state.store.get(&job_id) else { return unknown_job() };
     let config = state.config_value();
@@ -602,6 +598,10 @@ async fn addon_heartbeat(State(state): State<Shared>, body: Bytes) -> Response {
     reply(if alive { 200 } else { 404 }, json!({ "ok": alive }))
 }
 
+/// Generic (not per feature): "open a terminal at this job's worktree and run claude" doesn't
+/// depend on which feature created it, only on the `data.worktree.dir` convention. The path is
+/// never client-supplied. A body of `{resume: true}` instead resumes the job's headless Claude
+/// session, read only from the server-held job data.
 async fn open_in_claude_code(State(state): State<Shared>, Path(job_id): Path<String>, body: Bytes) -> Response {
     let body = match body_of(&body) {
         Ok(b) => b,

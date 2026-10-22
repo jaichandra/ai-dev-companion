@@ -3,7 +3,7 @@
 // The pack's add-ons for a finished review (GET /jobs/:id/addons), as one card that keeps itself
 // current while it is on the page: "Start <label>" -> "Starting <label>…" -> a link that opens in a
 // new tab (+ Stop) -> the error and Retry. The service decides what is offered, so the card stays
-// empty when nothing is.
+// empty when nothing is, and then stops polling (a re-rendered panel builds a new card that asks again).
 // Add-ons already auto-started this page load, keyed `${jobId}:${addonId}`: a re-rendered panel
 // builds a new card, which must not start them again (e.g. after the user pressed Stop).
 const paiAutoStarted = new Set();
@@ -13,6 +13,8 @@ function paiAddonsCard(jobId) {
   const POLL_MS = 3000;
   let firstTick = true;
   let busy = false;
+  // Nothing was offered for this job: no more polls from this card.
+  let nothingOffered = false;
   const ask = (message) =>
     new Promise((resolve, reject) =>
       chrome.runtime.sendMessage(message, (response) => {
@@ -52,7 +54,7 @@ function paiAddonsCard(jobId) {
       pending.className = "open-in-editor-btn";
       pending.textContent = `Starting ${addon.label}…`;
       box.append(pending);
-    } else if (addon.state === "ready") {
+    } else if (addon.state === "ready" && /^https?:\/\//.test(addon.href || "")) {
       const link = document.createElement("a");
       link.className = "open-in-editor-btn";
       link.textContent = `View ${addon.label}`;
@@ -63,8 +65,14 @@ function paiAddonsCard(jobId) {
     } else {
       const error = document.createElement("pre");
       error.className = "action-error";
-      error.textContent = addon.error || "Failed.";
-      box.append(error, button("Retry", () => op(addon, "start")));
+      if (addon.state === "ready") {
+        // Ready, but its link isn't http(s): shown as a failure; Stop ends it.
+        error.textContent = `${addon.label} has no usable link.`;
+        box.append(error, button(`Stop ${addon.label}`, () => op(addon, "stop")));
+      } else {
+        error.textContent = addon.error || "Failed.";
+        box.append(error, button("Retry", () => op(addon, "start")));
+      }
     }
     return box;
   };
@@ -76,12 +84,13 @@ function paiAddonsCard(jobId) {
       body.replaceChildren(...addons.map(row));
       body.dataset.shown = "1";
       body.style.marginBottom = addons.length ? "20px" : "0";
+      nothingOffered = addons.length === 0;
     } catch {
       // The service may be restarting; the next poll tries again.
     }
   }
   (function tick() {
-    if (!firstTick && !body.isConnected) return;
+    if (nothingOffered || (!firstTick && !body.isConnected)) return;
     if (!busy) void refresh();
     firstTick = false;
     setTimeout(tick, POLL_MS);

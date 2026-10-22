@@ -55,7 +55,13 @@ repo that depends on this one and adds files. Three things carry that.
   `siteSettings` (extra keys on a site's Settings), `targets` (data for
   `GET /targets`), `externalTokens` (tokens another tool already holds, used only
   for the host they name), `diagnose` (a richer way to diagnose a build),
-  `doctorChecks` and `mcpDenyList`. A feature is a folder with an `index.ts` and a
+  `doctorChecks` and `mcpDenyList`. In the Rust crate a pack may also contribute
+  `job_addons` (each a `JobAddon`: `view`, `start`, `stop`, `heartbeat`,
+  `shutdown`; a card on a finished job's panel, served by
+  `GET /jobs/:id/addons`, `POST /jobs/:id/addons/:addon/start|stop` and
+  `POST /addons/heartbeat`, and shut down with the service) and `page_scripts`
+  (content scripts for pages outside the sites, e.g. the add-on's own pages, that
+  the manifest generator adds with their `matches`). A feature is a folder with an `index.ts` and a
   `feature.js` declaration (setup descriptor, factory thunk, MCP tools, scope-key
   rule, `persist`, `history` flags, and the extension script that registers its
   ✨ row). `packs/builtin.js` lists the framework's own.
