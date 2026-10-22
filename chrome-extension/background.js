@@ -251,6 +251,15 @@ async function handle(message) {
         method: "POST",
         body: message.body,
       });
+    case "addons-list":
+      return await callService(`/jobs/${encodeURIComponent(message.jobId)}/addons`);
+    case "addon-op":
+      return await callService(
+        `/jobs/${encodeURIComponent(message.jobId)}/addons/${encodeURIComponent(message.addon)}/${encodeURIComponent(message.op)}`,
+        { method: "POST", body: {} },
+      );
+    case "addon-heartbeat":
+      return await callService("/addons/heartbeat", { method: "POST", body: { origin: message.origin } });
     case "choose-repo":
       return await callService("/repos/choose", {
         method: "POST",
