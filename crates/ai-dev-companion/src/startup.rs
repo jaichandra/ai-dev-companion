@@ -49,6 +49,12 @@ const SHUTDOWN_WAIT: Duration = Duration::from_millis(2000);
 /// How long shutdown waits for the job add-ons to stop what they run (launchd's default
 /// `ExitTimeOut` is 20 s).
 const ADDON_SHUTDOWN_WAIT: Duration = Duration::from_secs(12);
+/// How long requests still in flight when the stop signal fires may run before the server is
+/// dropped, so the rest of shutdown runs well within launchd's `ExitTimeOut`.
+const DRAIN_WAIT: Duration = Duration::from_secs(5);
+
+/// Resolves when the server should stop accepting connections and drain.
+type StopSignal = std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>>;
 
 /// What a test (or a dev build) swaps for the real thing.
 #[derive(Default)]
@@ -104,14 +110,64 @@ struct Shutdown {
     shutting_down: Arc<std::sync::atomic::AtomicBool>,
     /// The packs' job add-ons (the ones the routes serve), told to stop what they run.
     addons: Vec<Arc<dyn crate::addons::JobAddon>>,
+    /// Their shutdown, once started (at the stop signal or by [`Running::shutdown`]); taken by
+    /// the shutdown that waits for it.
+    addons_stopping: Mutex<Option<AddonsStopping>>,
+    addons_started: std::sync::atomic::AtomicBool,
+}
+
+struct AddonsStopping {
+    deadline: tokio::time::Instant,
+    wait: Duration,
+    tasks: Vec<(String, tokio::task::JoinHandle<()>)>,
+}
+
+impl Shutdown {
+    /// Tells every add-on to stop what it runs, each in its own task (one that panics fails alone),
+    /// to be waited for until `wait` from now. Only the first call does anything.
+    fn start_addons(&self, wait: Duration) {
+        if self.addons_started.swap(true, std::sync::atomic::Ordering::SeqCst) {
+            return;
+        }
+        let tasks = self
+            .addons
+            .iter()
+            .map(|a| {
+                let a = a.clone();
+                (a.id().to_string(), tokio::spawn(async move { a.shutdown().await }))
+            })
+            .collect();
+        *self.addons_stopping.lock().unwrap() = Some(AddonsStopping { deadline: tokio::time::Instant::now() + wait, wait, tasks });
+    }
+
+    /// Waits for the add-ons' shutdown (until its deadline), aborting the ones still running then.
+    async fn finish_addons(&self) {
+        let Some(mut stopping) = self.addons_stopping.lock().unwrap().take() else { return };
+        let waited = tokio::time::timeout_at(stopping.deadline, async {
+            for (id, handle) in stopping.tasks.iter_mut() {
+                if let Err(e) = handle.await {
+                    warn(&format!("add-on {id} failed while stopping: {e}"));
+                }
+            }
+        })
+        .await;
+        if waited.is_err() {
+            for (id, handle) in &stopping.tasks {
+                if !handle.is_finished() {
+                    warn(&format!("add-on {id} did not stop within {}s", stopping.wait.as_secs_f32()));
+                    handle.abort();
+                }
+            }
+        }
+    }
 }
 
 impl Running {
     /// Freezes job persistence and history first, so the jobs these kills fail are never saved as
     /// "failed: aborted" (their files keep "running" and the next start reconciles them), then stops
     /// the scheduler and the features' background work and kills detached children. The job
-    /// add-ons are told to stop what they run at the start, and waited for (at most 12 s) before
-    /// it returns.
+    /// add-ons are told to stop what they run at the start (unless the stop signal already did),
+    /// and waited for (at most 12 s from then) before it returns.
     pub async fn shutdown(&self) {
         self.shutdown_within(ADDON_SHUTDOWN_WAIT).await;
     }
@@ -121,15 +177,7 @@ impl Running {
     pub async fn shutdown_within(&self, addon_wait: Duration) {
         let s = &self.shutdown;
         s.shutting_down.store(true, std::sync::atomic::Ordering::SeqCst);
-        let addons_deadline = tokio::time::Instant::now() + addon_wait;
-        let mut addons: Vec<(String, tokio::task::JoinHandle<()>)> = s
-            .addons
-            .iter()
-            .map(|a| {
-                let a = a.clone();
-                (a.id().to_string(), tokio::spawn(async move { a.shutdown().await }))
-            })
-            .collect();
+        s.start_addons(addon_wait);
         s.store.freeze_persistence();
         if let Some(r) = &s.recorder {
             r.freeze();
@@ -143,21 +191,35 @@ impl Running {
         while crate::exec::detached_child_count() > 0 && Instant::now() < deadline {
             tokio::time::sleep(Duration::from_millis(50)).await;
         }
-        let waited = tokio::time::timeout_at(addons_deadline, async {
-            for (id, handle) in addons.iter_mut() {
-                if let Err(e) = handle.await {
-                    warn(&format!("add-on {id} failed while stopping: {e}"));
+        s.finish_addons().await;
+    }
+
+    /// Runs the server `serve` builds around the stop signal it is handed, until it ends. When
+    /// `signal` fires the add-ons start stopping at once, while the server drains, and requests
+    /// still in flight after `drain` are dropped with the server (a request waiting on a slow
+    /// add-on stop would otherwise hold the drain open past launchd's `ExitTimeOut`).
+    async fn serve_until_signal<S>(&self, signal: impl std::future::Future<Output = ()> + Send + 'static, serve: impl FnOnce(StopSignal) -> S, drain: Duration) -> std::io::Result<()>
+    where
+        S: std::future::Future<Output = std::io::Result<()>>,
+    {
+        let (fired_tx, fired_rx) = tokio::sync::oneshot::channel::<()>();
+        let shutdown = self.shutdown.clone();
+        let stop: StopSignal = Box::pin(async move {
+            signal.await;
+            shutdown.start_addons(ADDON_SHUTDOWN_WAIT);
+            let _ = fired_tx.send(());
+        });
+        let server = serve(stop);
+        tokio::pin!(server);
+        tokio::select! {
+            served = &mut server => served,
+            Ok(()) = fired_rx => match tokio::time::timeout(drain, &mut server).await {
+                Ok(served) => served,
+                Err(_) => {
+                    warn(&format!("requests still running {}s after the stop signal were dropped", drain.as_secs_f32()));
+                    Ok(())
                 }
-            }
-        })
-        .await;
-        if waited.is_err() {
-            for (id, handle) in &addons {
-                if !handle.is_finished() {
-                    warn(&format!("add-on {id} did not stop within {}s", addon_wait.as_secs_f32()));
-                    handle.abort();
-                }
-            }
+            },
         }
     }
 
@@ -799,7 +861,16 @@ pub fn build(dist: Distribution) -> Result<Option<Running>, String> {
         router: server::app(state.clone()),
         state,
         port,
-        shutdown: Arc::new(Shutdown { store, recorder, scheduler: wiring.scheduler.clone(), stop_background: Mutex::new(vec![]), shutting_down, addons }),
+        shutdown: Arc::new(Shutdown {
+            store,
+            recorder,
+            scheduler: wiring.scheduler.clone(),
+            stop_background: Mutex::new(vec![]),
+            shutting_down,
+            addons,
+            addons_stopping: Mutex::new(None),
+            addons_started: std::sync::atomic::AtomicBool::new(false),
+        }),
     };
     running.start_background(persist_jobs, &features);
     if let Some(stop) = cfg.start_update_checks() {
@@ -825,7 +896,11 @@ pub async fn run_service(dist: Distribution) -> Result<(), String> {
         let mut term = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()).expect("a SIGTERM handler installs");
         tokio::select! { _ = term.recv() => {}, _ = tokio::signal::ctrl_c() => {} }
     };
-    axum::serve(listener, running.router.clone()).with_graceful_shutdown(signal).await.map_err(|e| e.to_string())?;
+    let router = running.router.clone();
+    running
+        .serve_until_signal(signal, |stop| axum::serve(listener, router).with_graceful_shutdown(stop).into_future(), DRAIN_WAIT)
+        .await
+        .map_err(|e| e.to_string())?;
     running.shutdown().await;
     Ok(())
 }
@@ -1026,6 +1101,45 @@ mod tests {
         }
         // The rest of shutdown still ran.
         assert!(running.shutdown.shutting_down.load(std::sync::atomic::Ordering::SeqCst));
+    }
+
+    #[tokio::test]
+    async fn once_the_stop_signal_fires_the_add_ons_stop_at_once_and_a_request_that_never_ends_is_cut_off() {
+        let (a, a_stopped) = stopping("a", Duration::ZERO, false);
+        let f = fx_with_addons(vec![a]);
+        let running = build(f.dist).unwrap().unwrap();
+        let (fire, fired) = tokio::sync::oneshot::channel::<()>();
+        // A server whose drain never ends: a request still waiting on an add-on's slow stop, say.
+        let serve = |stop: StopSignal| async move {
+            stop.await;
+            std::future::pending::<()>().await;
+            Ok(())
+        };
+        let drain = Duration::from_millis(500);
+        let started = Instant::now();
+        let run = running.serve_until_signal(
+            async move {
+                let _ = fired.await;
+            },
+            serve,
+            drain,
+        );
+        let watch = async {
+            tokio::time::sleep(Duration::from_millis(50)).await;
+            let signalled = Instant::now();
+            let _ = fire.send(());
+            while a_stopped.load(std::sync::atomic::Ordering::SeqCst) == 0 && signalled.elapsed() < Duration::from_secs(2) {
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            }
+            signalled.elapsed()
+        };
+        let (served, told_after) = tokio::time::timeout(Duration::from_secs(5), async { tokio::join!(run, watch) }).await.expect("serving never ended: the drain is unbounded");
+        served.unwrap();
+        assert!(told_after < Duration::from_millis(250), "the add-on was told {told_after:?} after the signal, not at once");
+        let took = started.elapsed();
+        assert!(took >= drain && took < Duration::from_secs(2), "the drain was not cut off at its bound: {took:?}");
+        running.shutdown_within(Duration::from_millis(300)).await;
+        assert_eq!(a_stopped.load(std::sync::atomic::Ordering::SeqCst), 1, "an add-on is shut down once");
     }
 
     #[tokio::test]
