@@ -4,10 +4,14 @@
 // current while it is on the page: "Start <label>" -> "Starting <label>…" -> a link that opens in a
 // new tab (+ Stop) -> the error and Retry. The service decides what is offered, so the card stays
 // empty when nothing is.
+// Add-ons already auto-started this page load, keyed `${jobId}:${addonId}`: a re-rendered panel
+// builds a new card, which must not start them again (e.g. after the user pressed Stop).
+const paiAutoStarted = new Set();
+
 function paiAddonsCard(jobId) {
   const body = document.createElement("div");
   const POLL_MS = 3000;
-  const autoStarted = new Set();
+  let firstTick = true;
   let busy = false;
   const ask = (message) =>
     new Promise((resolve, reject) =>
@@ -39,8 +43,8 @@ function paiAddonsCard(jobId) {
     box.className = "open-in-editor-actions";
     if (addon.state === "idle") {
       box.append(button(`Start ${addon.label}`, () => op(addon, "start")));
-      if (addon.autoStart && !autoStarted.has(addon.id)) {
-        autoStarted.add(addon.id);
+      if (addon.autoStart && !paiAutoStarted.has(`${jobId}:${addon.id}`)) {
+        paiAutoStarted.add(`${jobId}:${addon.id}`);
         void op(addon, "start");
       }
     } else if (addon.state === "starting") {
@@ -65,9 +69,10 @@ function paiAddonsCard(jobId) {
     return box;
   };
   async function refresh() {
-    if (!body.isConnected && body.dataset.shown) return;
+    if (!firstTick && !body.isConnected) return;
     try {
       const { addons } = await ask({ type: "addons-list", jobId });
+      if (!firstTick && !body.isConnected) return;
       body.replaceChildren(...addons.map(row));
       body.dataset.shown = "1";
       body.style.marginBottom = addons.length ? "20px" : "0";
@@ -76,8 +81,9 @@ function paiAddonsCard(jobId) {
     }
   }
   (function tick() {
-    if (body.dataset.shown && !body.isConnected) return;
+    if (!firstTick && !body.isConnected) return;
     if (!busy) void refresh();
+    firstTick = false;
     setTimeout(tick, POLL_MS);
   })();
   return body;
