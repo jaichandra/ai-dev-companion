@@ -154,6 +154,10 @@ pub fn build_manifest<F>(base: &Value, config: &Value, env: &Environment, packs:
     first.insert("matches".into(), json!(match_patterns(env, config)));
     first.insert("js".into(), json!(content_scripts(packs)));
     scripts.insert(0, Value::Object(first));
+    for page in packs.page_scripts() {
+        scripts.retain(|b| b["js"] != json!(page.js));
+        scripts.push(json!({ "matches": page.matches, "js": page.js, "run_at": "document_idle" }));
+    }
     manifest.insert("content_scripts".into(), Value::Array(scripts));
     Value::Object(manifest)
 }
@@ -249,6 +253,18 @@ mod tests {
         };
         let none = FeatureSpec::new(FeatureDescriptor::new("no-ui", "no-ui"), ());
         PackRegistry::new(vec![Pack::new("t", vec![spec("resolve-conflict", Some(20.0)), spec("review-in-editor", Some(10.0)), none, spec("analyze-issue", None), spec("create-jira-subtasks", Some(20.0))])]).unwrap()
+    }
+
+    #[test]
+    fn a_packs_page_scripts_become_content_script_blocks_once() {
+        let mut pack = Pack::<()>::new("t", vec![]);
+        pack.page_scripts = vec![crate::packs::PageScript { matches: vec!["http://*.localhost/*".into()], js: vec!["packs/t/beat.js".into()] }];
+        let registry = PackRegistry::new(vec![pack]).unwrap();
+        let base = json!({ "content_scripts": [{ "matches": ["https://x/*"], "js": ["a.js"] }] });
+        let once = build_manifest(&base, &json!({}), environment::current(), &registry);
+        assert_eq!(once["content_scripts"][1], json!({ "matches": ["http://*.localhost/*"], "js": ["packs/t/beat.js"], "run_at": "document_idle" }));
+        let twice = build_manifest(&once, &json!({}), environment::current(), &registry);
+        assert_eq!(twice["content_scripts"].as_array().unwrap().len(), 2);
     }
 
     fn committed() -> Value {

@@ -13,9 +13,11 @@
 // A route helper's `Err` is the ready-made error response: that is the point, not a cost.
 #![allow(clippy::result_large_err)]
 
+use crate::addons::JobAddon;
 use crate::atlassian::AuthContext;
 use crate::background_routes::BackgroundRoutes;
 use crate::background_wiring::{feature_context_for, StartVia};
+use crate::config::ConfigFn;
 use crate::host_guard::check_host;
 use crate::jobs::{Feature, FeatureContext, FeatureError, JobStore};
 use crate::scope_key::is_valid_scope_key;
@@ -188,13 +190,15 @@ pub struct AppState {
     pub background: Option<Arc<BackgroundRoutes>>,
     /// `/mcp`; `None` answers 404.
     pub mcp: Option<Arc<dyn McpHandler>>,
+    pub addons: Vec<Arc<dyn JobAddon>>,
+    config: Option<ConfigFn>,
     extension_hello: Mutex<Option<(Option<String>, String)>>,
     jobs_being_started: Mutex<HashSet<String>>,
 }
 
 impl AppState {
     pub fn new(port: u16, store: Arc<JobStore>, features: Vec<Arc<dyn Feature>>, hooks: Arc<dyn AppHooks>) -> Self {
-        Self { port, store, features, hooks, background: None, mcp: None, extension_hello: Mutex::new(None), jobs_being_started: Mutex::new(HashSet::new()) }
+        Self { port, store, features, hooks, background: None, mcp: None, addons: vec![], config: None, extension_hello: Mutex::new(None), jobs_being_started: Mutex::new(HashSet::new()) }
     }
 
     pub fn with_background(mut self, background: Arc<BackgroundRoutes>) -> Self {
@@ -205,6 +209,16 @@ impl AppState {
     pub fn with_mcp(mut self, mcp: Arc<dyn McpHandler>) -> Self {
         self.mcp = Some(mcp);
         self
+    }
+
+    pub fn with_addons(mut self, addons: Vec<Arc<dyn JobAddon>>, config: ConfigFn) -> Self {
+        self.addons = addons;
+        self.config = Some(config);
+        self
+    }
+
+    fn config_value(&self) -> Value {
+        self.config.as_ref().map(|c| c()).unwrap_or_else(|| json!({}))
     }
 
     fn feature(&self, id: &str) -> Option<&Arc<dyn Feature>> {
@@ -547,6 +561,43 @@ fn build_resume_header(label: &str, job: &Value) -> Vec<Vec<HeaderSegment>> {
     vec![vec![HeaderSegment::styled(&rule, HeaderStyle::Rule)], title, vec![HeaderSegment::styled(&rule, HeaderStyle::Rule)], vec![HeaderSegment::styled("Resuming Claude Code\u{2026}", HeaderStyle::Status)], vec![]]
 }
 
+async fn addons_list(State(state): State<Shared>, Path(job_id): Path<String>) -> Response {
+    let Some(job) = state.store.get(&job_id) else { return unknown_job() };
+    let config = state.config_value();
+    let mut views = vec![];
+    for addon in &state.addons {
+        if let Some(v) = addon.view(&job, &config).await {
+            views.push(v.to_json());
+        }
+    }
+    reply(200, json!({ "addons": views }))
+}
+
+async fn addon_op(State(state): State<Shared>, Path((job_id, addon_id, op)): Path<(String, String, String)>) -> Response {
+    let Some(job) = state.store.get(&job_id) else { return unknown_job() };
+    let Some(addon) = state.addons.iter().find(|a| a.id() == addon_id) else { return reply(404, json!({ "error": "unknown add-on" })) };
+    let config = state.config_value();
+    let result = match op.as_str() {
+        "start" => addon.start(&job, &config).await,
+        "stop" => addon.stop(&job, &config).await,
+        _ => return reply(404, json!({ "error": "unknown add-on operation" })),
+    };
+    match result {
+        Ok(view) => reply(200, json!({ "addon": view.to_json() })),
+        Err(e) => reply(500, json!({ "error": e })),
+    }
+}
+
+async fn addon_heartbeat(State(state): State<Shared>, body: Bytes) -> Response {
+    let body = match body_of(&body) {
+        Ok(b) => b,
+        Err(r) => return r,
+    };
+    let Some(origin) = body["origin"].as_str() else { return reply(400, json!({ "error": "origin is required" })) };
+    let alive = state.addons.iter().any(|a| a.heartbeat(origin));
+    reply(if alive { 200 } else { 404 }, json!({ "ok": alive }))
+}
+
 /// Generic (not per feature): "open a terminal at this job's worktree and run claude" doesn't
 /// depend on which feature created it, only on the `data.worktree.dir` convention. The path is
 /// never client-supplied. A body of `{resume: true}` instead resumes the job's headless Claude
@@ -864,6 +915,9 @@ pub fn app(state: Arc<AppState>) -> Router {
         .route("/settings/restart", post(settings_restart))
         .route("/status/{job_id}", get(job_status))
         .route("/jobs/{job_id}/open-in-claude-code", post(open_in_claude_code))
+        .route("/jobs/{job_id}/addons", get(addons_list))
+        .route("/jobs/{job_id}/addons/{addon}/{op}", post(addon_op))
+        .route("/addons/heartbeat", post(addon_heartbeat))
         .route("/notifications", get(notifications_list))
         .route("/notifications/seen", post(notifications_seen))
         .route("/notifications/announce", post(notifications_announce))
@@ -888,6 +942,7 @@ pub fn app(state: Arc<AppState>) -> Router {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::addons::{AddonState, AddonView};
     use axum::body::Body;
     use http_body_util::BodyExt;
     use tower::ServiceExt;
@@ -1026,6 +1081,58 @@ mod tests {
         let fake = Arc::new(Fake { store: store.clone(), fail: Mutex::new(None) });
         let state = Arc::new(AppState::new(PORT, store, vec![fake.clone() as Arc<dyn Feature>], hooks.clone()).with_mcp(Arc::new(Mcp)));
         Fx { app: app(state.clone()), state, hooks, fake }
+    }
+
+    fn fx_addons(addons: Vec<Arc<dyn JobAddon>>) -> Fx {
+        let store = Arc::new(JobStore::new());
+        let hooks = Arc::new(Hooks { calls: Mutex::new(vec![]), launchd: false });
+        let fake = Arc::new(Fake { store: store.clone(), fail: Mutex::new(None) });
+        let state = Arc::new(AppState::new(PORT, store, vec![fake.clone() as Arc<dyn Feature>], hooks.clone()).with_mcp(Arc::new(Mcp)).with_addons(addons, Arc::new(|| json!({}))));
+        Fx { app: app(state.clone()), state, hooks, fake }
+    }
+
+    struct FakeAddon {
+        calls: Mutex<Vec<String>>,
+    }
+
+    #[async_trait]
+    impl JobAddon for FakeAddon {
+        fn id(&self) -> &str {
+            "fake-addon"
+        }
+        async fn view(&self, job: &Value, _: &Value) -> Option<AddonView> {
+            (job["featureId"] == "fake").then(|| AddonView { id: "fake-addon".into(), label: "Fake".into(), state: AddonState::Idle, href: None, error: None, auto_start: false })
+        }
+        async fn start(&self, _: &Value, _: &Value) -> Result<AddonView, String> {
+            self.calls.lock().unwrap().push("start".into());
+            Ok(AddonView { id: "fake-addon".into(), label: "Fake".into(), state: AddonState::Starting, href: None, error: None, auto_start: false })
+        }
+        async fn stop(&self, _: &Value, _: &Value) -> Result<AddonView, String> {
+            self.calls.lock().unwrap().push("stop".into());
+            Err("nope".into())
+        }
+        fn heartbeat(&self, origin: &str) -> bool {
+            origin == "http://x.localhost"
+        }
+    }
+
+    #[tokio::test]
+    async fn addons_are_listed_started_stopped_and_kept_alive_by_job_and_origin() {
+        let addon = Arc::new(FakeAddon { calls: Mutex::new(vec![]) });
+        let f = fx_addons(vec![addon.clone()]);
+        assert_eq!(get_(&f, "/jobs/nope/addons").await.0, 404);
+        let job = f.state.store.create("fake", Map::new());
+        let id = job["id"].as_str().unwrap().to_string();
+        let (s, body) = get_(&f, &format!("/jobs/{id}/addons")).await;
+        assert_eq!((s, body["addons"][0]["state"].clone()), (200, json!("idle")));
+        let (s, body) = post_(&f, &format!("/jobs/{id}/addons/fake-addon/start"), "{}").await;
+        assert_eq!((s, body["addon"]["state"].clone()), (200, json!("starting")));
+        assert_eq!(post_(&f, &format!("/jobs/{id}/addons/fake-addon/stop"), "{}").await.0, 500);
+        assert_eq!(post_(&f, &format!("/jobs/{id}/addons/other/start"), "{}").await.0, 404);
+        assert_eq!(post_(&f, &format!("/jobs/{id}/addons/fake-addon/launch"), "{}").await.0, 404);
+        assert_eq!(post_(&f, "/addons/heartbeat", "{\"origin\":\"http://x.localhost\"}").await.0, 200);
+        assert_eq!(post_(&f, "/addons/heartbeat", "{\"origin\":\"http://y.localhost\"}").await.0, 404);
+        assert_eq!(post_(&f, "/addons/heartbeat", "{}").await.0, 400);
     }
 
     async fn call(f: &Fx, method: &str, uri: &str, headers: &[(&str, &str)], body: Option<&str>) -> (u16, HeaderMap, Value) {

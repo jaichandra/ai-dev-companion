@@ -213,6 +213,14 @@ pub struct ServerHint {
     pub when_missing: String,
 }
 
+/// A content script block the extension loads on pages that are not a site's (e.g. a local app a
+/// pack starts): match patterns and the scripts (paths inside the extension folder).
+#[derive(Clone, Debug, PartialEq)]
+pub struct PageScript {
+    pub matches: Vec<String>,
+    pub js: Vec<String>,
+}
+
 #[derive(Clone)]
 pub struct Pack<F> {
     pub id: String,
@@ -233,6 +241,8 @@ pub struct Pack<F> {
     pub doctor_checks: Vec<DoctorCheck>,
     pub mcp_deny_list: Vec<String>,
     pub analysis_server_hints: Vec<ServerHint>,
+    pub job_addons: Vec<Arc<dyn crate::addons::JobAddon>>,
+    pub page_scripts: Vec<PageScript>,
 }
 
 impl<F> Pack<F> {
@@ -250,6 +260,8 @@ impl<F> Pack<F> {
             doctor_checks: vec![],
             mcp_deny_list: vec![],
             analysis_server_hints: vec![],
+            job_addons: vec![],
+            page_scripts: vec![],
         }
     }
 }
@@ -333,6 +345,17 @@ pub fn define_pack<F>(pack: Pack<F>) -> Result<Pack<F>, String> {
         }
         seen.push(&spec.descriptor.id);
     }
+    let mut seen_addons = std::collections::HashSet::new();
+    for a in &pack.job_addons {
+        if !seen_addons.insert(a.id().to_string()) {
+            return fail(&pack.id, format!("two add-ons share the id {}", a.id()));
+        }
+    }
+    for s in &pack.page_scripts {
+        if s.matches.is_empty() || s.js.is_empty() || !s.js.iter().all(|j| is_extension_script(j)) {
+            return fail(&pack.id, "a pageScripts entry needs matches and relative .js paths inside the extension folder");
+        }
+    }
     Ok(pack)
 }
 
@@ -369,6 +392,14 @@ impl<F> PackRegistry<F> {
 
     pub fn packs(&self) -> &[Pack<F>] {
         &self.packs
+    }
+
+    pub fn job_addons(&self) -> Vec<Arc<dyn crate::addons::JobAddon>> {
+        self.packs.iter().flat_map(|p| p.job_addons.iter().cloned()).collect()
+    }
+
+    pub fn page_scripts(&self) -> Vec<&PageScript> {
+        self.packs.iter().flat_map(|p| p.page_scripts.iter()).collect()
     }
 
     /// Every feature spec, in pack order then declared order.
@@ -538,6 +569,41 @@ mod tests {
         }
         // `./a.js` passes the same pattern the Node build used (a lone dot is a legal segment).
         assert!(define_pack(P::new("p", vec![ext("./a.js", None)])).is_ok());
+    }
+
+    #[test]
+    fn a_page_script_needs_matches_and_a_relative_js_path() {
+        let mut p = Pack::<()>::new("t", vec![]);
+        p.page_scripts = vec![PageScript { matches: vec!["http://*.localhost/*".into()], js: vec!["../x.js".into()] }];
+        assert!(err(p).contains("pageScripts"));
+    }
+
+    struct StubAddon;
+
+    #[async_trait::async_trait]
+    impl crate::addons::JobAddon for StubAddon {
+        fn id(&self) -> &str {
+            "same"
+        }
+        async fn view(&self, _: &Value, _: &Value) -> Option<crate::addons::AddonView> {
+            None
+        }
+        async fn start(&self, _: &Value, _: &Value) -> Result<crate::addons::AddonView, String> {
+            Err("stub".into())
+        }
+        async fn stop(&self, _: &Value, _: &Value) -> Result<crate::addons::AddonView, String> {
+            Err("stub".into())
+        }
+        fn heartbeat(&self, _: &str) -> bool {
+            false
+        }
+    }
+
+    #[test]
+    fn two_add_ons_in_a_pack_cannot_share_an_id() {
+        let mut p = Pack::<()>::new("t", vec![]);
+        p.job_addons = vec![Arc::new(StubAddon), Arc::new(StubAddon)];
+        assert!(err(p).contains("share the id"));
     }
 
     #[test]
