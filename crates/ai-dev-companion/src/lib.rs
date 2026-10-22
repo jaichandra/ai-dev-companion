@@ -80,6 +80,7 @@ pub mod mcp_stdio;
 pub mod mcp_tools;
 pub mod node_path;
 pub mod notifications;
+pub mod addons;
 pub mod packs;
 pub mod paths;
 pub mod permission_mode;
