@@ -1,5 +1,88 @@
 // The "review-in-editor" feature of the ✨ menu: its helpers and its registry entry (the contract is in registry.js).
 
+// The pack's add-ons for a finished review (GET /jobs/:id/addons), as one card that keeps itself
+// current while it is on the page: "Start <label>" -> "Starting <label>…" -> a link that opens in a
+// new tab (+ Stop) -> the error and Retry. The service decides what is offered, so the card stays
+// empty when nothing is.
+function paiAddonsCard(jobId) {
+  const body = document.createElement("div");
+  const POLL_MS = 3000;
+  const autoStarted = new Set();
+  let busy = false;
+  const ask = (message) =>
+    new Promise((resolve, reject) =>
+      chrome.runtime.sendMessage(message, (response) => {
+        const failure = chrome.runtime.lastError?.message || response?.error;
+        failure ? reject(new Error(failure)) : resolve(response);
+      }),
+    );
+  const button = (label, onClick, className = "open-in-editor-btn") => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = className;
+    b.textContent = label;
+    b.addEventListener("click", onClick);
+    return b;
+  };
+  const op = async (addon, name) => {
+    busy = true;
+    try {
+      await ask({ type: "addon-op", jobId, addon: addon.id, op: name });
+    } catch (err) {
+      alert(`${addon.label}: ${err.message}`);
+    }
+    busy = false;
+    await refresh();
+  };
+  const row = (addon) => {
+    const box = document.createElement("div");
+    box.className = "open-in-editor-actions";
+    if (addon.state === "idle") {
+      box.append(button(`Start ${addon.label}`, () => op(addon, "start")));
+      if (addon.autoStart && !autoStarted.has(addon.id)) {
+        autoStarted.add(addon.id);
+        void op(addon, "start");
+      }
+    } else if (addon.state === "starting") {
+      const pending = document.createElement("span");
+      pending.className = "open-in-editor-btn";
+      pending.textContent = `Starting ${addon.label}…`;
+      box.append(pending);
+    } else if (addon.state === "ready") {
+      const link = document.createElement("a");
+      link.className = "open-in-editor-btn";
+      link.textContent = `View ${addon.label}`;
+      link.href = addon.href;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      box.append(link, button(`Stop ${addon.label}`, () => op(addon, "stop"), "open-in-editor-btn open-in-editor-btn-secondary"));
+    } else {
+      const error = document.createElement("pre");
+      error.className = "action-error";
+      error.textContent = addon.error || "Failed.";
+      box.append(error, button("Retry", () => op(addon, "start")));
+    }
+    return box;
+  };
+  async function refresh() {
+    if (!body.isConnected && body.dataset.shown) return;
+    try {
+      const { addons } = await ask({ type: "addons-list", jobId });
+      body.replaceChildren(...addons.map(row));
+      body.dataset.shown = "1";
+      body.style.marginBottom = addons.length ? "20px" : "0";
+    } catch {
+      // The service may be restarting; the next poll tries again.
+    }
+  }
+  (function tick() {
+    if (body.dataset.shown && !body.isConnected) return;
+    if (!busy) void refresh();
+    setTimeout(tick, POLL_MS);
+  })();
+  return body;
+}
+
 PaiRegistry.register({
   site: "git",
   id: "review-in-editor",
@@ -226,6 +309,8 @@ PaiRegistry.register({
     actions.appendChild(copyBtn);
     box.appendChild(actions);
     rest.push(box);
+
+    if (review.reviewStarted !== false && job?.id) rest.push(paiAddonsCard(job.id));
 
     const stashed = review.stashedFiles || [];
     if (stashed.length > 0) {
