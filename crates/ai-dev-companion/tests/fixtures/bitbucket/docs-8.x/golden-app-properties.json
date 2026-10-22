@@ -1,0 +1,11 @@
+{
+  "props": {
+    "version": "8.19.1",
+    "major": 8,
+    "minor": 19
+  },
+  "caps": {
+    "threadResolvedField": true,
+    "commitBuildsEndpoint": true
+  }
+}

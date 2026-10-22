@@ -8,45 +8,40 @@ This repository is a **framework**. It knows how to do those things against a gi
 
 | Folder | What it is |
 |---|---|
-| `companion-service/` | The Node service: jobs and worktrees, the Claude runner and its safety guards, the MCP server, local history, scheduler and watchers, setup wizard, `doctor`, the `companion` CLI. |
+| `crates/ai-dev-companion/` | The service, as a Rust library crate: jobs and worktrees, the Claude runner and its safety guards (the `guard` subcommand), the HTTP API and MCP server, local history, scheduler and watchers, setup wizard, `doctor`, the `companion` CLI. A distribution crate depends on it and supplies its profile and packs. |
 | `chrome-extension/` | The extension: a feature registry, shared UI, the Settings panel. Its `manifest.json` is generated from the environment profile. |
 | `plugin/` | A Claude Code plugin template (MCP bridge, session-start hook, skills). |
 | `docs/DESIGN.md` | The technical design: architecture, security notes, how each feature and subsystem works, the extension guide, known limitations. |
-| `scripts/assemble.js` | Merges the framework with a distribution into the folder that runs and is installed. |
-| `examples/minimal-env/` | An example distribution profile: GitHub, Jira and Jenkins, with its own test. |
+| `scripts/` | `check.sh` (clippy and tests: the gate before a commit), `commit.sh`, `mark-ported.py`. |
 
 ## Building a distribution
 
 A distribution is a separate repo that depends on this one and adds its own files:
 
-1. **An environment profile**, `companion-service/environment.js`, written with `defineEnvironment` (`core/environment-base.js`): the sites (`jira`, `jenkins`, `bitbucket`: kind, provider, base URL), where updates come from, the LLM proxy defaults, default Jira projects, branding, and which packs to load. The framework ships a placeholder profile (GitHub at `github.com`, Jira and Jenkins at `example.com`); yours replaces it. Setup asks for the address of any site whose default is an `example.com` placeholder, so the bare framework works with GitHub, your Jira and your Jenkins without a distribution.
-2. **Packs** (optional): a pack (`core/packs.js`) lists features and can add settings keys, `/targets` data, borrowed-token sources, a diagnose command, doctor lines and an MCP deny list. A feature is a folder with an `index.ts` implementation and a `feature.js` declaration (setup descriptor, factory, MCP tools, scope-key rule, history flags), plus an extension file that registers its ✨ row.
-3. **Root files**: installer, README, changelog.
-4. **Assemble**: `assemble({ frameworkDir, rootDir, rootSkip, overlays, dest })` from `scripts/assemble.js` lays the framework, your root files and your overlay folders into one tree. Install and test from that tree, so what you test is what you ship.
+1. **A distribution crate** that depends on `ai-dev-companion` (a git dependency with a branch, tag or rev) and has its own `main`: it installs its profile with `environment::init`, builds the pack registry (`packs::builtin::pack` plus its own packs) and calls `startup::run_service` or `companion_cli::run_cli`.
+2. **An environment profile**, built with `environment_base::define_environment`: the sites (`jira`, `jenkins`, `bitbucket`: kind, provider, base URL), where updates come from, default Jira projects, branding, the names of any credentials its packs save, and which packs to load. The framework's placeholder profile (`environment::placeholder_profile`: GitHub at `github.com`, Jira and Jenkins at `example.com`) is what its own tests use; yours replaces it.
+3. **Packs** (optional): a `packs::Pack` lists features and can add settings keys and whole Settings sections (with their extension page), an LLM for the watchers' triage and similar-ticket search (`llm::LlmBackend`), `/targets` data, borrowed-token sources, a diagnose command, doctor lines and an MCP deny list. A feature is a module with its implementation, a `feature.rs` declaration (setup descriptor, factory, MCP tools, scope-key rule, history flags) and an extension file that registers its ✨ row.
+4. **An installer** (a distribution's own `install` subcommand): build the release binary, lay out the extension and plugin around it and mirror them into `~/<app slug>`, keeping settings.
 
-See `CLAUDE.md` for the architecture and `companion-service/core/packs.js` for the pack contract.
+See `CLAUDE.md` for the architecture and `crates/ai-dev-companion/src/packs.rs` for the pack contract.
 
 ## Using GitHub
 
-Name a GitHub site (`provider: "github"`, `tokenOnly: true`) in the profile, as `examples/minimal-env` does, and add a personal access token in Settings. The companion reads and writes pull requests, review threads (through GraphQL, so resolved and outdated threads are skipped), check runs and commit statuses with that token; the extension runs only on pull request pages and is never given github.com's cookies. See `examples/minimal-env/README.md` for what is and isn't supported (fork PRs, default reviewers, conversation-tab comments).
+Name a GitHub site (`provider: "github"`, `tokenOnly: true`) in the profile, as the placeholder profile does, and add a personal access token in Settings. The companion reads and writes pull requests, review threads (through GraphQL, so resolved and outdated threads are skipped), check runs and commit statuses with that token; the extension runs only on pull request pages and is never given github.com's cookies. Fork PRs, default reviewers and conversation-tab comments are not supported.
 
 ## Running the tests
 
 ```
-cd companion-service
-npm install
-npm run build   # many tests run against dist/
-npm test
-cd .. && npm run test:example   # the same framework assembled with a GitHub profile (examples/minimal-env)
+scripts/check.sh   # cargo clippy --all-targets -D warnings, then cargo test
 ```
 
-Node 22.13 or newer is required (the history store uses `node:sqlite`).
+No Node is needed to build or test the service (the extension stays JavaScript; the plugin's two small scripts use the `node` that Claude Code already runs them with).
 
 ## Known limits
 
 - Opening a terminal or an editor is macOS-only.
 - The product identity (state folder `~/.ai-dev-companion`, install folder `~/ai-dev-companion`, launchd label, MCP server name `ai-companion`) is still fixed; making it part of the profile is future work.
 - Provider-neutral issue types are not done: features read Jira's JSON for an issue.
-- GitHub support was written against GitHub's documented API and hand-made fixtures, not a live account: compare the first real run with `core/fixtures/github/`.
+- GitHub support was written against GitHub's documented API and hand-made fixtures, not a live account: compare the first real run with `crates/ai-dev-companion/tests/fixtures/github/`.
 - One git host per profile: Bitbucket and GitHub side by side in one install is not supported.
 - No license has been chosen yet.

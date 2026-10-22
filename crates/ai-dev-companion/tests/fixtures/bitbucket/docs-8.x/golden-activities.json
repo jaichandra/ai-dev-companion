@@ -1,0 +1,189 @@
+[
+  {
+    "id": 1,
+    "version": 2,
+    "text": "Please rename this variable for clarity — done, thanks!",
+    "authorSlug": "asmith",
+    "authorName": "Alice Smith",
+    "createdAt": 1706000100000,
+    "severity": "NORMAL",
+    "state": "OPEN",
+    "threadResolved": false,
+    "anchor": {
+      "path": "src/main/sample-app/widget.js",
+      "line": 42,
+      "lineType": "ADDED",
+      "fileType": "TO",
+      "diffType": "EFFECTIVE",
+      "orphaned": false
+    },
+    "replies": []
+  },
+  {
+    "id": 2,
+    "version": 1,
+    "text": "Looks fixed now, thanks!",
+    "authorSlug": "bwhite",
+    "authorName": "Bob White",
+    "createdAt": 1706000200000,
+    "severity": "NORMAL",
+    "state": "RESOLVED",
+    "threadResolved": true,
+    "anchor": {
+      "path": "src/main/sample-app/widget.js",
+      "line": 10,
+      "lineType": "CONTEXT",
+      "fileType": "TO",
+      "diffType": "EFFECTIVE",
+      "orphaned": false
+    },
+    "replies": []
+  },
+  {
+    "id": 3,
+    "version": 1,
+    "text": "Must fix the null check before merge.",
+    "authorSlug": "ccole",
+    "authorName": "Carol Cole",
+    "createdAt": 1706000300000,
+    "severity": "BLOCKER",
+    "state": "OPEN",
+    "threadResolved": false,
+    "anchor": {
+      "path": "src/main/sample-app/widget.js",
+      "line": 77,
+      "lineType": "CONTEXT",
+      "fileType": "TO",
+      "diffType": "EFFECTIVE",
+      "orphaned": false
+    },
+    "replies": []
+  },
+  {
+    "id": 4,
+    "version": 1,
+    "text": "Can you add a test for this branch?",
+    "authorSlug": "dpatel",
+    "authorName": "Dev Patel",
+    "createdAt": 1706000400000,
+    "severity": "NORMAL",
+    "state": "OPEN",
+    "threadResolved": false,
+    "anchor": {
+      "path": "src/main/sample-app/widget.js",
+      "line": 30,
+      "lineType": "CONTEXT",
+      "fileType": "TO",
+      "diffType": "EFFECTIVE",
+      "orphaned": false
+    },
+    "replies": [
+      {
+        "id": 8,
+        "version": 1,
+        "text": "Good idea, added in the latest push.",
+        "authorSlug": "asmith",
+        "authorName": "Alice Smith",
+        "createdAt": 1706000450000,
+        "severity": "NORMAL",
+        "state": "OPEN",
+        "threadResolved": false,
+        "anchor": null,
+        "replies": []
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "version": 1,
+    "text": "This code no longer exists on the current diff?",
+    "authorSlug": "erobles",
+    "authorName": "Erin Robles",
+    "createdAt": 1706000500000,
+    "severity": "NORMAL",
+    "state": "OPEN",
+    "threadResolved": false,
+    "anchor": {
+      "path": "src/main/sample-app/widget.js",
+      "line": 15,
+      "lineType": "CONTEXT",
+      "fileType": "TO",
+      "diffType": "EFFECTIVE",
+      "orphaned": true
+    },
+    "replies": []
+  },
+  {
+    "id": 6,
+    "version": 1,
+    "text": "This whole block was deleted — should we keep the helper around?",
+    "authorSlug": "ffisher",
+    "authorName": "Frank Fisher",
+    "createdAt": 1706000600000,
+    "severity": "NORMAL",
+    "state": "OPEN",
+    "threadResolved": false,
+    "anchor": {
+      "path": "src/main/sample-app/widget.js",
+      "line": 99,
+      "lineType": "REMOVED",
+      "fileType": "FROM",
+      "diffType": "EFFECTIVE",
+      "orphaned": false
+    },
+    "replies": []
+  },
+  {
+    "id": 7,
+    "version": 1,
+    "text": "Was this addressed in the follow-up commit?",
+    "authorSlug": "ggray",
+    "authorName": "Grace Gray",
+    "createdAt": 1706000700000,
+    "severity": "NORMAL",
+    "state": "OPEN",
+    "threadResolved": false,
+    "anchor": {
+      "path": "src/main/sample-app/widget.js",
+      "line": 5,
+      "lineType": "CONTEXT",
+      "fileType": "TO",
+      "diffType": "COMMIT",
+      "orphaned": false
+    },
+    "replies": []
+  },
+  {
+    "id": 9,
+    "version": 1,
+    "text": "Mystery status field from a future Bitbucket release.",
+    "authorSlug": "hkumar",
+    "authorName": "Henry Kumar",
+    "createdAt": 1706001000000,
+    "severity": "unknown",
+    "state": "unknown",
+    "threadResolved": false,
+    "anchor": {
+      "path": "src/main/sample-app/widget.js",
+      "line": 1,
+      "lineType": "CONTEXT",
+      "fileType": "TO",
+      "diffType": "EFFECTIVE",
+      "orphaned": false
+    },
+    "replies": []
+  },
+  {
+    "id": 10,
+    "version": 1,
+    "text": "General PR comment with no line anchor.",
+    "authorSlug": "ijones",
+    "authorName": "Ian Jones",
+    "createdAt": 1706001100000,
+    "severity": "NORMAL",
+    "state": "OPEN",
+    "threadResolved": false,
+    "anchor": null,
+    "replies": []
+  }
+]

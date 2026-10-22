@@ -47,9 +47,10 @@ repo that depends on this one and adds files. Three things carry that.
   out of the extension's host permissions and never has a session relayed) and may
   narrow where the extension runs with `pageMatches` (patterns starting
   `{origin}/`, e.g. `{origin}/*/*/pull/*`). The profile also holds the update
-  source, the LLM proxy defaults, the default Jira projects and issue-type
-  settings, the Settings panel's branding (`branding.supportEmail`,
-  `branding.llmProxy`), and the packs to load. `config.json` overrides it.
+  source, the default Jira projects and issue-type settings, the Settings panel's
+  branding (`branding.supportEmail`, plus whatever names a pack's own pages
+  read), the names of the credentials a pack's settings sections save
+  (`credentialNames`), and the packs to load. `config.json` overrides it.
 - **Packs** (`core/packs.js`). A pack lists features and may contribute
   `siteSettings` (extra keys on a site's Settings), `targets` (data for
   `GET /targets`), `externalTokens` (tokens another tool already holds, used only
@@ -1358,8 +1359,8 @@ run.
   `AuthContext` and `authedJsonWithHeaders` runs `authContextFor` (vault
   cookie, then saved token).
 - **Triage** (only for events the rules would run Claude for). When
-  `route-policy.chooseTier({task: "triage"})` says `onprem` (proxy detected,
-  prompt within 200 KB) the watcher asks the proxy for `{worth, reason}` JSON,
+  `route-policy.chooseTier({task: "triage"})` says `onprem` (LLM available,
+  prompt within 200 KB) the watcher asks the LLM for `{worth, reason}` JSON,
   checked against a schema. The answer can only veto a run the rules allow; a
   broken or failed reply falls back to the rules. The prompt is a plain chat
   call with no tools, and ticket/PR text is untrusted: fenced, flattened to
@@ -1388,71 +1389,32 @@ run.
     nothing is pushed until a person clicks Approve. It does spend budget.
   - *Review requests* only run `git fetch`.
 
-### LLM proxy and routing
+### The LLM seam and routing
 
-`core/llm-proxy-request.js` (pure request/response shapes),
-`core/llm-proxy-client.js` (HTTP over an injected `fetch`; no new dependency)
-and `core/llm-proxy.ts` (live config and credential). The paths are the
-OpenAI-compatible `/v1/chat/completions`, `/v1/embeddings` and `GET /v1/models`
-(a tiny detection call), with `Authorization: Bearer <key>` and the `user` field
-from `llmProxy.user` (else the OS user name), all in one `PATHS`/`headers()`
-place. The defaults (address, models, allowed host suffixes, where to get a key)
-come from the profile's `llm` block; the Settings page that edits them is named
-by the profile's `branding.llmProxy`, and is hidden when the profile has none.
+The service makes a few cheap model calls of its own, apart from the Claude Code runs the features
+start: the watchers' "is this worth a Claude run?" triage and the embeddings behind similar-item
+search. The framework knows no provider. `llm.rs` defines `LlmBackend` (available / detect_state /
+chat / embed / embedding_model, the entries the Settings view puts under `background`, the doctor's
+view, and why the embedding task skipped); `LlmHandle` adapts one to the `WatcherLlm` and `Embedder`
+traits those features are written against; `NoLlm` is what runs when no pack supplies one. A pack
+supplies a factory (`Pack.llm`) that builds the backend from the live config, the credential
+store and the OS user name (`LlmContext`); `startup` builds it once. With no backend, or one with
+no key, the watchers decide by rules and similar items match by shared words.
 
-- **Reasoning models.** A reasoning chat model thinks before it answers: a
-  trivial prompt can use 40-100 hidden `reasoning_content` tokens inside
-  `max_tokens` (a budget of 8 gave an empty answer). Chat therefore defaults to
-  1024 tokens, the final `content` (which starts with blank lines) is what is
-  parsed, and a reply with `finish_reason: "length"` that has no answer, or that
-  must fit a JSON schema, is reported as "cut off before the answer" rather
-  than as an empty or invalid reply.
-- **Allowed models.** Only names in `llmProxy.allowedModels` (default: the
-  profile's chat and embedding models) are ever sent anything; any other is
-  refused before a request is built. `allowedModels` can be set by hand in
-  `config.json` only, not from Settings. The chat and embedding model choices
-  must be in the list. Names the profile lists as `retiredChatModels` are only
-  aliases of the current model (an alias can be re-pointed at any time): a saved
-  choice of one moves to the current default; any other name outside the list is
-  refused, not replaced. Settings offers only what the proxy lists for each role,
-  and a chat model can't be saved as the embedding model or the reverse.
-- **Allowed host.** The key and the prompt text go to `llmProxy.baseUrl` only if
-  it is `https:` with no credentials and its host is (or is under) one of
-  `llmProxy.allowedHostSuffixes` (default: the profile's `llm.hostSuffixes`).
-  Enforced twice: the Settings validator rejects anything else with a message
-  saying so, and the request builders refuse to build for a hand-edited bad
-  address (nothing is sent). Like `allowedModels`, the suffix list is
-  config.json-only.
-- **Key.** `llmProxy.apiKey` in `credentials.enc` (an allowed credential name);
-  never in `config.json` and never in a response (only `apiKeySet`). No Keychain.
-- **Timeouts and retry.** 60 s; one retry after 1 s on 429/5xx only (a network
-  error is not retried); redirects are errors; a refused or failed reply's body
-  is cancelled.
-- **Detection.** `detect()` gives `ready | no-key | unreachable | tls |
-  key-rejected | error`: the key check is live and the one call (10 s, no retry)
-  is cached for 10 minutes per base URL and a hash of the whole key. The call is
-  one tiny embedding (`POST /v1/embeddings`), not the model list, because some
-  proxies answer the model list to anyone: a real embedding exercises the key,
-  the application, the `user` field and the model. A non-2xx answer is classified
-  by `classifyReply` into fixed states, never echoing the proxy's text (its errors
-  can include the key): `application` (a gateway that ties each key to the
-  application it was created for by the request's User-Agent and refuses a client
-  it doesn't know), `user` (a missing or invalid `user` field), `key-rejected`
-  (401/403), `error` (any other status, shown as "error (HTTP n)"). Because such
-  gateways have no generic application, the client name is a setting,
-  `llmProxy.userAgent` (default `ai-dev-companion/<version>`, printable ASCII
-  up to 100 characters), sent on chat, embeddings and detection; prefer asking
-  the proxy team for an application of this tool's own over borrowing another
-  tool's name. `tls` means Node refused the proxy's certificate
-  (`SELF_SIGNED_CERT_IN_CHAIN` and similar): a private-CA chain is only trusted
-  through the system certificate store, so the launchd plist starts the service
-  with `NODE_USE_SYSTEM_CA=1`; a shell-run `companion doctor` needs the same
-  variable. `GET /settings` waits at most 1.5 s for it.
-- **`route-policy.chooseTier({task, bytes, needsTools}, {onpremAvailable})`**
-  returns `{tier, reason}`: `needsTools`, `code-change`, `diagnosis`, `analysis`
-  and unknown tasks are `claude`; `triage`, `classify`, `condense` and `embed`
-  are `onprem` when available and under 200 KB, else `claude`. For a watcher's
-  triage, `claude` means "rules only": triage never spends Claude budget.
+What a backend's Settings look like is the pack's too: `Pack.settings_sections` registers a
+top-level config key (`SettingsSection`: validate, merge, public view; a credential it saves
+goes through a `TokenOp`, never into `config.json`, and its name is listed in the profile's
+`credentialNames`), and `Pack.extension_scripts` adds the extension script that registers the page
+(`PaiSettingsPages`, see `settings-panel.js`). The doctor shows the backend's own line
+(`LlmView`: level, text, fix, and how similar-item search works while it is and isn't ready).
+
+`route_policy.rs` decides, per step, whether an LLM or Claude does it: small, text-only steps
+(triage, classify, condense, embed) go on-prem when a backend is available and the text fits
+(200 KB), everything else to Claude. A backend that has no key, can't be reached or is refused
+reads as "not available", so the answer is always Claude or rules, never an error.
+
+A provider's own client (its request shapes, how it identifies the caller, its allow-lists and
+detection states) is the distribution's: it implements `LlmBackend` and documents itself.
 
 ### Inbox and notifications
 
@@ -1567,11 +1529,11 @@ default there (`similar.enabled`).
 - **The `history.embed` task** (`core/embed-task.js`; scheduler task, last in
   a tick; first run 2 minutes after start, then every 30 minutes; quiet hours
   don't stop it, it notifies no one). At most 48 items a run, newest first,
-  in batches of 16. Without a ready proxy its events row (`featureId:
-  scheduler:history.embed`) says `{skipped: "no proxy", proxy: <state>,
+  in batches of 16. Without a ready LLM its events row (`featureId:
+  scheduler:history.embed`) says `{skipped: <the backend's reason>, llm: <state>,
   embedded: 0}` and nothing is sent. `chooseTier({task: "embed"})` must say
   `onprem` before anything is sent, embedding never falls back to Claude, and
-  the proxy client refuses a model outside `llmProxy.allowedModels` and a base
+  the LLM backend refuses a model outside the backend's allow-list and a base
   URL that isn't https on an allowed host suffix. A failed batch returns `outcome:
   "failed"` with what it managed; the scheduler redacts the error. It is due
   whenever `similar.enabled` isn't false but is registered only when the local
@@ -1585,7 +1547,7 @@ default there (`similar.enabled`).
   cosine >= 0.55 against vectors of the same model and size. A ticket and its
   `analysis:` item count as one result (`jira:ABC-1`); the queried item is
   left out. The query vector is the item's stored vector, else the text
-  embedded on-prem (8 s limit); no real vectors, no ready proxy or any
+  embedded on-prem (8 s limit); no real vectors, no ready LLM or any
   failure gives words only. `mode` is `"vector+text"` or `"text"`; `k`
   defaults to 5, at most 20. It throws when the history is off, or when a key
   has nothing recorded and no text was given.
@@ -1623,7 +1585,7 @@ default there (`similar.enabled`).
   disabled product-wide and must not be resurrected or replaced by a new
   reader of review comments. The `review_comment` kind, the `commented_on`
   relation and the `onprem-llm` provenance stay in the schema for it.
-- **Not verified live.** The proxy's embeddings path (`/v1/embeddings`), body
+- **Not verified live.** The LLM's embeddings path (`/v1/embeddings`), body
   and vector size are modelled on OpenAI-compatible documentation, not
   captured; a mismatch shows as a `failed` embed row while word search keeps
   working. See the live checks under **Known limitations**.
@@ -1730,7 +1692,7 @@ hand); this logs the same skip line.
 
 The original ask was rebase, but this team already resolves PR conflicts by
 merging master in (see PR #5530's own history: `Merge branch 'master' ...
-into proj-789-cleanup-standard`). Merging means the push after resolution
+into proj-53543-cleanup-standard`). Merging means the push after resolution
 is a plain `git push` — no `--force-with-lease`, and no risk to existing PR
 review comments/approvals, which a rebase's history rewrite would disturb.
 
@@ -2380,7 +2342,7 @@ Discard button (Ticket to PR uses "Stop tracking").
   does); the review watcher only fetches. The `background` flag is set only by
   the service's own watcher, never from a request. Ticket and PR text is
   untrusted in the triage prompt (fenced, flattened, forged fences stripped)
-  and the on-prem answer can only veto a run the rules allow. The proxy key
+  and the on-prem answer can only veto a run the rules allow. The LLM key
   lives in `credentials.enc` and only the on-prem models are ever sent
   anything; the state files (`scheduler.json`, `notifications.json`) hold ids,
   keys, clipped titles, https links and counts, never credentials, and error
@@ -2465,10 +2427,10 @@ Discard button (Ticket to PR uses "Stop tracking").
   terminal hand-off is macOS-only, as before. `startFixToPrMs` is recorded but
   has no reader yet.
 - **Background work (Phase 7).**
-  - The LLM proxy's paths and auth are modelled on OpenAI-compatible
+  - The LLM's paths and auth are modelled on OpenAI-compatible
     documentation, and the dashboard (`/rest/api/1.0/dashboard/pull-requests`),
     `/merge` and Jira search shapes on the documented API; none was captured
-    live. A different proxy path shows as detection "error" (the watchers keep
+    live. A different path shows as detection "error" (the watchers keep
     working on rules); a different 200 shape reads as "nothing found", not an
     error.
   - A background analysis is saved to the shared analysis cache with no
@@ -2491,10 +2453,10 @@ Discard button (Ticket to PR uses "Stop tracking").
        --metrics`) should show `found` > 0 and no `needsLogin`, confirming the
        Bitbucket 9.4.16 dashboard shape; turn on `assignedBugs` to confirm Jira
        search; with a conflicted PR, `/merge`'s `conflicted` field.
-    2. *LLM proxy.* Save a key: `companion doctor` and Settings should say
+    2. *LLM.* Save a key: `companion doctor` and Settings should say
        "ready". If "error", fix `PATHS`/`headers()` in
-       `core/llm-proxy-request.js` and capture one real chat and embed reply
-       into `core/fixtures/llm-proxy/`. Remove the key: "no key", and the
+       the backend's request builder and capture one real chat and embed reply
+       into the backend's fixtures. Remove the key: "no key", and the
        watchers still work. A model outside the list (`gpt-5.1`) is refused.
     3. *Watcher end to end.* `watchers.conflicts` with `intervalMinutes: 1` and
        a conflict on a test PR: a pre-warmed Resolve Conflict job, badge 1, one
@@ -2530,12 +2492,12 @@ Discard button (Ticket to PR uses "Stop tracking").
   style pairs and URL credentials but does **not** mask GitHub `ghp_...`
   tokens or other bare token formats, so a secret of that shape in a ticket
   title would be stored and embedded as text.
-- **The LLM proxy and the routing rules.** Optional. The key is in
-  `credentials.enc`; only `llmProxy.allowedModels` (on-prem) and https
+- **The LLM and the routing rules.** Optional. The key is in
+  `credentials.enc`; only the backend's allow-list (on-prem) and https
   base URLs on an allowed host suffix are used, both changeable only in `config.json`.
   `chooseTier` sends only triage, classify, condense and embed on-prem, and
   everything with tools, code changes, diagnosis and analysis to Claude. The
-  proxy's chat and embeddings paths and the embedding vector size are modelled
+  the LLM's chat and embeddings paths and the embedding vector size are modelled
   on OpenAI-compatible documentation, not captured live.
 - **The session vault** (`core/session-vault.js`). Browser sessions relayed by
   the extension are held in memory only, for `sessionCache.ttlMinutes` (default
@@ -2552,7 +2514,7 @@ Discard button (Ticket to PR uses "Stop tracking").
 - **Similar items (Phase 8).** The search is a brute-force scan: fine for a
   personal history, slower past tens of thousands of items. A
   `scheduler:history.embed` events row is written every 30 minutes even when
-  it only says "skipped: no proxy". Doctor's "embedded" figure counts only
+  it only says "skipped: no llm". Doctor's "embedded" figure counts only
   real vectors (of the current model, with more than one number), not the
   placeholders. The prompt block can
   still carry a wrong earlier analysis (it is labelled, not filtered). An
@@ -2567,16 +2529,16 @@ Discard button (Ticket to PR uses "Stop tracking").
   1. *Migration.* The service starts on the existing `history.db` (schema 1);
      the startup log says the local history is on; `companion doctor` shows
      "Similar past tickets: on, ... N of M ... embedded".
-  2. *Without a proxy key.* Two minutes after start, `companion history
+  2. *Without an LLM key.* Two minutes after start, `companion history
      --metrics` shows a `scheduler:history.embed` row whose metrics say
-     `skipped: "no proxy"`; `companion similar <an analysed ticket>` answers
-     "by shared words (no LLM proxy)".
-  3. *LLM proxy embeddings.* With the key saved, within 30 minutes the embed row
+     `skipped: "no llm"`; `companion similar <an analysed ticket>` answers
+     "by shared words (no LLM)".
+  3. *LLM embeddings.* With the key saved, within 30 minutes the embed row
      shows `embedded` > 0 and doctor's count rises, and `companion similar`
      says "by meaning and shared words". If the row says `failed` with an HTTP
      error, the embeddings path or body differs from `/v1/embeddings`: fix
-     `PATHS.embed`/`buildEmbedRequest` in `core/llm-proxy-request.js` and
-     capture one real embed reply into `core/fixtures/llm-proxy/`.
+     `PATHS.embed`/`buildEmbedRequest` in the backend's request builder and
+     capture one real embed reply into the backend's fixtures.
   4. *Similar block quality in a real analysis.* Re-analyse a ticket with a
      similar earlier one: the Claude run's prompt (the session transcript in
      `~/.claude/projects/...`) contains the `<similar-past-tickets>` block with
@@ -2622,7 +2584,7 @@ Discard button (Ticket to PR uses "Stop tracking").
   `chrome.storage.local` job persistence across a page refresh were all
   verified against real jobs, not just code review.
 - **Create Subtasks was run end-to-end against a real ticket**
-  (`PROJ-456`, a Story), not just unit-tested: submitting real rows
+  (`PROJ-83053`, a Story), not just unit-tested: submitting real rows
   created real Sub-tasks, confirmed afterward via
   `jira_get_issue` — correct parent, summary, and assignee on each,
   including one deliberately edited through the assignee search dropdown.
@@ -2632,7 +2594,7 @@ Discard button (Ticket to PR uses "Stop tracking").
 - **`companion doctor`, in the order `doctor.js`'s `main()` prints it:**
   prerequisites (Node), the settings file, credentials, MCP registration (with
   Phase 8's line for which way Claude Code reaches the companion), background
-  work (watchers, quiet hours, digest), the LLM proxy, Phase 8's
+  work (watchers, quiet hours, digest), the LLM, Phase 8's
   "Similar past tickets" line, the pre-push hook, the extension's connection
   settings, enabled features and their prerequisites,
   a pack's own lines, the shared test history, Ticket to PR and the repositories, the

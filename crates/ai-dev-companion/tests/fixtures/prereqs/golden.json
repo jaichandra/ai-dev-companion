@@ -1,0 +1,2031 @@
+{
+ "origins": {
+  "https://bitbucket.example.com/scm/acme/sample-app.git": {
+   "bb": {
+    "project": "ACME",
+    "repo": "sample-app",
+    "key": "ACME/sample-app"
+   },
+   "gh": null
+  },
+  "https://jdoe@bitbucket.example.com/scm/acme/sample-app": {
+   "bb": {
+    "project": "ACME",
+    "repo": "sample-app",
+    "key": "ACME/sample-app"
+   },
+   "gh": null
+  },
+  "https://bitbucket.example.com/scm/acme/sample-app/": {
+   "bb": {
+    "project": "ACME",
+    "repo": "sample-app",
+    "key": "ACME/sample-app"
+   },
+   "gh": null
+  },
+  "https://bitbucket.example.com/scm/ACME/Sample-App.GIT": {
+   "bb": {
+    "project": "ACME",
+    "repo": "Sample-App",
+    "key": "ACME/Sample-App"
+   },
+   "gh": null
+  },
+  "https://bitbucket.example.com/scm/~jdoe/tools.git": {
+   "bb": null,
+   "gh": null
+  },
+  "https://bitbucket.example.com:8443/scm/acme/a.b.git": {
+   "bb": {
+    "project": "ACME",
+    "repo": "a.b",
+    "key": "ACME/a.b"
+   },
+   "gh": null
+  },
+  "ssh://git@bitbucket.example.com:7999/acme/sample-app.git": {
+   "bb": {
+    "project": "ACME",
+    "repo": "sample-app",
+    "key": "ACME/sample-app"
+   },
+   "gh": {
+    "project": "acme",
+    "repo": "sample-app",
+    "key": "acme/sample-app"
+   }
+  },
+  "git@bitbucket.example.com:acme/sample-app.git": {
+   "bb": {
+    "project": "ACME",
+    "repo": "sample-app",
+    "key": "ACME/sample-app"
+   },
+   "gh": {
+    "project": "acme",
+    "repo": "sample-app",
+    "key": "acme/sample-app"
+   }
+  },
+  "git@bitbucket.example.com:acme/sample-app": {
+   "bb": {
+    "project": "ACME",
+    "repo": "sample-app",
+    "key": "ACME/sample-app"
+   },
+   "gh": {
+    "project": "acme",
+    "repo": "sample-app",
+    "key": "acme/sample-app"
+   }
+  },
+  "git@github.com:someone/tools.git": {
+   "bb": null,
+   "gh": {
+    "project": "someone",
+    "repo": "tools",
+    "key": "someone/tools"
+   }
+  },
+  "https://github.com/Octo/hello.git": {
+   "bb": null,
+   "gh": {
+    "project": "Octo",
+    "repo": "hello",
+    "key": "Octo/hello"
+   }
+  },
+  "https://github.com/Octo/hello": {
+   "bb": null,
+   "gh": {
+    "project": "Octo",
+    "repo": "hello",
+    "key": "Octo/hello"
+   }
+  },
+  "https://token@github.com/octo/hello.git/": {
+   "bb": null,
+   "gh": {
+    "project": "octo",
+    "repo": "hello",
+    "key": "octo/hello"
+   }
+  },
+  "git@github.com:octo/.github.git": {
+   "bb": null,
+   "gh": {
+    "project": "octo",
+    "repo": ".github",
+    "key": "octo/.github"
+   }
+  },
+  "ssh://git@ghe.example.com:2222/octo/hello.git": {
+   "bb": {
+    "project": "OCTO",
+    "repo": "hello",
+    "key": "OCTO/hello"
+   },
+   "gh": {
+    "project": "octo",
+    "repo": "hello",
+    "key": "octo/hello"
+   }
+  },
+  "ssh://git@ghe.example.com/octo/hello": {
+   "bb": {
+    "project": "OCTO",
+    "repo": "hello",
+    "key": "OCTO/hello"
+   },
+   "gh": {
+    "project": "octo",
+    "repo": "hello",
+    "key": "octo/hello"
+   }
+  },
+  "https://github.com/only-one-part": {
+   "bb": null,
+   "gh": null
+  },
+  "https://gitlab.com/a/b.git": {
+   "bb": null,
+   "gh": {
+    "project": "a",
+    "repo": "b",
+    "key": "a/b"
+   }
+  },
+  "https://git.example.com/some/mirror.git": {
+   "bb": null,
+   "gh": {
+    "project": "some",
+    "repo": "mirror",
+    "key": "some/mirror"
+   }
+  },
+  "https://git.example.com/a/b/c.git": {
+   "bb": null,
+   "gh": null
+  },
+  "file:///srv/git/a/b.git": {
+   "bb": {
+    "project": "A",
+    "repo": "b",
+    "key": "A/b"
+   },
+   "gh": null
+  },
+  "/srv/git/a/b.git": {
+   "bb": {
+    "project": "A",
+    "repo": "b",
+    "key": "A/b"
+   },
+   "gh": null
+  },
+  "C:\\repos\\a\\b": {
+   "bb": null,
+   "gh": null
+  },
+  "a/b": {
+   "bb": null,
+   "gh": null
+  },
+  "  https://bitbucket.example.com/scm/acme/sample-app.git  ": {
+   "bb": {
+    "project": "ACME",
+    "repo": "sample-app",
+    "key": "ACME/sample-app"
+   },
+   "gh": null
+  },
+  "": {
+   "bb": null,
+   "gh": null
+  },
+  "HTTPS://BITBUCKET.EXAMPLE.COM/SCM/ACME/SAMPLE-APP.GIT": {
+   "bb": {
+    "project": "ACME",
+    "repo": "SAMPLE-APP",
+    "key": "ACME/SAMPLE-APP"
+   },
+   "gh": null
+  },
+  "git@host:~me/x.git": {
+   "bb": null,
+   "gh": {
+    "project": "~me",
+    "repo": "x",
+    "key": "~me/x"
+   }
+  },
+  "https://host/scm/a/b.git.git": {
+   "bb": {
+    "project": "A",
+    "repo": "b.git",
+    "key": "A/b.git"
+   },
+   "gh": null
+  },
+  "https://host/scm/a/b.gitx": {
+   "bb": {
+    "project": "A",
+    "repo": "b.gitx",
+    "key": "A/b.gitx"
+   },
+   "gh": null
+  }
+ },
+ "matches": [
+  {
+   "o": "https://bitbucket.example.com/scm/acme/sample-app.git",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": true
+  },
+  {
+   "o": "https://bitbucket.example.com/scm/acme/sample-app.git",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://bitbucket.example.com/scm/acme/sample-app.git",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "https://bitbucket.example.com/scm/acme/sample-app.git",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": true
+  },
+  {
+   "o": "https://bitbucket.example.com/scm/acme/sample-app.git",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://bitbucket.example.com/scm/acme/sample-app.git",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "https://jdoe@bitbucket.example.com/scm/acme/sample-app",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": true
+  },
+  {
+   "o": "https://jdoe@bitbucket.example.com/scm/acme/sample-app",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://jdoe@bitbucket.example.com/scm/acme/sample-app",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "https://jdoe@bitbucket.example.com/scm/acme/sample-app",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": false
+  },
+  {
+   "o": "https://jdoe@bitbucket.example.com/scm/acme/sample-app",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://jdoe@bitbucket.example.com/scm/acme/sample-app",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "https://bitbucket.example.com/scm/acme/sample-app/",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": true
+  },
+  {
+   "o": "https://bitbucket.example.com/scm/acme/sample-app/",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://bitbucket.example.com/scm/acme/sample-app/",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "https://bitbucket.example.com/scm/acme/sample-app/",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": false
+  },
+  {
+   "o": "https://bitbucket.example.com/scm/acme/sample-app/",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://bitbucket.example.com/scm/acme/sample-app/",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "https://bitbucket.example.com/scm/ACME/Sample-App.GIT",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": true
+  },
+  {
+   "o": "https://bitbucket.example.com/scm/ACME/Sample-App.GIT",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://bitbucket.example.com/scm/ACME/Sample-App.GIT",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "https://bitbucket.example.com/scm/ACME/Sample-App.GIT",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": true
+  },
+  {
+   "o": "https://bitbucket.example.com/scm/ACME/Sample-App.GIT",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://bitbucket.example.com/scm/ACME/Sample-App.GIT",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "https://bitbucket.example.com/scm/~jdoe/tools.git",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": false
+  },
+  {
+   "o": "https://bitbucket.example.com/scm/~jdoe/tools.git",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://bitbucket.example.com/scm/~jdoe/tools.git",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "https://bitbucket.example.com/scm/~jdoe/tools.git",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": false
+  },
+  {
+   "o": "https://bitbucket.example.com/scm/~jdoe/tools.git",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://bitbucket.example.com/scm/~jdoe/tools.git",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "https://bitbucket.example.com:8443/scm/acme/a.b.git",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": false
+  },
+  {
+   "o": "https://bitbucket.example.com:8443/scm/acme/a.b.git",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://bitbucket.example.com:8443/scm/acme/a.b.git",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "https://bitbucket.example.com:8443/scm/acme/a.b.git",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": false
+  },
+  {
+   "o": "https://bitbucket.example.com:8443/scm/acme/a.b.git",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://bitbucket.example.com:8443/scm/acme/a.b.git",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "ssh://git@bitbucket.example.com:7999/acme/sample-app.git",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": true
+  },
+  {
+   "o": "ssh://git@bitbucket.example.com:7999/acme/sample-app.git",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "ssh://git@bitbucket.example.com:7999/acme/sample-app.git",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "ssh://git@bitbucket.example.com:7999/acme/sample-app.git",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": true
+  },
+  {
+   "o": "ssh://git@bitbucket.example.com:7999/acme/sample-app.git",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "ssh://git@bitbucket.example.com:7999/acme/sample-app.git",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "git@bitbucket.example.com:acme/sample-app.git",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": true
+  },
+  {
+   "o": "git@bitbucket.example.com:acme/sample-app.git",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "git@bitbucket.example.com:acme/sample-app.git",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "git@bitbucket.example.com:acme/sample-app.git",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": true
+  },
+  {
+   "o": "git@bitbucket.example.com:acme/sample-app.git",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "git@bitbucket.example.com:acme/sample-app.git",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "git@bitbucket.example.com:acme/sample-app",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": true
+  },
+  {
+   "o": "git@bitbucket.example.com:acme/sample-app",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "git@bitbucket.example.com:acme/sample-app",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "git@bitbucket.example.com:acme/sample-app",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": false
+  },
+  {
+   "o": "git@bitbucket.example.com:acme/sample-app",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "git@bitbucket.example.com:acme/sample-app",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "git@github.com:someone/tools.git",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": false
+  },
+  {
+   "o": "git@github.com:someone/tools.git",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "git@github.com:someone/tools.git",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "git@github.com:someone/tools.git",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": false
+  },
+  {
+   "o": "git@github.com:someone/tools.git",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "git@github.com:someone/tools.git",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "https://github.com/Octo/hello.git",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": false
+  },
+  {
+   "o": "https://github.com/Octo/hello.git",
+   "p": "octo",
+   "r": "hello",
+   "m": true
+  },
+  {
+   "o": "https://github.com/Octo/hello.git",
+   "p": "Octo",
+   "r": "Hello",
+   "m": true
+  },
+  {
+   "o": "https://github.com/Octo/hello.git",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": false
+  },
+  {
+   "o": "https://github.com/Octo/hello.git",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://github.com/Octo/hello.git",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "https://github.com/Octo/hello",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": false
+  },
+  {
+   "o": "https://github.com/Octo/hello",
+   "p": "octo",
+   "r": "hello",
+   "m": true
+  },
+  {
+   "o": "https://github.com/Octo/hello",
+   "p": "Octo",
+   "r": "Hello",
+   "m": true
+  },
+  {
+   "o": "https://github.com/Octo/hello",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": false
+  },
+  {
+   "o": "https://github.com/Octo/hello",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://github.com/Octo/hello",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "https://token@github.com/octo/hello.git/",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": false
+  },
+  {
+   "o": "https://token@github.com/octo/hello.git/",
+   "p": "octo",
+   "r": "hello",
+   "m": true
+  },
+  {
+   "o": "https://token@github.com/octo/hello.git/",
+   "p": "Octo",
+   "r": "Hello",
+   "m": true
+  },
+  {
+   "o": "https://token@github.com/octo/hello.git/",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": false
+  },
+  {
+   "o": "https://token@github.com/octo/hello.git/",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://token@github.com/octo/hello.git/",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "git@github.com:octo/.github.git",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": false
+  },
+  {
+   "o": "git@github.com:octo/.github.git",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "git@github.com:octo/.github.git",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "git@github.com:octo/.github.git",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": false
+  },
+  {
+   "o": "git@github.com:octo/.github.git",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "git@github.com:octo/.github.git",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "ssh://git@ghe.example.com:2222/octo/hello.git",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": false
+  },
+  {
+   "o": "ssh://git@ghe.example.com:2222/octo/hello.git",
+   "p": "octo",
+   "r": "hello",
+   "m": true
+  },
+  {
+   "o": "ssh://git@ghe.example.com:2222/octo/hello.git",
+   "p": "Octo",
+   "r": "Hello",
+   "m": true
+  },
+  {
+   "o": "ssh://git@ghe.example.com:2222/octo/hello.git",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": false
+  },
+  {
+   "o": "ssh://git@ghe.example.com:2222/octo/hello.git",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "ssh://git@ghe.example.com:2222/octo/hello.git",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "ssh://git@ghe.example.com/octo/hello",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": false
+  },
+  {
+   "o": "ssh://git@ghe.example.com/octo/hello",
+   "p": "octo",
+   "r": "hello",
+   "m": true
+  },
+  {
+   "o": "ssh://git@ghe.example.com/octo/hello",
+   "p": "Octo",
+   "r": "Hello",
+   "m": true
+  },
+  {
+   "o": "ssh://git@ghe.example.com/octo/hello",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": false
+  },
+  {
+   "o": "ssh://git@ghe.example.com/octo/hello",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "ssh://git@ghe.example.com/octo/hello",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "https://github.com/only-one-part",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": false
+  },
+  {
+   "o": "https://github.com/only-one-part",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://github.com/only-one-part",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "https://github.com/only-one-part",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": false
+  },
+  {
+   "o": "https://github.com/only-one-part",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://github.com/only-one-part",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "https://gitlab.com/a/b.git",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": false
+  },
+  {
+   "o": "https://gitlab.com/a/b.git",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://gitlab.com/a/b.git",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "https://gitlab.com/a/b.git",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": false
+  },
+  {
+   "o": "https://gitlab.com/a/b.git",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://gitlab.com/a/b.git",
+   "p": "a",
+   "r": "b",
+   "m": true
+  },
+  {
+   "o": "https://git.example.com/some/mirror.git",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": false
+  },
+  {
+   "o": "https://git.example.com/some/mirror.git",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://git.example.com/some/mirror.git",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "https://git.example.com/some/mirror.git",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": false
+  },
+  {
+   "o": "https://git.example.com/some/mirror.git",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://git.example.com/some/mirror.git",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "https://git.example.com/a/b/c.git",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": false
+  },
+  {
+   "o": "https://git.example.com/a/b/c.git",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://git.example.com/a/b/c.git",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "https://git.example.com/a/b/c.git",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": false
+  },
+  {
+   "o": "https://git.example.com/a/b/c.git",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://git.example.com/a/b/c.git",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "file:///srv/git/a/b.git",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": false
+  },
+  {
+   "o": "file:///srv/git/a/b.git",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "file:///srv/git/a/b.git",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "file:///srv/git/a/b.git",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": false
+  },
+  {
+   "o": "file:///srv/git/a/b.git",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "file:///srv/git/a/b.git",
+   "p": "a",
+   "r": "b",
+   "m": true
+  },
+  {
+   "o": "/srv/git/a/b.git",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": false
+  },
+  {
+   "o": "/srv/git/a/b.git",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "/srv/git/a/b.git",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "/srv/git/a/b.git",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": false
+  },
+  {
+   "o": "/srv/git/a/b.git",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "/srv/git/a/b.git",
+   "p": "a",
+   "r": "b",
+   "m": true
+  },
+  {
+   "o": "C:\\repos\\a\\b",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": false
+  },
+  {
+   "o": "C:\\repos\\a\\b",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "C:\\repos\\a\\b",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "C:\\repos\\a\\b",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": false
+  },
+  {
+   "o": "C:\\repos\\a\\b",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "C:\\repos\\a\\b",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "a/b",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": false
+  },
+  {
+   "o": "a/b",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "a/b",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "a/b",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": false
+  },
+  {
+   "o": "a/b",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "a/b",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "  https://bitbucket.example.com/scm/acme/sample-app.git  ",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": true
+  },
+  {
+   "o": "  https://bitbucket.example.com/scm/acme/sample-app.git  ",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "  https://bitbucket.example.com/scm/acme/sample-app.git  ",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "  https://bitbucket.example.com/scm/acme/sample-app.git  ",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": true
+  },
+  {
+   "o": "  https://bitbucket.example.com/scm/acme/sample-app.git  ",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "  https://bitbucket.example.com/scm/acme/sample-app.git  ",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": false
+  },
+  {
+   "o": "",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": false
+  },
+  {
+   "o": "",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "HTTPS://BITBUCKET.EXAMPLE.COM/SCM/ACME/SAMPLE-APP.GIT",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": true
+  },
+  {
+   "o": "HTTPS://BITBUCKET.EXAMPLE.COM/SCM/ACME/SAMPLE-APP.GIT",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "HTTPS://BITBUCKET.EXAMPLE.COM/SCM/ACME/SAMPLE-APP.GIT",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "HTTPS://BITBUCKET.EXAMPLE.COM/SCM/ACME/SAMPLE-APP.GIT",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": true
+  },
+  {
+   "o": "HTTPS://BITBUCKET.EXAMPLE.COM/SCM/ACME/SAMPLE-APP.GIT",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "HTTPS://BITBUCKET.EXAMPLE.COM/SCM/ACME/SAMPLE-APP.GIT",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "git@host:~me/x.git",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": false
+  },
+  {
+   "o": "git@host:~me/x.git",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "git@host:~me/x.git",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "git@host:~me/x.git",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": false
+  },
+  {
+   "o": "git@host:~me/x.git",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "git@host:~me/x.git",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "https://host/scm/a/b.git.git",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": false
+  },
+  {
+   "o": "https://host/scm/a/b.git.git",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://host/scm/a/b.git.git",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "https://host/scm/a/b.git.git",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": false
+  },
+  {
+   "o": "https://host/scm/a/b.git.git",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://host/scm/a/b.git.git",
+   "p": "a",
+   "r": "b",
+   "m": false
+  },
+  {
+   "o": "https://host/scm/a/b.gitx",
+   "p": "ACME",
+   "r": "sample-app",
+   "m": false
+  },
+  {
+   "o": "https://host/scm/a/b.gitx",
+   "p": "octo",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://host/scm/a/b.gitx",
+   "p": "Octo",
+   "r": "Hello",
+   "m": false
+  },
+  {
+   "o": "https://host/scm/a/b.gitx",
+   "p": "acme",
+   "r": "sample-app.git",
+   "m": false
+  },
+  {
+   "o": "https://host/scm/a/b.gitx",
+   "p": "o.cto",
+   "r": "hello",
+   "m": false
+  },
+  {
+   "o": "https://host/scm/a/b.gitx",
+   "p": "a",
+   "r": "b",
+   "m": false
+  }
+ ],
+ "urls": {
+  "https://bb.example.com/projects/ACME/repos/sample-app/pull-requests/7/overview": {
+   "bitbucket-dc": {
+    "pr": {
+     "project": "ACME",
+     "repo": "sample-app",
+     "id": 7
+    },
+    "repo": {
+     "project": "ACME",
+     "repo": "sample-app"
+    }
+   },
+   "github": {
+    "pr": null,
+    "repo": {
+     "project": "projects",
+     "repo": "ACME"
+    }
+   }
+  },
+  "https://bb.example.com/projects/ACME/repos/sample-app/pull-requests/7?x=1#c": {
+   "bitbucket-dc": {
+    "pr": {
+     "project": "ACME",
+     "repo": "sample-app",
+     "id": 7
+    },
+    "repo": {
+     "project": "ACME",
+     "repo": "sample-app"
+    }
+   },
+   "github": {
+    "pr": null,
+    "repo": {
+     "project": "projects",
+     "repo": "ACME"
+    }
+   }
+  },
+  "https://bb.example.com/projects/~JSMITH/repos/r/pull-requests/12": {
+   "bitbucket-dc": {
+    "pr": {
+     "project": "~JSMITH",
+     "repo": "r",
+     "id": 12
+    },
+    "repo": {
+     "project": "~JSMITH",
+     "repo": "r"
+    }
+   },
+   "github": {
+    "pr": null,
+    "repo": {
+     "project": "projects",
+     "repo": "~JSMITH"
+    }
+   }
+  },
+  "https://bb.example.com/projects/ACME/repos/sample-app/browse": {
+   "bitbucket-dc": {
+    "pr": null,
+    "repo": {
+     "project": "ACME",
+     "repo": "sample-app"
+    }
+   },
+   "github": {
+    "pr": null,
+    "repo": {
+     "project": "projects",
+     "repo": "ACME"
+    }
+   }
+  },
+  "https://bb.example.com/projects/ACME/repos/sample-app?at=main": {
+   "bitbucket-dc": {
+    "pr": null,
+    "repo": {
+     "project": "ACME",
+     "repo": "sample-app"
+    }
+   },
+   "github": {
+    "pr": null,
+    "repo": {
+     "project": "projects",
+     "repo": "ACME"
+    }
+   }
+  },
+  "https://bb.example.com/projects/ACME/repos/sample-app/pull-requests/x": {
+   "bitbucket-dc": {
+    "pr": null,
+    "repo": {
+     "project": "ACME",
+     "repo": "sample-app"
+    }
+   },
+   "github": {
+    "pr": null,
+    "repo": {
+     "project": "projects",
+     "repo": "ACME"
+    }
+   }
+  },
+  "https://github.com/Octo/hello/pull/7/files": {
+   "bitbucket-dc": {
+    "pr": null,
+    "repo": null
+   },
+   "github": {
+    "pr": {
+     "project": "Octo",
+     "repo": "hello",
+     "id": 7
+    },
+    "repo": {
+     "project": "Octo",
+     "repo": "hello"
+    }
+   }
+  },
+  "https://github.com/Octo/hello/pull/7": {
+   "bitbucket-dc": {
+    "pr": null,
+    "repo": null
+   },
+   "github": {
+    "pr": {
+     "project": "Octo",
+     "repo": "hello",
+     "id": 7
+    },
+    "repo": {
+     "project": "Octo",
+     "repo": "hello"
+    }
+   }
+  },
+  "/Octo/hello/pull/7": {
+   "bitbucket-dc": {
+    "pr": null,
+    "repo": null
+   },
+   "github": {
+    "pr": {
+     "project": "Octo",
+     "repo": "hello",
+     "id": 7
+    },
+    "repo": {
+     "project": "Octo",
+     "repo": "hello"
+    }
+   }
+  },
+  "https://ghe.example.com/api/v3/Octo/hello/pull/7": {
+   "bitbucket-dc": {
+    "pr": null,
+    "repo": null
+   },
+   "github": {
+    "pr": {
+     "project": "Octo",
+     "repo": "hello",
+     "id": 7
+    },
+    "repo": {
+     "project": "api",
+     "repo": "v3"
+    }
+   }
+  },
+  "https://github.com/Octo/hello/issues/7": {
+   "bitbucket-dc": {
+    "pr": null,
+    "repo": null
+   },
+   "github": {
+    "pr": null,
+    "repo": {
+     "project": "Octo",
+     "repo": "hello"
+    }
+   }
+  },
+  "https://github.com/Octo/hello/tree/main": {
+   "bitbucket-dc": {
+    "pr": null,
+    "repo": null
+   },
+   "github": {
+    "pr": null,
+    "repo": {
+     "project": "Octo",
+     "repo": "hello"
+    }
+   }
+  },
+  "https://github.com/Octo/hello?tab=readme": {
+   "bitbucket-dc": {
+    "pr": null,
+    "repo": null
+   },
+   "github": {
+    "pr": null,
+    "repo": {
+     "project": "Octo",
+     "repo": "hello"
+    }
+   }
+  },
+  "https://github.com/": {
+   "bitbucket-dc": {
+    "pr": null,
+    "repo": null
+   },
+   "github": {
+    "pr": null,
+    "repo": null
+   }
+  },
+  "https://github.com/onlyone": {
+   "bitbucket-dc": {
+    "pr": null,
+    "repo": null
+   },
+   "github": {
+    "pr": null,
+    "repo": null
+   }
+  },
+  "/o/r": {
+   "bitbucket-dc": {
+    "pr": null,
+    "repo": null
+   },
+   "github": {
+    "pr": null,
+    "repo": {
+     "project": "o",
+     "repo": "r"
+    }
+   }
+  },
+  "": {
+   "bitbucket-dc": {
+    "pr": null,
+    "repo": null
+   },
+   "github": {
+    "pr": null,
+    "repo": null
+   }
+  },
+  "http://host:8080/o/r/pull/3": {
+   "bitbucket-dc": {
+    "pr": null,
+    "repo": null
+   },
+   "github": {
+    "pr": {
+     "project": "o",
+     "repo": "r",
+     "id": 3
+    },
+    "repo": {
+     "project": "o",
+     "repo": "r"
+    }
+   }
+  }
+ },
+ "clone": [
+  {
+   "k": "bitbucket-dc",
+   "o": "https://bitbucket.example.com/scm/acme/sample-app.git",
+   "page": null,
+   "v": "https://bitbucket.example.com/scm/acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "https://bitbucket.example.com/scm/acme/sample-app.git",
+   "page": "https://page.example.com/",
+   "v": "https://bitbucket.example.com/scm/acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "https://jdoe@bitbucket.example.com/scm/acme/sample-app",
+   "page": null,
+   "v": "https://jdoe@bitbucket.example.com/scm/acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "https://jdoe@bitbucket.example.com/scm/acme/sample-app",
+   "page": "https://page.example.com/",
+   "v": "https://jdoe@bitbucket.example.com/scm/acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "https://bitbucket.example.com/scm/acme/sample-app/",
+   "page": null,
+   "v": "https://bitbucket.example.com/scm/acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "https://bitbucket.example.com/scm/acme/sample-app/",
+   "page": "https://page.example.com/",
+   "v": "https://bitbucket.example.com/scm/acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "https://bitbucket.example.com/scm/ACME/Sample-App.GIT",
+   "page": null,
+   "v": "https://bitbucket.example.com/scm/acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "https://bitbucket.example.com/scm/ACME/Sample-App.GIT",
+   "page": "https://page.example.com/",
+   "v": "https://bitbucket.example.com/scm/acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "https://bitbucket.example.com/scm/~jdoe/tools.git",
+   "page": null,
+   "v": null
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "https://bitbucket.example.com/scm/~jdoe/tools.git",
+   "page": "https://page.example.com/",
+   "v": "https://page.example.com/scm/acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "https://bitbucket.example.com:8443/scm/acme/a.b.git",
+   "page": null,
+   "v": "https://bitbucket.example.com:8443/scm/acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "https://bitbucket.example.com:8443/scm/acme/a.b.git",
+   "page": "https://page.example.com/",
+   "v": "https://bitbucket.example.com:8443/scm/acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "ssh://git@bitbucket.example.com:7999/acme/sample-app.git",
+   "page": null,
+   "v": "ssh://git@bitbucket.example.com:7999/acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "ssh://git@bitbucket.example.com:7999/acme/sample-app.git",
+   "page": "https://page.example.com/",
+   "v": "ssh://git@bitbucket.example.com:7999/acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "git@bitbucket.example.com:acme/sample-app.git",
+   "page": null,
+   "v": "git@bitbucket.example.com:acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "git@bitbucket.example.com:acme/sample-app.git",
+   "page": "https://page.example.com/",
+   "v": "git@bitbucket.example.com:acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "git@bitbucket.example.com:acme/sample-app",
+   "page": null,
+   "v": "git@bitbucket.example.com:acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "git@bitbucket.example.com:acme/sample-app",
+   "page": "https://page.example.com/",
+   "v": "git@bitbucket.example.com:acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "git@github.com:someone/tools.git",
+   "page": null,
+   "v": null
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "git@github.com:someone/tools.git",
+   "page": "https://page.example.com/",
+   "v": "https://page.example.com/scm/acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "https://github.com/Octo/hello.git",
+   "page": null,
+   "v": null
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "https://github.com/Octo/hello.git",
+   "page": "https://page.example.com/",
+   "v": "https://page.example.com/scm/acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "https://github.com/Octo/hello",
+   "page": null,
+   "v": null
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "https://github.com/Octo/hello",
+   "page": "https://page.example.com/",
+   "v": "https://page.example.com/scm/acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "https://token@github.com/octo/hello.git/",
+   "page": null,
+   "v": null
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "https://token@github.com/octo/hello.git/",
+   "page": "https://page.example.com/",
+   "v": "https://page.example.com/scm/acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "git@github.com:octo/.github.git",
+   "page": null,
+   "v": null
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "git@github.com:octo/.github.git",
+   "page": "https://page.example.com/",
+   "v": "https://page.example.com/scm/acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "ssh://git@ghe.example.com:2222/octo/hello.git",
+   "page": null,
+   "v": "ssh://git@ghe.example.com:2222/acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "ssh://git@ghe.example.com:2222/octo/hello.git",
+   "page": "https://page.example.com/",
+   "v": "ssh://git@ghe.example.com:2222/acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "ssh://git@ghe.example.com/octo/hello",
+   "page": null,
+   "v": "ssh://git@ghe.example.com/acme/svc.git"
+  },
+  {
+   "k": "bitbucket-dc",
+   "o": "ssh://git@ghe.example.com/octo/hello",
+   "page": "https://page.example.com/",
+   "v": "ssh://git@ghe.example.com/acme/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "https://bitbucket.example.com/scm/acme/sample-app.git",
+   "page": null,
+   "v": null
+  },
+  {
+   "k": "github",
+   "o": "https://bitbucket.example.com/scm/acme/sample-app.git",
+   "page": "https://page.example.com/",
+   "v": "https://page.example.com/ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "https://jdoe@bitbucket.example.com/scm/acme/sample-app",
+   "page": null,
+   "v": null
+  },
+  {
+   "k": "github",
+   "o": "https://jdoe@bitbucket.example.com/scm/acme/sample-app",
+   "page": "https://page.example.com/",
+   "v": "https://page.example.com/ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "https://bitbucket.example.com/scm/acme/sample-app/",
+   "page": null,
+   "v": null
+  },
+  {
+   "k": "github",
+   "o": "https://bitbucket.example.com/scm/acme/sample-app/",
+   "page": "https://page.example.com/",
+   "v": "https://page.example.com/ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "https://bitbucket.example.com/scm/ACME/Sample-App.GIT",
+   "page": null,
+   "v": null
+  },
+  {
+   "k": "github",
+   "o": "https://bitbucket.example.com/scm/ACME/Sample-App.GIT",
+   "page": "https://page.example.com/",
+   "v": "https://page.example.com/ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "https://bitbucket.example.com/scm/~jdoe/tools.git",
+   "page": null,
+   "v": null
+  },
+  {
+   "k": "github",
+   "o": "https://bitbucket.example.com/scm/~jdoe/tools.git",
+   "page": "https://page.example.com/",
+   "v": "https://page.example.com/ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "https://bitbucket.example.com:8443/scm/acme/a.b.git",
+   "page": null,
+   "v": null
+  },
+  {
+   "k": "github",
+   "o": "https://bitbucket.example.com:8443/scm/acme/a.b.git",
+   "page": "https://page.example.com/",
+   "v": "https://page.example.com/ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "ssh://git@bitbucket.example.com:7999/acme/sample-app.git",
+   "page": null,
+   "v": "ssh://git@bitbucket.example.com:7999/ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "ssh://git@bitbucket.example.com:7999/acme/sample-app.git",
+   "page": "https://page.example.com/",
+   "v": "ssh://git@bitbucket.example.com:7999/ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "git@bitbucket.example.com:acme/sample-app.git",
+   "page": null,
+   "v": "git@bitbucket.example.com:ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "git@bitbucket.example.com:acme/sample-app.git",
+   "page": "https://page.example.com/",
+   "v": "git@bitbucket.example.com:ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "git@bitbucket.example.com:acme/sample-app",
+   "page": null,
+   "v": "git@bitbucket.example.com:ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "git@bitbucket.example.com:acme/sample-app",
+   "page": "https://page.example.com/",
+   "v": "git@bitbucket.example.com:ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "git@github.com:someone/tools.git",
+   "page": null,
+   "v": "git@github.com:ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "git@github.com:someone/tools.git",
+   "page": "https://page.example.com/",
+   "v": "git@github.com:ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "https://github.com/Octo/hello.git",
+   "page": null,
+   "v": "https://github.com/ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "https://github.com/Octo/hello.git",
+   "page": "https://page.example.com/",
+   "v": "https://github.com/ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "https://github.com/Octo/hello",
+   "page": null,
+   "v": "https://github.com/ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "https://github.com/Octo/hello",
+   "page": "https://page.example.com/",
+   "v": "https://github.com/ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "https://token@github.com/octo/hello.git/",
+   "page": null,
+   "v": "https://token@github.com/ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "https://token@github.com/octo/hello.git/",
+   "page": "https://page.example.com/",
+   "v": "https://token@github.com/ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "git@github.com:octo/.github.git",
+   "page": null,
+   "v": "git@github.com:ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "git@github.com:octo/.github.git",
+   "page": "https://page.example.com/",
+   "v": "git@github.com:ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "ssh://git@ghe.example.com:2222/octo/hello.git",
+   "page": null,
+   "v": "ssh://git@ghe.example.com:2222/ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "ssh://git@ghe.example.com:2222/octo/hello.git",
+   "page": "https://page.example.com/",
+   "v": "ssh://git@ghe.example.com:2222/ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "ssh://git@ghe.example.com/octo/hello",
+   "page": null,
+   "v": "ssh://git@ghe.example.com/ACME/svc.git"
+  },
+  {
+   "k": "github",
+   "o": "ssh://git@ghe.example.com/octo/hello",
+   "page": "https://page.example.com/",
+   "v": "ssh://git@ghe.example.com/ACME/svc.git"
+  }
+ ],
+ "configs": [
+  {
+   "text": "[core]\n\tbare = false\n[remote \"origin\"]\n\turl = https://x/y.git\n\tfetch = +refs/*\n[branch \"m\"]\n\tremote = origin\n",
+   "origin": "https://x/y.git"
+  },
+  {
+   "text": "[remote \"origin\"]\r\n\turl = https://x/crlf.git\r\n",
+   "origin": "https://x/crlf.git"
+  },
+  {
+   "text": "[remote \"upstream\"]\n\turl = https://x/up.git\n",
+   "origin": null
+  },
+  {
+   "text": "[remote \"origin\"]\n\tfetch = +refs/*\n",
+   "origin": null
+  },
+  {
+   "text": "[remote   \"origin\" ]\n   url   =   https://x/spaced.git  \n",
+   "origin": "https://x/spaced.git"
+  },
+  {
+   "text": "\n\n  [remote \"origin\"]\nurl=https://x/nospace.git\n",
+   "origin": "https://x/nospace.git"
+  },
+  {
+   "text": "[remote \"origin\"]\n\turl = https://x/first.git\n\turl = https://x/second.git\n",
+   "origin": "https://x/first.git"
+  },
+  {
+   "text": "[remote \"origin\"]\n\t# url = https://x/commented.git\n\turl = https://x/real.git\n",
+   "origin": "https://x/real.git"
+  },
+  {
+   "text": "[remote \"origin\"]\nurl = \n",
+   "origin": ""
+  },
+  {
+   "text": "[remote \"origin\"]\n\turl = https://x/a b.git\n",
+   "origin": "https://x/a b.git"
+  },
+  {
+   "text": "[remote \"origin2\"]\n\turl = https://x/no.git\n",
+   "origin": null
+  }
+ ]
+}

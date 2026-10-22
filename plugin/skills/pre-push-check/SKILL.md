@@ -7,7 +7,7 @@ allowed-tools: Bash(companion status:*), Bash(companion precheck:*), Bash(git st
 # Pre-push check
 
 1. Run `companion status`. If the service **isn't running** (or `companion` is not found),
-   tell the user **"companion service not running"**, suggest `companion doctor` (if `companion` is not found, `node ~/ai-dev-companion/companion-service/bin/companion.js doctor`), and stop.
+   tell the user **"companion service not running"**, suggest `companion doctor` (if `companion` is not found, the binary in the install folder's `bin/`, e.g. `~/ai-dev-companion/bin/<binary> doctor`), and stop.
 2. Run `companion precheck` for the uncommitted changes, or `companion precheck <file>…`
    for the files the user names (repo-relative paths).
 3. Report the level and every cited line as printed. "Skipped" means the shared test history

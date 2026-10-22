@@ -1,0 +1,21 @@
+{
+  "id": 42,
+  "version": 3,
+  "title": "Fix widget rendering on Safari",
+  "state": "OPEN",
+  "fromBranch": "fix/widget-flicker",
+  "fromSha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+  "fromRepo": {
+    "projectKey": "ACME",
+    "slug": "sample-app"
+  },
+  "toBranch": "master",
+  "toSha": "0f1e2d3c4b5a69788796a5b4c3d2e1f0a9b8c7d6",
+  "toRepo": {
+    "projectKey": "ACME",
+    "slug": "sample-app"
+  },
+  "authorSlug": "jsmith",
+  "openTaskCount": 1,
+  "commentCount": 8
+}
