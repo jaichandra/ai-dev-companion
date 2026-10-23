@@ -25,7 +25,7 @@ use crate::terminal::{HeaderSegment, HeaderStyle};
 use async_trait::async_trait;
 use axum::body::Bytes;
 use axum::extract::{Path, Query, Request, State};
-use axum::http::{header, HeaderMap, HeaderValue, Method, StatusCode};
+use axum::http::{header, HeaderMap, Method, StatusCode};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{any, get, post};
@@ -331,28 +331,27 @@ async fn host_guard(State(state): State<Shared>, req: Request, next: Next) -> Re
     }
 }
 
-/// Permissive CORS response headers are harmless here (they only matter if a caller's request is
-/// subject to CORS); the secret check is what gates access either way. Deliberately not an
-/// Origin check: Chrome sends no Origin for an extension's fetch to a host in its manifest.
-async fn cors_and_secret(State(state): State<Shared>, req: Request, next: Next) -> Response {
-    let origin = req.headers().get(header::ORIGIN).cloned();
-    let mut res = if req.method() == Method::OPTIONS {
-        StatusCode::NO_CONTENT.into_response()
-    } else {
-        let given = req.headers().get("x-companion-secret").and_then(|v| v.to_str().ok()).map(String::from);
-        if given.as_deref() != Some(state.hooks.shared_secret().as_str()) {
-            reply(403, json!({ "error": "The Chrome extension and the companion service aren't using the same secret. Reload the extension at chrome://extensions (setup regenerates its config); if that doesn't help, re-run `npm run setup` in the companion-service folder, then reload the extension again." }))
-        } else {
-            next.run(req).await
-        }
-    };
-    let h = res.headers_mut();
-    if let Some(o) = origin {
-        h.insert("access-control-allow-origin", o);
+/// The secret check, constant-time. No CORS headers are sent: the extension's service worker is
+/// the only caller that needs this API, and Chrome exempts its fetches to a manifest host from
+/// CORS (and sends no Origin), so a web page gets no preflight answer and can't read a reply.
+/// Deliberately not an Origin check, for that same reason.
+async fn secret_guard(State(state): State<Shared>, req: Request, next: Next) -> Response {
+    let given = req.headers().get("x-companion-secret").map(|v| v.as_bytes());
+    let expected = state.hooks.shared_secret();
+    if !secret_matches(given, expected.as_bytes()) {
+        return reply(403, json!({ "error": "The Chrome extension and the companion service aren't using the same secret. Reload the extension at chrome://extensions (setup regenerates its config); if that doesn't help, re-run `npm run setup` in the companion-service folder, then reload the extension again." }));
     }
-    h.insert("access-control-allow-headers", HeaderValue::from_static("content-type, x-companion-secret"));
-    h.insert("access-control-allow-methods", HeaderValue::from_static("GET,POST,PUT,OPTIONS"));
-    res
+    next.run(req).await
+}
+
+/// Whether `given` is the (non-empty) `expected` secret, compared in constant time once the
+/// lengths agree.
+fn secret_matches(given: Option<&[u8]>, expected: &[u8]) -> bool {
+    use subtle::ConstantTimeEq;
+    match given {
+        Some(g) if !expected.is_empty() => g.len() == expected.len() && bool::from(g.ct_eq(expected)),
+        _ => false,
+    }
 }
 
 // ---- Routes: open (no secret) ----
@@ -935,7 +934,7 @@ pub fn app(state: Arc<AppState>) -> Router {
         .route("/jobs/{job_id}/start", post(job_start))
         .route("/jobs/{job_id}/dismiss", post(job_dismiss))
         .fallback(not_found)
-        .layer(middleware::from_fn_with_state(state.clone(), cors_and_secret));
+        .layer(middleware::from_fn_with_state(state.clone(), secret_guard));
     Router::new().route("/health", get(health)).route("/mcp", any(mcp)).merge(secured).layer(middleware::from_fn_with_state(state.clone(), host_guard)).with_state(state)
 }
 
@@ -1194,14 +1193,30 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn a_preflight_is_answered_without_the_secret_and_the_origin_is_echoed() {
+    async fn no_response_carries_cors_headers_and_a_preflight_needs_the_secret() {
         let f = fx(false);
-        let req = axum::http::Request::builder().method("OPTIONS").uri("/features/fake/start").header("host", "127.0.0.1:8787").header("origin", "chrome-extension://abc").body(Body::empty()).unwrap();
-        let res = f.app.clone().oneshot(req).await.unwrap();
-        assert_eq!(res.status(), 204);
-        assert_eq!(res.headers()["access-control-allow-origin"], "chrome-extension://abc");
-        assert_eq!(res.headers()["access-control-allow-headers"], "content-type, x-companion-secret");
-        assert_eq!(res.headers()["access-control-allow-methods"], "GET,POST,PUT,OPTIONS");
+        for (method, secret) in [("OPTIONS", None), ("GET", None), ("GET", Some(SECRET))] {
+            let mut b = axum::http::Request::builder().method(method).uri("/features").header("host", "127.0.0.1:8787").header("origin", "https://page.example");
+            if let Some(s) = secret {
+                b = b.header("x-companion-secret", s);
+            }
+            let res = f.app.clone().oneshot(b.body(Body::empty()).unwrap()).await.unwrap();
+            assert!(res.headers().keys().all(|k| !k.as_str().starts_with("access-control-")), "{method} {secret:?}");
+            if secret.is_none() {
+                assert_eq!(res.status(), 403);
+            }
+        }
+    }
+
+    #[test]
+    fn the_secret_check_wants_the_exact_non_empty_secret() {
+        assert!(secret_matches(Some(b"s3cret"), b"s3cret"));
+        assert!(!secret_matches(Some(b"s3cre"), b"s3cret"));
+        assert!(!secret_matches(Some(b"s3cretx"), b"s3cret"));
+        assert!(!secret_matches(Some(b"S3cret"), b"s3cret"));
+        assert!(!secret_matches(None, b"s3cret"));
+        assert!(!secret_matches(Some(b""), b""), "an unset secret never matches an empty header");
+        assert!(!secret_matches(None, b""));
     }
 
     #[tokio::test]
