@@ -1142,6 +1142,38 @@
           else resolve(response);
         });
       });
+    // ---- Change log: this install's own CHANGELOG.md, always here (What's new in the update panel only
+    // exists while an update is on offer). No refresh, so opening About never waits on git. ----
+    const changelog = block(aboutPage, "Change log");
+    const changelogBody = el("div", "settings-item");
+    changelogBody.appendChild(el("div", "settings-row-text", "Loading…"));
+    changelog.appendChild(changelogBody);
+    (async () => {
+      try {
+        const { info } = await bgMessage({ type: "update-info" });
+        const entries = (Array.isArray(info.changelog) ? info.changelog : []).filter(
+          (e) => e && typeof e.version === "string" && Array.isArray(e.notes) && e.notes.length > 0,
+        );
+        if (entries.length === 0) {
+          changelogBody.textContent = "No change log in this install.";
+          return;
+        }
+        changelogBody.remove();
+        for (const entry of entries) {
+          const item = el("div", "settings-item");
+          item.dataset.search = `change log ${entry.version} ${entry.notes.join(" ")}`.toLowerCase();
+          const head = el("div", "settings-changelog-version", `v${entry.version}`);
+          if (entry.version === info.current) head.appendChild(el("span", "settings-changelog-installed", " · installed"));
+          const list = el("ul", "settings-changelog-notes");
+          for (const note of entry.notes) list.appendChild(el("li", "", String(note)));
+          item.append(head, list);
+          changelog.appendChild(item);
+        }
+      } catch {
+        changelogBody.textContent = "Couldn't load the change log (is the companion service running?).";
+      }
+    })();
+
     let offeredLatest = null;
     const checkForUpdates = async () => {
       updateBtn.disabled = true;

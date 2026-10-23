@@ -221,6 +221,14 @@ pub fn read_changelog(dir: &Path) -> Vec<ChangelogEntry> {
     std::fs::read_to_string(dir.join("CHANGELOG.md")).map(|t| parse_changelog(&t)).unwrap_or_default()
 }
 
+/// This copy's own CHANGELOG.md, newest version first: what Settings shows under About, always (the
+/// update panel's What's new only exists while an update is on offer).
+pub fn installed_changelog(install_dir: &Path) -> Vec<ChangelogEntry> {
+    let mut entries = read_changelog(install_dir);
+    entries.sort_by(|a, b| compare_versions(&b.version, &a.version).cmp(&0));
+    entries
+}
+
 /// The entries newer than `current` and no newer than `latest`, newest first.
 pub fn whats_new_since(entries: &[ChangelogEntry], current: &str, latest: Option<&str>) -> Vec<ChangelogEntry> {
     let mut out: Vec<ChangelogEntry> = entries.iter().filter(|e| compare_versions(&e.version, current) > 0 && latest.is_none_or(|l| l.is_empty() || compare_versions(&e.version, l) <= 0)).cloned().collect();
@@ -439,6 +447,7 @@ pub async fn get_update_info(checker: &Arc<UpdateChecker>, loc: &Locations, opts
     let whats_new: Vec<Value> = current.as_deref().map(|c| whats_new_since(&check.changelog, c, check.latest.as_deref()).iter().map(ChangelogEntry::to_json).collect()).unwrap_or_default();
     json!({
         "current": current, "latest": check.latest, "available": available, "whatsNew": whats_new,
+        "changelog": installed_changelog(&loc.install_dir()).iter().map(ChangelogEntry::to_json).collect::<Vec<_>>(),
         "checkedAt": check.checked_at.map(crate::js_number::json_number), "error": check.error,
         "source": source.to_json(), "canApply": reason.is_none(), "cannotApplyReason": reason,
         "restartsItself": opts.under_launchd, "manualCommand": manual_update_command(&source),
@@ -703,6 +712,20 @@ mod tests {
         assert_eq!(start_update(&l, &runner, None).unwrap()["marker"], 1);
     }
 
+    #[tokio::test]
+    async fn get_update_info_carries_this_copys_own_changelog_newest_first_for_settings() {
+        let home = tmp();
+        let dev = tmp();
+        let l = loc(home.path(), dev.path());
+        std::fs::write(dev.path().join("package.json"), r#"{"version":"0.10.0"}"#).unwrap();
+        std::fs::write(dev.path().join("CHANGELOG.md"), "# Changelog\n\n## Unreleased\n\n- not out yet\n\n## 0.9.0\n\n- Older **change**\n\n## 0.10.0\n\n- Newer change\n").unwrap();
+        let checker = UpdateChecker::new(home.path().to_path_buf());
+        let info = get_update_info(&checker, &l, UpdateInfoOptions { refresh: false, under_launchd: false, running_version: None }).await;
+        let versions: Vec<&str> = info["changelog"].as_array().unwrap().iter().map(|e| e["version"].as_str().unwrap()).collect();
+        assert_eq!(versions, ["0.10.0", "0.9.0"]);
+        assert_eq!(info["changelog"][1]["notes"][0], "Older change");
+    }
+
     #[test]
     fn find_companion_service_dir_walks_up_to_the_package_and_skips_dist() {
         let root = tmp();
@@ -726,6 +749,8 @@ mod tests {
         let info = get_update_info(&checker, &l, UpdateInfoOptions { refresh: false, under_launchd: true, running_version: None }).await;
         assert_eq!((info["current"].clone(), info["latest"].clone(), info["available"].clone()), (json!("0.1.0"), json!("0.2.0"), json!(true)));
         assert_eq!(info["whatsNew"][0]["version"], "0.2.0");
+        // No CHANGELOG.md in this copy: an empty list, not an error.
+        assert_eq!(info["changelog"], json!([]));
         assert_eq!((info["canApply"].clone(), info["restartsItself"].clone()), (json!(false), json!(true)));
         assert_eq!(info["manualCommand"], "cd \"/nowhere/repo\" && git pull && cargo run --release -- install --yes");
         assert_eq!(info["source"], json!({ "url": "/nowhere/repo", "ref": "main" }));

@@ -2578,6 +2578,11 @@
       .update-version { margin:0 0 4px; font-size:12px; font-weight:600; color:#0052a3; }
       .update-notes { margin:0; padding-left:18px; }
       .update-notes li { margin:0 0 4px; font-size:13px; line-height:1.45; color:#1c1c1c; }
+      /* Settings → About → Change log: one item per release, newest first. */
+      .settings-changelog-version { margin:0 0 4px; font-size:12px; font-weight:600; color:#0052a3; }
+      .settings-changelog-installed { color:#1a7f37; }
+      .settings-changelog-notes { margin:0; padding-left:18px; }
+      .settings-changelog-notes li { margin:0 0 4px; font-size:13px; line-height:1.45; color:#1c1c1c; font-weight:400; }
       .repo-setup .update-status { margin:0 0 16px; padding:10px 14px 10px 11px; border-left:3px solid #0067c5; background:#f4fbff; }
       .repo-setup .update-status:empty { display:none; }
       .actions { display:flex; gap:8px; flex-wrap:wrap; }
