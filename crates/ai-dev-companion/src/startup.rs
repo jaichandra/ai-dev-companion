@@ -434,7 +434,8 @@ impl AppHooks for ServiceHooks {
     }
 
     fn restart_process(&self) {
-        // SIGTERM ourselves: launchd's KeepAlive starts the new build.
+        // SIGTERM ourselves: the service shuts down and then dies by the signal ([`die_like_sigterm`]),
+        // which is what makes launchd's KeepAlive start the new build.
         // SAFETY: signalling our own process.
         unsafe { libc::kill(std::process::id() as i32, libc::SIGTERM) };
     }
@@ -884,7 +885,8 @@ pub fn build(dist: Distribution) -> Result<Option<Running>, String> {
     Ok(Some(running))
 }
 
-/// Runs the service until SIGINT/SIGTERM. A missing config exits cleanly (see [`build`]).
+/// Runs the service until SIGINT/SIGTERM. A missing config exits cleanly (see [`build`]); a SIGTERM ends the
+/// process by that signal after the clean shutdown (see [`die_like_sigterm`]).
 pub async fn run_service(dist: Distribution) -> Result<(), String> {
     let Some(running) = build(dist)? else { return Ok(()) };
     let port = running.port;
@@ -896,9 +898,13 @@ pub async fn run_service(dist: Distribution) -> Result<(), String> {
         }
     })?;
     println!("listening on http://127.0.0.1:{port}");
-    let signal = async {
-        let mut term = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()).expect("a SIGTERM handler installs");
-        tokio::select! { _ = term.recv() => {}, _ = tokio::signal::ctrl_c() => {} }
+    let terminated = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let signal = {
+        let terminated = terminated.clone();
+        async move {
+            let mut term = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()).expect("a SIGTERM handler installs");
+            tokio::select! { _ = term.recv() => terminated.store(true, std::sync::atomic::Ordering::SeqCst), _ = tokio::signal::ctrl_c() => {} }
+        }
     };
     let router = running.router.clone();
     running
@@ -906,7 +912,26 @@ pub async fn run_service(dist: Distribution) -> Result<(), String> {
         .await
         .map_err(|e| e.to_string())?;
     running.shutdown().await;
+    if terminated.load(std::sync::atomic::Ordering::SeqCst) {
+        die_like_sigterm();
+    }
     Ok(())
+}
+
+/// Ends the process as an unhandled SIGTERM would have. The service handles SIGTERM to drain and shut
+/// down cleanly, but the launchd job (`KeepAlive` with `SuccessfulExit` false) restarts only a job that
+/// ends unsuccessfully, and an exit code of 0 is a deliberate stop. A SIGTERM is how the service
+/// restarts itself (`restart_process`) and how the updater restarts it onto a new build, so after the
+/// clean shutdown it must still die by the signal. `launchctl bootout` (`service uninstall`) removes the
+/// job first, so a real stop stays stopped; Ctrl+C (SIGINT) still exits 0.
+fn die_like_sigterm() -> ! {
+    // SAFETY: restoring SIGTERM's default action, then delivering it to ourselves.
+    unsafe {
+        libc::signal(libc::SIGTERM, libc::SIG_DFL);
+        libc::raise(libc::SIGTERM);
+    }
+    // Unreachable once the signal is delivered; a non-zero exit all the same.
+    std::process::exit(128 + libc::SIGTERM)
 }
 
 #[cfg(all(test, unix))]
@@ -917,6 +942,24 @@ mod tests {
     use tower::ServiceExt;
 
     const SECRET: &str = "s3cret-for-tests";
+
+    /// launchd restarts a `KeepAlive: SuccessfulExit=false` job only after an unsuccessful exit, and the
+    /// service restarts itself (and is restarted by the updater) with a SIGTERM it handles. So after
+    /// shutting down cleanly it must still end *as if killed by* SIGTERM, never with exit code 0.
+    #[test]
+    fn dying_like_sigterm_ends_by_the_signal_so_launchd_restarts_the_job() {
+        use std::os::unix::process::ExitStatusExt;
+        if std::env::var_os("AI_DEV_COMPANION_TEST_DIE_LIKE_SIGTERM").is_some() {
+            die_like_sigterm();
+        }
+        let status = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "startup::tests::dying_like_sigterm_ends_by_the_signal_so_launchd_restarts_the_job", "--nocapture"])
+            .env("AI_DEV_COMPANION_TEST_DIE_LIKE_SIGTERM", "1")
+            .status()
+            .unwrap();
+        assert!(!status.success());
+        assert_eq!(status.signal(), Some(libc::SIGTERM), "{status:?}");
+    }
 
     struct Fx {
         _d: tempfile::TempDir,
