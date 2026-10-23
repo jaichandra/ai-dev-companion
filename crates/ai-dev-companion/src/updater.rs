@@ -325,6 +325,47 @@ pub async fn sync_source(source: &Source, dir: &Path) -> Result<PathBuf, String>
     Ok(dir.to_path_buf())
 }
 
+/// The files the check for a newer version reads from the release: its version and its changelog.
+const CHECK_PATHS: [&str; 3] = ["package.json", "companion-service/package.json", "CHANGELOG.md"];
+
+/// The lighter sync the check for a newer version uses: a shallow, blob-less clone (commits and trees
+/// only), then just the files in [`CHECK_PATHS`] written out. A prebuilt release carries a binary of
+/// tens of megabytes, which this never downloads or checks out; applying an update still takes the
+/// full tree through [`sync_source`]. A clone left by [`sync_source`] (not a blob-less one) is
+/// replaced, once. A server that can't filter just sends everything, which is only slower.
+pub async fn sync_source_for_check(source: &Source, dir: &Path) -> Result<PathBuf, String> {
+    let mut reuse = dir.join(".git").exists();
+    if reuse {
+        let origin = run_git(&["remote", "get-url", "origin"], dir).await.unwrap_or_default();
+        let filter = run_git(&["config", "--get", "remote.origin.partialclonefilter"], dir).await.unwrap_or_default();
+        reuse = origin == source.url && filter == "blob:none";
+    }
+    let rev = if reuse {
+        run_git(&["fetch", "--depth", "1", "--filter=blob:none", "--quiet", "origin", &source.git_ref], dir).await?;
+        "FETCH_HEAD"
+    } else {
+        let _ = std::fs::remove_dir_all(dir);
+        let parent = dir.parent().unwrap_or(Path::new("."));
+        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+        run_git(&["clone", "--depth", "1", "--filter=blob:none", "--no-checkout", "--quiet", "--branch", &source.git_ref, &source.url, &dir.to_string_lossy()], parent).await?;
+        "HEAD"
+    };
+    // Files the release no longer has must not linger from an earlier check.
+    for path in CHECK_PATHS {
+        let _ = std::fs::remove_file(dir.join(path));
+    }
+    let mut ls = vec!["ls-tree", "--name-only", rev, "--"];
+    ls.extend(CHECK_PATHS);
+    let present = run_git(&ls, dir).await?;
+    let present: Vec<&str> = present.lines().filter(|l| !l.is_empty()).collect();
+    if !present.is_empty() {
+        let mut checkout = vec!["checkout", "--quiet", "-f", rev, "--"];
+        checkout.extend(present);
+        run_git(&checkout, dir).await?;
+    }
+    Ok(dir.to_path_buf())
+}
+
 /// The outcome of the last check for a newer version.
 #[derive(Debug, Clone, Default)]
 pub struct Check {
@@ -366,7 +407,7 @@ impl UpdateChecker {
             return c;
         }
         let outcome = async {
-            let dir = sync_source(source, &source_cache_dir(&self.home)).await?;
+            let dir = sync_source_for_check(source, &source_cache_dir(&self.home)).await?;
             let latest = installed_version(&dir).ok_or_else(|| format!("{} ({}) has no package.json version.", source.url, source.git_ref))?;
             Ok::<_, String>(Check { latest: Some(latest), changelog: read_changelog(&dir), error: None, checked_at: Some(crate::job_files::now_ms()) })
         }
@@ -597,6 +638,78 @@ mod tests {
         git(&origin, &["commit", "-qam", "v1.1"]);
         sync_source(&source, &dir).await.unwrap();
         assert_eq!(installed_version(&dir).as_deref(), Some("1.1.0"));
+    }
+
+    /// An origin that serves partial clones, holding a version, a changelog and a bulky "binary".
+    fn origin_with_a_binary(root: &Path) -> (PathBuf, Source) {
+        let origin = root.join("origin");
+        std::fs::create_dir_all(origin.join("bin")).unwrap();
+        git(&origin, &["init", "-q", "-b", "master"]);
+        for (k, v) in [("user.email", "t@example.com"), ("user.name", "t"), ("uploadpack.allowFilter", "true")] {
+            git(&origin, &["config", k, v]);
+        }
+        std::fs::write(origin.join("package.json"), r#"{"version":"1.0.0"}"#).unwrap();
+        std::fs::write(origin.join("CHANGELOG.md"), "## 1.0.0\n\n- first\n").unwrap();
+        std::fs::write(origin.join("bin/tool"), (0..200_000u32).flat_map(|n| n.to_le_bytes()).collect::<Vec<u8>>()).unwrap();
+        git(&origin, &["add", "."]);
+        git(&origin, &["commit", "-qm", "v1"]);
+        let source = Source { url: format!("file://{}", origin.display()), git_ref: "master".into() };
+        (origin, source)
+    }
+
+    /// Objects the clone knows of but doesn't have (`?<sha>` lines).
+    fn missing_objects(dir: &Path) -> usize {
+        let out = Command::new("git").args(["rev-list", "--objects", "--missing=print", "HEAD"]).current_dir(dir).output().unwrap();
+        String::from_utf8_lossy(&out.stdout).lines().filter(|l| l.starts_with('?')).count()
+    }
+
+    #[tokio::test]
+    async fn the_check_reads_the_version_and_changelog_without_downloading_the_rest_of_the_release() {
+        let root = tmp();
+        let (origin, source) = origin_with_a_binary(root.path());
+        let dir = root.path().join("cache");
+        sync_source_for_check(&source, &dir).await.unwrap();
+        assert_eq!(installed_version(&dir).as_deref(), Some("1.0.0"));
+        assert_eq!(read_changelog(&dir).first().map(|e| e.version.as_str()), Some("1.0.0"));
+        assert!(!dir.join("bin/tool").exists(), "the binary must not be checked out");
+        assert_eq!(missing_objects(&dir), 1, "the binary's blob must not be downloaded");
+
+        // A new commit is picked up on the same clone, still without the binary.
+        std::fs::write(origin.join("package.json"), r#"{"version":"1.1.0"}"#).unwrap();
+        std::fs::write(origin.join("bin/tool"), (0..200_000u32).flat_map(|n| (n + 1).to_le_bytes()).collect::<Vec<u8>>()).unwrap();
+        git(&origin, &["commit", "-qam", "v1.1"]);
+        sync_source_for_check(&source, &dir).await.unwrap();
+        assert_eq!(installed_version(&dir).as_deref(), Some("1.1.0"));
+        assert!(!dir.join("bin/tool").exists());
+    }
+
+    #[tokio::test]
+    async fn the_check_replaces_a_full_clone_left_by_an_earlier_version_and_drops_files_the_release_no_longer_has() {
+        let root = tmp();
+        let (origin, source) = origin_with_a_binary(root.path());
+        let dir = root.path().join("cache");
+        sync_source(&source, &dir).await.unwrap();
+        assert!(dir.join("bin/tool").exists());
+        sync_source_for_check(&source, &dir).await.unwrap();
+        assert_eq!(installed_version(&dir).as_deref(), Some("1.0.0"));
+        assert!(!dir.join("bin/tool").exists());
+
+        std::fs::remove_file(origin.join("CHANGELOG.md")).unwrap();
+        git(&origin, &["commit", "-qam", "no changelog"]);
+        sync_source_for_check(&source, &dir).await.unwrap();
+        assert!(read_changelog(&dir).is_empty());
+    }
+
+    #[tokio::test]
+    async fn the_update_check_itself_uses_the_light_sync_and_still_reports_the_latest_version_and_changelog() {
+        let root = tmp();
+        let (_origin, source) = origin_with_a_binary(root.path());
+        let home = root.path().join("home");
+        let checker = UpdateChecker::new(home.clone());
+        let check = checker.check_for_update(Duration::ZERO, &source).await;
+        assert_eq!((check.latest.as_deref(), check.error), (Some("1.0.0"), None));
+        assert_eq!(check.changelog.first().map(|e| e.version.as_str()), Some("1.0.0"));
+        assert!(!source_cache_dir(&home).join("bin/tool").exists(), "a check must not check out the binary");
     }
 
     #[tokio::test]
