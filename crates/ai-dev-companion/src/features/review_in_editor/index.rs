@@ -107,9 +107,13 @@ impl<G: Git + 'static> ReviewInEditor<G> {
         let now = crate::job_files::now_ms();
         let job_id = record["jobId"].as_str().unwrap_or("");
         let file = rs::status_file_for(job_id, &self.d.sessions_dir).map(|p| p.to_string_lossy().into_owned()).unwrap_or_default();
+        let mut data = json!({ "payload": record["payload"], "session": { "file": file, "worktree": record["worktree"] } });
+        if terminal_location_from_value(&record["terminal"]).is_some() {
+            data["terminal"] = record["terminal"].clone();
+        }
         self.d.store.restore(json!({
             "id": job_id, "featureId": "review-in-editor", "status": "approved",
-            "data": { "payload": record["payload"], "session": { "file": file, "worktree": record["worktree"] } },
+            "data": data,
             "result": { "summary": record["summary"], "files": [], "review": record["review"] },
             "createdAt": now, "updatedAt": now,
         }))
@@ -271,6 +275,8 @@ impl<G: Git + 'static> ReviewInEditor<G> {
             let mut record = json!({ "jobId": job_id, "worktree": dir, "payload": payload, "summary": summary, "review": review });
             if let Some(t) = &launch.terminal {
                 record["terminal"] = t.to_json();
+                // So the panel can bring this window to the front (`POST /jobs/:id/focus-terminal`).
+                let _ = self.d.store.set_data(job_id, "terminal", t.to_json());
             }
             let _ = rs::write_session_record(&record, &self.d.sessions_dir);
         }

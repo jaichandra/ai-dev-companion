@@ -21,7 +21,8 @@ use crate::pr_status::{PrGit, PrStatus, PrStatusError};
 use crate::prereqs::{self, check_repo_path, Check};
 use crate::providers::{GitCapability, GitHost, Providers};
 use crate::repo_setup::{RepoSetup, RepoSetupError};
-use crate::resume_session::{resume_session_in_terminal, ResumeOutcome};
+use crate::resume_session::{resume_session_located, ResumeOutcome};
+use crate::terminal_focus::{focus_terminal, terminal_location_from_value};
 use crate::scheduler::Scheduler;
 use crate::server::{ApiError, HookResult, ResumeResult};
 use crate::settings::{self, CredentialView, RepoDeps, Settings, TokenOpsResult, LOCKED_KEYS};
@@ -196,15 +197,22 @@ impl ConfigHooks {
 
     // ---- terminal ----
 
-    pub async fn open_claude_code(&self, dir: &str) -> Result<(), String> {
-        self.terminal.open_claude_code(dir, &[], &[], &TerminalOptions::default()).await.map(|_| ())
+    /// Where the terminal opened (`TerminalLocation::to_json`), when it said.
+    pub async fn open_claude_code(&self, dir: &str, title: Option<String>) -> Result<Option<Value>, String> {
+        self.terminal.open_claude_code(dir, &[], &[], &TerminalOptions { title, ..Default::default() }).await.map(|l| l.map(|l| l.to_json()))
+    }
+
+    /// Brings a stored terminal window to the front: `Ok(false)` if it has been closed.
+    pub async fn focus_terminal(&self, location: &Value) -> Result<bool, String> {
+        let loc = terminal_location_from_value(location).ok_or("This job has no terminal to bring forward.")?;
+        focus_terminal(&loc, &self.terminal.osascript).await
     }
 
     pub async fn resume_session(&self, session: &Value, header: &[Vec<HeaderSegment>], job_worktree: Option<&str>) -> Result<ResumeResult, String> {
-        Ok(match resume_session_in_terminal(&self.terminal, &(self.config)(), session, header, job_worktree, &self.home).await? {
-            ResumeOutcome::Resumed => ResumeResult::Resumed,
-            ResumeOutcome::Invalid => ResumeResult::Invalid,
-            ResumeOutcome::Gone => ResumeResult::Gone,
+        Ok(match resume_session_located(&self.terminal, &(self.config)(), session, header, job_worktree, &self.home).await? {
+            (ResumeOutcome::Resumed, loc) => ResumeResult::Resumed(loc.map(|l| l.to_json())),
+            (ResumeOutcome::Invalid, _) => ResumeResult::Invalid,
+            (ResumeOutcome::Gone, _) => ResumeResult::Gone,
         })
     }
 

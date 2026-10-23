@@ -58,9 +58,10 @@ impl ApiError {
 pub type HookResult = Result<Value, ApiError>;
 
 /// How the service answers a request to resume a job's Claude session.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ResumeResult {
-    Resumed,
+    /// With where its terminal opened (`TerminalLocation::to_json`), when known.
+    Resumed(Option<Value>),
     /// Not a session this service would have recorded.
     Invalid,
     /// Its folder or transcript is gone.
@@ -173,8 +174,13 @@ pub trait AppHooks: Send + Sync {
     }
     /// Stops the process so launchd starts it again. Called a moment after the answer is sent.
     fn restart_process(&self) {}
-    async fn open_claude_code(&self, _dir: &str) -> Result<(), String> {
+    /// Opens a terminal running `claude` in `dir`, titled `title`; where it opened, when known.
+    async fn open_claude_code(&self, _dir: &str, _title: Option<String>) -> Result<Option<Value>, String> {
         Err("Opening Claude Code isn't available in this build.".into())
+    }
+    /// Brings the terminal at a stored location to the front: `Ok(false)` if it has been closed.
+    async fn focus_terminal(&self, _location: &Value) -> Result<bool, String> {
+        Err("Focusing a terminal isn't available in this build.".into())
     }
     async fn resume_session(&self, _session: &Value, _header: &[Vec<HeaderSegment>], _job_worktree: Option<&str>) -> Result<ResumeResult, String> {
         Err("Resuming a session isn't available in this build.".into())
@@ -615,8 +621,11 @@ async fn open_in_claude_code(State(state): State<Shared>, Path(job_id): Path<Str
         if !std::path::Path::new(dir).exists() {
             return reply(410, json!({ "error": "the worktree no longer exists (the job may already have been approved or discarded)" }));
         }
-        return match state.hooks.open_claude_code(dir).await {
-            Ok(()) => reply(200, json!({ "ok": true })),
+        return match state.hooks.open_claude_code(dir, terminal_title(&state, &job)).await {
+            Ok(location) => {
+                record_terminal(&state, &job_id, location);
+                reply(200, json!({ "ok": true }))
+            }
             Err(e) => reply(500, json!({ "error": e })),
         };
     }
@@ -627,9 +636,45 @@ async fn open_in_claude_code(State(state): State<Shared>, Path(job_id): Path<Str
     let feature_id = job["featureId"].as_str().unwrap_or("");
     let header = state.feature(feature_id).map(|f| build_resume_header(f.label(), &job)).unwrap_or_default();
     match state.hooks.resume_session(&job["data"]["claudeSession"], &header, job["data"]["worktree"]["dir"].as_str()).await {
-        Ok(ResumeResult::Resumed) => reply(200, json!({ "ok": true })),
+        Ok(ResumeResult::Resumed(location)) => {
+            record_terminal(&state, &job_id, location);
+            reply(200, json!({ "ok": true }))
+        }
         Ok(ResumeResult::Invalid) => reply(400, json!({ "error": "This job has no resumable Claude Code session." })),
         Ok(ResumeResult::Gone) => reply(410, json!({ "error": expired_session_message(feature_id) })),
+        Err(e) => reply(500, json!({ "error": e })),
+    }
+}
+
+/// What the terminal's tab is called: the feature and the PR or ticket it is for, so its window
+/// can be told from the others'.
+fn terminal_title(state: &Shared, job: &Value) -> Option<String> {
+    let label = state.feature(job["featureId"].as_str().unwrap_or("")).map(|f| f.label().to_string())?;
+    Some(match resume_header_key(job) {
+        Some(key) => format!("{label} {key}"),
+        None => label,
+    })
+}
+
+/// Remembers where a job's terminal opened (`data.terminal`) so the slideout can bring it back.
+/// A launch that couldn't say where leaves any earlier location alone.
+fn record_terminal(state: &Shared, job_id: &str, location: Option<Value>) {
+    if let Some(location) = location {
+        let _ = state.store.set_data(job_id, "terminal", location);
+    }
+}
+
+/// Brings the job's terminal window to the front. `focused`, `missing` (it was closed) or
+/// `unknown` (no location was recorded). The location is only ever the server-held one.
+async fn focus_job_terminal(State(state): State<Shared>, Path(job_id): Path<String>) -> Response {
+    let Some(job) = state.store.get(&job_id) else { return unknown_job() };
+    let location = &job["data"]["terminal"];
+    if location.is_null() {
+        return reply(200, json!({ "focus": "unknown" }));
+    }
+    match state.hooks.focus_terminal(location).await {
+        Ok(true) => reply(200, json!({ "focus": "focused" })),
+        Ok(false) => reply(200, json!({ "focus": "missing" })),
         Err(e) => reply(500, json!({ "error": e })),
     }
 }
@@ -914,6 +959,7 @@ pub fn app(state: Arc<AppState>) -> Router {
         .route("/settings/restart", post(settings_restart))
         .route("/status/{job_id}", get(job_status))
         .route("/jobs/{job_id}/open-in-claude-code", post(open_in_claude_code))
+        .route("/jobs/{job_id}/focus-terminal", post(focus_job_terminal))
         .route("/jobs/{job_id}/addons", get(addons_list))
         .route("/jobs/{job_id}/addons/{addon}/{op}", post(addon_op))
         .route("/addons/heartbeat", post(addon_heartbeat))
@@ -992,15 +1038,19 @@ mod tests {
         async fn settings_get(&self) -> HookResult {
             Ok(json!({ "settings": {} }))
         }
-        async fn open_claude_code(&self, dir: &str) -> Result<(), String> {
-            self.calls.lock().unwrap().push(format!("open:{dir}"));
-            Ok(())
+        async fn open_claude_code(&self, dir: &str, title: Option<String>) -> Result<Option<Value>, String> {
+            self.calls.lock().unwrap().push(format!("open:{dir}:{}", title.unwrap_or_default()));
+            Ok(Some(json!({ "app": "terminal", "windowId": "7", "tty": "/dev/ttys003" })))
+        }
+        async fn focus_terminal(&self, location: &Value) -> Result<bool, String> {
+            self.calls.lock().unwrap().push(format!("focus:{}", location["tty"].as_str().unwrap_or("")));
+            Ok(location["windowId"] == "7")
         }
         async fn resume_session(&self, session: &Value, header: &[Vec<HeaderSegment>], _: Option<&str>) -> Result<ResumeResult, String> {
             self.calls.lock().unwrap().push(format!("resume:{}:{}", session["id"], header.len()));
             Ok(match session["id"].as_str() {
                 Some("gone") => ResumeResult::Gone,
-                Some(_) => ResumeResult::Resumed,
+                Some(_) => ResumeResult::Resumed(Some(json!({ "app": "terminal", "windowId": "8", "tty": "/dev/ttys004" }))),
                 None => ResumeResult::Invalid,
             })
         }
@@ -1460,9 +1510,28 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         f.state.store.patch_data(&id, Map::from_iter([("worktree".to_string(), json!({ "dir": dir.path() }))])).unwrap();
         assert_eq!(post_(&f, &format!("/jobs/{id}/open-in-claude-code"), "{}").await, (200, json!({ "ok": true })));
-        assert_eq!(f.hooks.calls.lock().unwrap().last().unwrap(), &format!("open:{}", dir.path().display()));
+        let label = f.state.feature("fake").unwrap().label().to_string();
+        assert_eq!(f.hooks.calls.lock().unwrap().last().unwrap(), &format!("open:{}:{label}", dir.path().display()));
+        // Where it opened is kept on the job, titled by feature (and the PR or ticket, when it has one).
+        assert_eq!(f.state.store.get(&id).unwrap()["data"]["terminal"]["windowId"], "7");
         f.state.store.patch_data(&id, Map::from_iter([("worktree".to_string(), json!({ "dir": "/definitely/not/here" }))])).unwrap();
         assert_eq!(post_(&f, &format!("/jobs/{id}/open-in-claude-code"), "{}").await.0, 410);
+    }
+
+    #[tokio::test]
+    async fn focus_terminal_uses_only_the_location_the_service_recorded() {
+        let f = fx(false);
+        assert_eq!(post_(&f, "/jobs/nope/focus-terminal", "{}").await.0, 404);
+        let id = f.state.store.create("fake", Map::new())["id"].as_str().unwrap().to_string();
+        // Nothing recorded: nothing is focused and the hook isn't called.
+        assert_eq!(post_(&f, &format!("/jobs/{id}/focus-terminal"), "{}").await, (200, json!({ "focus": "unknown" })));
+        assert!(f.hooks.calls.lock().unwrap().is_empty());
+        f.state.store.set_data(&id, "terminal", json!({ "app": "terminal", "windowId": "7", "tty": "/dev/ttys003" })).unwrap();
+        assert_eq!(post_(&f, &format!("/jobs/{id}/focus-terminal"), "{\"location\":{\"tty\":\"/dev/ttys999\"}}").await, (200, json!({ "focus": "focused" })));
+        assert_eq!(f.hooks.calls.lock().unwrap().last().unwrap(), "focus:/dev/ttys003");
+        // A window that has been closed.
+        f.state.store.set_data(&id, "terminal", json!({ "app": "terminal", "windowId": "9", "tty": "/dev/ttys003" })).unwrap();
+        assert_eq!(post_(&f, &format!("/jobs/{id}/focus-terminal"), "{}").await, (200, json!({ "focus": "missing" })));
     }
 
     #[tokio::test]
