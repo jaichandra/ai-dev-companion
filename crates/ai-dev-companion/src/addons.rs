@@ -10,6 +10,8 @@ pub enum AddonState {
     Idle,
     Starting,
     Ready,
+    /// Being stopped: not startable until it is gone.
+    Stopping,
     Failed,
 }
 
@@ -19,6 +21,7 @@ impl AddonState {
             AddonState::Idle => "idle",
             AddonState::Starting => "starting",
             AddonState::Ready => "ready",
+            AddonState::Stopping => "stopping",
             AddonState::Failed => "failed",
         }
     }
@@ -66,5 +69,11 @@ mod tests {
     fn a_view_serializes_for_the_extension() {
         let v = AddonView { id: "x".into(), label: "X".into(), state: AddonState::Ready, href: Some("http://a.localhost/".into()), error: None, auto_start: false };
         assert_eq!(v.to_json(), json!({ "id": "x", "label": "X", "state": "ready", "href": "http://a.localhost/", "error": null, "autoStart": false }));
+    }
+
+    #[test]
+    fn every_state_has_its_own_name_for_the_extension() {
+        let names: Vec<&str> = [AddonState::Idle, AddonState::Starting, AddonState::Ready, AddonState::Stopping, AddonState::Failed].iter().map(|s| s.as_str()).collect();
+        assert_eq!(names, ["idle", "starting", "ready", "stopping", "failed"]);
     }
 }
