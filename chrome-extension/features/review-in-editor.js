@@ -30,8 +30,19 @@ function paiAddonsCard(jobId) {
     b.addEventListener("click", onClick);
     return b;
   };
+  const pendingRow = (text) => {
+    const box = document.createElement("div");
+    box.className = "open-in-editor-actions";
+    const pending = document.createElement("span");
+    pending.className = "open-in-editor-btn";
+    pending.textContent = text;
+    box.append(pending);
+    return box;
+  };
   const op = async (addon, name) => {
     busy = true;
+    // The stop request returns only when everything is gone (it can take a while), so say so at once.
+    if (name === "stop") body.replaceChildren(pendingRow(`Stopping ${addon.label}…`));
     try {
       await ask({ type: "addon-op", jobId, addon: addon.id, op: name });
     } catch (err) {
@@ -50,10 +61,9 @@ function paiAddonsCard(jobId) {
         void op(addon, "start");
       }
     } else if (addon.state === "starting") {
-      const pending = document.createElement("span");
-      pending.className = "open-in-editor-btn";
-      pending.textContent = `Starting ${addon.label}…`;
-      box.append(pending);
+      box.append(...pendingRow(`Starting ${addon.label}…`).childNodes);
+    } else if (addon.state === "stopping") {
+      box.append(...pendingRow(`Stopping ${addon.label}…`).childNodes);
     } else if (addon.state === "ready" && /^https?:\/\//.test(addon.href || "")) {
       const link = document.createElement("a");
       link.className = "open-in-editor-btn";
