@@ -183,12 +183,22 @@ pub fn hosts_changed(env: &Environment, before: &Value, after: &Value) -> bool {
     shape(before) != shape(after)
 }
 
+/// Writes `text` owner-only (0600), also tightening a file an earlier version left readable by
+/// others: companion-config.js holds the shared secret.
+fn write_private(path: &Path, text: &str) -> io::Result<()> {
+    use std::io::Write;
+    use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+    let mut f = fs::OpenOptions::new().write(true).create(true).truncate(true).mode(0o600).open(path)?;
+    f.set_permissions(fs::Permissions::from_mode(0o600))?;
+    f.write_all(text.as_bytes())
+}
+
 /// Writes what the extension folder needs from `config`: `companion-config.js`
 /// (service address, secret, right-click menu hosts) and a manifest whose hosts
 /// and scripts match. Returns whether the manifest changed.
 pub fn write_extension_files<F>(extension_dir: &Path, config: &Value, env: &Environment, packs: &PackRegistry<F>) -> io::Result<bool> {
     let port = config["port"].as_u64().and_then(|p| u16::try_from(p).ok()).unwrap_or(0);
-    fs::write(extension_dir.join("companion-config.js"), render_extension_config(config["sharedSecret"].as_str().unwrap_or(""), port, &context_menu_matches(env, config)))?;
+    write_private(&extension_dir.join("companion-config.js"), &render_extension_config(config["sharedSecret"].as_str().unwrap_or(""), port, &context_menu_matches(env, config)))?;
     write_manifest(extension_dir, config, env, packs)
 }
 
@@ -387,6 +397,18 @@ mod tests {
         assert!(!hosts_changed(env, &a("https://a.example.com"), &a("https://a.example.com/other/path")), "same origin");
         assert!(hosts_changed(env, &json!({}), &a("https://a.example.com")));
         assert!(hosts_changed(env, &a("https://a.example.com"), &json!({})));
+    }
+
+    #[test]
+    fn the_connection_file_is_owner_only_even_over_a_world_readable_one() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("companion-config.js");
+        fs::write(&file, "old").unwrap();
+        fs::set_permissions(&file, fs::Permissions::from_mode(0o644)).unwrap();
+        write_private(&file, "new").unwrap();
+        assert_eq!(fs::read_to_string(&file).unwrap(), "new");
+        assert_eq!(fs::metadata(&file).unwrap().permissions().mode() & 0o777, 0o600);
     }
 
     #[test]
