@@ -421,8 +421,12 @@ impl AppHooks for ServiceHooks {
         self.cfg.manual_start_command()
     }
 
-    async fn open_claude_code(&self, dir: &str) -> Result<(), String> {
-        self.cfg.open_claude_code(dir).await
+    async fn open_claude_code(&self, dir: &str, title: Option<String>) -> Result<Option<Value>, String> {
+        self.cfg.open_claude_code(dir, title).await
+    }
+
+    async fn focus_terminal(&self, location: &Value) -> Result<bool, String> {
+        self.cfg.focus_terminal(location).await
     }
 
     async fn resume_session(&self, session: &Value, header: &[Vec<crate::terminal::HeaderSegment>], job_worktree: Option<&str>) -> Result<server::ResumeResult, String> {

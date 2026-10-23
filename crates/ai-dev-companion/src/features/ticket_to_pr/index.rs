@@ -29,7 +29,7 @@ use crate::node_path;
 use crate::prereqs::GitRemoteRules;
 use crate::providers::{GitHost, IssueTracker, NewPullRequest, Providers, ReviewerIds};
 use crate::repo_choice::{RepoChoices, RepoOption, RepoQuestion};
-use crate::resume_session::{resume_session_in_terminal, ResumeOutcome};
+use crate::resume_session::{resume_session_located, ResumeOutcome};
 use crate::terminal::{HeaderSegment, HeaderStyle, Terminal, TerminalOptions};
 use crate::ticket_git::{commit_log, commits_ahead, current_branch, default_branch_from_git, diff_stat, ensure_ticket_worktree, fetch_base, push_branch, ticket_worktree_path};
 use crate::work_unit_record::{record_work_unit, record_work_unit_session, Session, Unit};
@@ -145,11 +145,12 @@ pub trait StartFixIo: Send + Sync {
     /// The ticket's raw fields the repo guess reads (components, labels, links).
     async fn issue_for_repo_guess(&self, auth: &AuthContext, issue_key: &str) -> Result<Value, String>;
     async fn default_branch(&self, auth: &AuthContext, project: &str, repo: &str) -> Result<Option<String>, String>;
-    async fn open_terminal(&self, cwd: &str, args: &[String], header: &[Vec<HeaderSegment>], options: &TerminalOptions) -> Result<(), String>;
+    /// Where the terminal opened (`TerminalLocation::to_json`), when it said.
+    async fn open_terminal(&self, cwd: &str, args: &[String], header: &[Vec<HeaderSegment>], options: &TerminalOptions) -> Result<Option<Value>, String>;
     /// Asks before a worktree is made; true means go ahead.
     async fn confirm_worktree(&self, job_id: &str, q: &WorktreeQuestion) -> bool;
-    /// Reopens a recorded Claude session in a terminal.
-    async fn resume_session(&self, config: &Value, session: &Value, header: &[Vec<HeaderSegment>], dir: &str) -> bool;
+    /// Reopens a recorded Claude session in a terminal: whether it did, and where it opened.
+    async fn resume_session(&self, config: &Value, session: &Value, header: &[Vec<HeaderSegment>], dir: &str) -> (bool, Option<Value>);
 }
 
 /// The real thing: the providers, the terminal and the repo-choice question.
@@ -176,8 +177,8 @@ impl StartFixIo for RealStartFixIo {
     async fn default_branch(&self, auth: &AuthContext, project: &str, repo: &str) -> Result<Option<String>, String> {
         self.api.git.get_default_branch(auth, project, repo).await.map_err(s)
     }
-    async fn open_terminal(&self, cwd: &str, args: &[String], header: &[Vec<HeaderSegment>], options: &TerminalOptions) -> Result<(), String> {
-        self.terminal.open_claude_code(cwd, args, header, options).await.map(|_| ())
+    async fn open_terminal(&self, cwd: &str, args: &[String], header: &[Vec<HeaderSegment>], options: &TerminalOptions) -> Result<Option<Value>, String> {
+        self.terminal.open_claude_code(cwd, args, header, options).await.map(|l| l.map(|l| l.to_json()))
     }
     async fn confirm_worktree(&self, job_id: &str, q: &WorktreeQuestion) -> bool {
         let question = RepoQuestion {
@@ -189,8 +190,11 @@ impl StartFixIo for RealStartFixIo {
         };
         matches!(self.choices.ask(job_id, None, &question, "continue again.").await, Ok(Some(_)))
     }
-    async fn resume_session(&self, config: &Value, session: &Value, header: &[Vec<HeaderSegment>], dir: &str) -> bool {
-        matches!(resume_session_in_terminal(&self.terminal, config, session, header, Some(dir), &self.home).await, Ok(ResumeOutcome::Resumed))
+    async fn resume_session(&self, config: &Value, session: &Value, header: &[Vec<HeaderSegment>], dir: &str) -> (bool, Option<Value>) {
+        match resume_session_located(&self.terminal, config, session, header, Some(dir), &self.home).await {
+            Ok((ResumeOutcome::Resumed, loc)) => (true, loc.map(|l| l.to_json())),
+            _ => (false, None),
+        }
     }
 }
 
@@ -488,9 +492,13 @@ impl<G: Git + 'static> Inner<G> {
                     vec![HeaderSegment::styled("Resuming your Claude Code session", HeaderStyle::Status)],
                     vec![],
                 ];
-                resumed = io.resume_session(&config, &session, &header, &wt_dir).await;
+                let (ok, location) = io.resume_session(&config, &session, &header, &wt_dir).await;
+                resumed = ok;
                 if resumed {
                     data_patch(store, job_id, json!({ "claudeSession": session }));
+                    if let Some(location) = location {
+                        data_patch(store, job_id, json!({ "terminal": location }));
+                    }
                 }
             }
         }
@@ -514,7 +522,9 @@ impl<G: Git + 'static> Inner<G> {
             ];
             // Every argv word is quoted by the terminal; the prompt is one word.
             let args = ["--session-id".to_string(), session_id, "--permission-mode".to_string(), mode, prompt];
-            io.open_terminal(&wt_dir, &args, &header, &TerminalOptions { title: Some(format!("{issue_key} fix")), ..Default::default() }).await?;
+            if let Some(location) = io.open_terminal(&wt_dir, &args, &header, &TerminalOptions { title: Some(format!("{issue_key} fix")), ..Default::default() }).await? {
+                data_patch(store, job_id, json!({ "terminal": location }));
+            }
         }
 
         let lead = if p.adopt {
@@ -795,7 +805,10 @@ impl<G: Git + 'static> Feature for TicketToPr<G> {
             // session; this is for an adopted worktree without one).
             "open-terminal" => {
                 let w = inner.ready_worktree(&job, &(inner.d.config)())?;
-                inner.d.terminal.open_claude_code(&w.dir, &[], &[], &TerminalOptions::default()).await?;
+                let title = job["data"]["issueKey"].as_str().map(|k| format!("{k} fix"));
+                if let Some(location) = inner.d.terminal.open_claude_code(&w.dir, &[], &[], &TerminalOptions { title, ..Default::default() }).await? {
+                    data_patch(&inner.d.store, job["id"].as_str().unwrap_or(""), json!({ "terminal": location.to_json() }));
+                }
                 Ok(json!({ "ok": true }))
             }
             other => Err(FeatureError::Other(format!("No action \"{other}\"."))),
@@ -899,17 +912,17 @@ mod tests {
         async fn default_branch(&self, _: &AuthContext, _: &str, _: &str) -> Result<Option<String>, String> {
             self.default_branch.clone()
         }
-        async fn open_terminal(&self, cwd: &str, args: &[String], _: &[Vec<HeaderSegment>], _: &TerminalOptions) -> Result<(), String> {
+        async fn open_terminal(&self, cwd: &str, args: &[String], _: &[Vec<HeaderSegment>], _: &TerminalOptions) -> Result<Option<Value>, String> {
             self.terminals.lock().unwrap().push((cwd.into(), args.to_vec()));
-            Ok(())
+            Ok(Some(json!({ "app": "terminal", "windowId": "3", "tty": "/dev/ttys009" })))
         }
         async fn confirm_worktree(&self, _: &str, q: &WorktreeQuestion) -> bool {
             self.asked.lock().unwrap().push(q.clone());
             self.confirm.expect("must not ask")
         }
-        async fn resume_session(&self, _: &Value, session: &Value, _: &[Vec<HeaderSegment>], _: &str) -> bool {
+        async fn resume_session(&self, _: &Value, session: &Value, _: &[Vec<HeaderSegment>], _: &str) -> (bool, Option<Value>) {
             self.resumes.lock().unwrap().push(session.clone());
-            self.resume_ok
+            (self.resume_ok, None)
         }
     }
 
@@ -1028,6 +1041,8 @@ mod tests {
         assert!(args[4].contains("Missing null check"));
         assert_eq!(terminals[0].0, dir.to_string_lossy());
         assert!(job["data"]["fixStartedAt"].is_number());
+        // Where its terminal opened is kept, so the panel can bring that window to the front.
+        assert_eq!(job["data"]["terminal"]["windowId"], "3");
     }
 
     #[tokio::test]

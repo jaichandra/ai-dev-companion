@@ -251,6 +251,11 @@ async function handle(message) {
         method: "POST",
         body: message.body,
       });
+    case "focus-terminal":
+      // Brings the terminal window a job opened to the front; the service
+      // answers {focus: "focused" | "missing" | "unknown"} from the location
+      // it recorded itself (never one sent from here).
+      return await callService(`/jobs/${encodeURIComponent(message.jobId)}/focus-terminal`, { method: "POST", body: {} });
     case "addons-list":
       return await callService(`/jobs/${encodeURIComponent(message.jobId)}/addons`);
     case "addon-op":

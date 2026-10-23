@@ -2242,6 +2242,11 @@
       .panel-head-text { flex:1; min-width:0; }
       .panel-head-line { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
       .panel-head h2 { margin:0; padding:0; font-size:16.2px; line-height:24px; font-weight:590; }
+      .terminal-strip { display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; margin:0 0 10px; padding:6px 10px; border:1px solid #d9d9d9; border-radius:6px; background:#f7f7f7; font-size:12px; color:#3a3a3a; }
+      .terminal-strip-name { font-weight:600; }
+      .terminal-strip-link { border:0; background:none; padding:0; color:#0067c5; font:inherit; cursor:pointer; text-decoration:underline; }
+      .terminal-strip-link:disabled { opacity:.6; cursor:default; }
+      .terminal-strip-note { color:#6f6f6f; }
       .panel-head-sub { margin-top:2px; font-size:11.7px; line-height:1.4; color:#6f6f6f; overflow-wrap:anywhere; }
       .panel-progress { position:absolute; top:0; left:0; right:0; height:3px; overflow:hidden; display:none; z-index:3; }
       .panel-progress.on { display:block; background:#ddf1ff; }
@@ -3102,6 +3107,41 @@
       window.addEventListener("focus", onFocus);
     }
 
+    // "Show terminal": for a job that opened a terminal window (job.data.terminal, recorded by the
+    // service), a link that brings that window to the front, named like the window's tab (the
+    // feature and its PR or ticket) so several reviews can be told apart.
+    function buildTerminalStrip(job, feature) {
+      if (!job?.data?.terminal) return null;
+      const key = job.data.payload?.prId != null ? `PR #${job.data.payload.prId}` : job.data.issueKey || "";
+      const strip = document.createElement("div");
+      strip.className = "terminal-strip";
+      const name = document.createElement("span");
+      name.className = "terminal-strip-name";
+      name.textContent = [feature.menuLabel || feature.label || "", key].filter(Boolean).join(" ");
+      const note = document.createElement("span");
+      note.className = "terminal-strip-note";
+      const link = document.createElement("button");
+      link.type = "button";
+      link.className = "terminal-strip-link";
+      link.textContent = "Show terminal";
+      link.title = "Brings the terminal window for this job to the front";
+      link.addEventListener("click", async () => {
+        link.disabled = true;
+        note.textContent = "";
+        try {
+          const { focus } = await sendToBackground({ type: "focus-terminal", jobId: job.id });
+          if (focus === "missing") note.textContent = "That terminal window has been closed.";
+          else if (focus === "unknown") note.textContent = "Couldn't tell which window that was.";
+        } catch (err) {
+          note.textContent = `Couldn't show it: ${err.message}`;
+        } finally {
+          link.disabled = false;
+        }
+      });
+      strip.append(name, link, note);
+      return strip;
+    }
+
     // Draws the whole panel (body + footer) for `job`. Called once below,
     // and again by a footerAction's api.rerender(job) — e.g. resolve-
     // conflict's Refresh diff, whose job can come back awaiting-approval
@@ -3147,6 +3187,8 @@
         setHeader(rendered.header);
         reportSubtitle = rendered.header.subtitle || "";
       }
+      const terminalStrip = buildTerminalStrip(job, feature);
+      if (terminalStrip) body.appendChild(terminalStrip);
       body.appendChild(bodyNode);
       // The panel carries its own buttons (and the X closes it): no footer strip.
       if (feature.hideFooter) return;

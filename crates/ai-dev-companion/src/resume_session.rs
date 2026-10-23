@@ -9,6 +9,7 @@ use crate::paths::state_dir;
 use crate::resume::{build_resume_args, real_cwd, session_transcript_path, validate_session};
 use crate::session_cwd::{session_cwd_allowed, SessionCwdRules};
 use crate::terminal::{HeaderSegment, Terminal, TerminalOptions};
+use crate::terminal_focus::TerminalLocation;
 use crate::worktree::worktree_root;
 use serde_json::Value;
 use std::path::Path;
@@ -26,8 +27,14 @@ pub enum ResumeOutcome {
 
 /// `job_worktree_dir`: the job's own worktree, also allowed when the session ran in it.
 pub async fn resume_session_in_terminal(terminal: &Terminal, config: &Value, session: &Value, header: &[Vec<HeaderSegment>], job_worktree_dir: Option<&str>, home: &Path) -> Result<ResumeOutcome, String> {
+    resume_session_located(terminal, config, session, header, job_worktree_dir, home).await.map(|(outcome, _)| outcome)
+}
+
+/// `resume_session_in_terminal`, plus where the terminal opened (when it said), so the caller can
+/// record it for "bring this terminal to the front".
+pub async fn resume_session_located(terminal: &Terminal, config: &Value, session: &Value, header: &[Vec<HeaderSegment>], job_worktree_dir: Option<&str>, home: &Path) -> Result<(ResumeOutcome, Option<TerminalLocation>), String> {
     if !validate_session(Some(session)) {
-        return Ok(ResumeOutcome::Invalid);
+        return Ok((ResumeOutcome::Invalid, None));
     }
     let (id, cwd, mode) = (session["id"].as_str().unwrap_or(""), session["cwd"].as_str().unwrap_or(""), session["permissionMode"].as_str().unwrap_or(""));
     let repo_paths: Vec<String> = config["repos"].as_object().map(|m| m.values().filter_map(|v| v.as_str().map(str::to_string)).collect()).unwrap_or_default();
@@ -37,16 +44,16 @@ pub async fn resume_session_in_terminal(terminal: &Terminal, config: &Value, ses
     let allowed = own_worktree
         || session_cwd_allowed(Some(cwd), &SessionCwdRules { repo_paths: &repo_paths, sessions_root: Some(&sessions), checkouts_root: Some(&checkouts), worktrees_root: Some(&worktrees) }, home);
     if !allowed {
-        return Ok(ResumeOutcome::Invalid);
+        return Ok((ResumeOutcome::Invalid, None));
     }
     // Only the transcript lookup needs the realpath'd cwd (Claude Code keys
     // ~/.claude/projects/<slug>/ by it); the session runs in the cwd as captured.
     let transcript = session_transcript_path(&home.to_string_lossy(), &real_cwd(cwd), id);
     if !Path::new(cwd).exists() || !Path::new(&transcript).exists() {
-        return Ok(ResumeOutcome::Gone);
+        return Ok((ResumeOutcome::Gone, None));
     }
-    terminal.open_claude_code(cwd, &build_resume_args(id, mode), header, &TerminalOptions::default()).await?;
-    Ok(ResumeOutcome::Resumed)
+    let location = terminal.open_claude_code(cwd, &build_resume_args(id, mode), header, &TerminalOptions::default()).await?;
+    Ok((ResumeOutcome::Resumed, location))
 }
 
 #[cfg(all(test, unix))]
