@@ -2,35 +2,37 @@
 
 ## Unreleased
 
-- Checking for updates no longer downloads the whole release. The check keeps a shallow clone with no file contents (commits and trees only) and writes out just the version and changelog files, so it stays about a second however big a release is (a prebuilt release carries a binary of tens of megabytes, which the check used to fetch and check out every time). Applying an update still takes the full tree. An older full clone in the update folder is replaced once.
-- Hardening of the service's local access: the shared secret is compared in constant time; no response carries CORS headers any more (a preflight now needs the secret, so a web page can neither probe the API nor read an error body; the extension's own fetches never needed them); `companion-config.js`, which holds the secret, is written owner-only (0600), also tightening an existing copy.
-- Review PR's prompt no longer names a `review-pr` skill or looks for one on disk. It gives the agent the PR (with its URL) and tells it to use whichever skill or command it has for reviewing pull requests or code, from the list it already sees, and otherwise to follow the built-in review instructions. People whose review skill has another name now get it too; the panel's Instructions row says so instead of naming a skill.
-- Review PR remembers its Claude Code session and the head commit it reviewed, per PR (`core/review-memory.js`; the session is named with `--session-id`). Clicking it again with no new commits reopens that session in a terminal (`claude --resume`) instead of reviewing again. With new commits it starts a new session, told to begin from `git diff <last reviewed>..HEAD`; an old session is never resumed to review new commits, because its whole transcript would be re-read (usually uncached) to review less than a fresh session. After a force-push, or when the transcript is gone, it is a full review. Cursor and VS Code reviews can't be tracked and behave as before.
-- Diagnose this failed build opens its panel at the click with a progress bar and runs headless: the report (likely cause, suspect changes, failing tests with the flaky ones marked, stage results, next steps) replaces the progress when it is done, instead of a terminal opening. Continue in Claude Code reopens the diagnosis in a terminal, Re-diagnose runs it again, and a second click on the same build reaches the same job. A pack's diagnose command is still used when available.
-- Ticket workspace, Analyze ticket, Summarize comments and the diagnosis show their reports as the AI Assistant design's cards (icon, title and count per section; rows with an icon tile, subtitle and status tag) under a header with the ticket or build and a status tag, and a foot note. A feature may set `panelTitle` (the design's "Ticket analysis"), return `{ node, header }` from `renderPanel`, and use `panelWhileRunning` and `reanalyzePayload` (registry.js). Reference links in an analysis are links only when they are https.
-- Address review comments, Review PR and (in a distribution's own pack) its own features use the same cards: the comments as rows with their action tag, reply checkbox and diff; the checkout, review status and setup of a review; the recommended build and the other builds checked. Their headers carry the PR or pipelines and a status tag. A one-shot panel may return `{ node, header }` too.
+- Update checks fetch only the version and changelog, not the whole release.
+- Local access hardened: constant-time secret check, no CORS headers, owner-only `companion-config.js`.
+- Review PR's prompt no longer names a `review-pr` skill; it uses whichever review skill you have.
+- Review PR remembers its session and reviewed commit per PR, and reopens it when nothing changed.
+- With new commits, Review PR starts a fresh session that reviews only `git diff <last reviewed>..HEAD`.
+- Diagnose this failed build runs headless in a panel, with Continue in Claude Code and Re-diagnose.
+- Ticket workspace, Analyze ticket, Summarize comments and the diagnosis use the AI Assistant design's cards.
+- Address review comments and Review PR use the same cards; features can return `{ node, header }`.
 - Regenerated the checked-in extension manifest (it lacked `icons.js`).
-- Resolve merge conflicts and Address review comments no longer fail when the PR's branch is checked out in your main clone. The panel asks: move the clone onto origin's default branch and keep a worktree for the branch (recommended, reused by later jobs), or use a temporary worktree of origin's branch and leave the clone alone (last resort), or cancel. Nothing is changed until you answer; moving the clone needs it clean. `acquireWorktree` takes an optional `onMainClone` callback, and refuses as before without one.
-- Workspace resolver (`core/workspace-resolver.js`): finds where to work on a branch without creating anything. An existing worktree (or the clone itself) that has the branch checked out comes first, reported unusable if it has uncommitted changes or a merge or rebase in progress; then a local or origin branch of that name, which needs the person's confirmation before a worktree is made (`createBranchWorktree`). Works from a PR's source branch or a ticket key. Review PR, Resolve merge conflicts and Address review comments use it (below).
-- Resolve merge conflicts and Address review comments reuse an existing clean linked worktree that has the PR's source branch checked out (fast-forwarded to origin first) instead of making a worktree per job; only when there is none do they make a disposable one, as before. A checkout with uncommitted changes, a merge or rebase in progress, commits not on origin, or the main clone is refused with the reason. Rejecting restores a reused worktree to where it started (and removes what the job added); approving leaves it as the push left it; it is never deleted. Jobs on a reused worktree survive a service restart when it is still a linked worktree of a configured repo.
-- Review PR looks for the branch in any worktree or clone through the resolver, then falls back to the shared review worktree.
-- One button, Continue in Claude Code, replaces Discuss in Claude Code, Start fix and Resume Claude session in the analysis report and the Ticket workspace. It reopens the ticket's recorded Claude session if there is one, else opens Claude Code in plan mode on the ticket's branch with the analysis. With Ticket to PR disabled, the analysis report keeps the old read-only reopen under the same name.
-- Start fix looks for an existing checkout of the ticket's branch first (any worktree or the clone, dirty or not: it is your own terminal), then the ticket's own worktree. It asks before making a worktree or branch (setting: Create a worktree without asking, `ticketToPr.createWorktreeWithoutAsking`). Track PR never creates one. Create PR and the other actions accept any registered worktree of the repo, not only `<repo>.worktrees/<KEY>`.
-- The Ticket workspace is offered on pull requests and CI builds as well as Jira tickets (an entry's `site` may now be a list). The ticket is read from the PR's branch or title, or from the build's job name, parameters, description or commit messages; a page that names none gets no row. Ticket keys in free text skip look-alikes such as UTF-8, SHA-256 and release-2024.
-- `companion worktrees` lists every worktree of your repos: the clone, yours, and the ones the tool made, with their ticket, PR, sessions and whether each is clean, merged or has its branch gone. `--prune` shows which of the tool's worktrees can go (clean, and merged or branch gone); `--prune --yes` removes them. Branches are never deleted, and your own worktrees and the clone are never touched. Start fix mentions it when it is about to make a worktree and the repo already has five or more.
-- A linked worktree git has registered for a mapped repo is accepted wherever it is as a place to resume a Claude session (`companion resume`, the panels), not only the tool's own folders.
-- Work-unit registry (`core/work-units.js`): one record per repo and branch with its worktree, ticket, PR and Claude sessions, in `work-units.json` in the state dir, so a session can be found again. The three features above record their branch, worktree and Claude session in it.
+- Resolve merge conflicts and Address review comments ask what to do when the branch is checked out in your main clone.
+- New workspace resolver (`core/workspace-resolver.js`) finds where to work on a branch without creating anything.
+- Resolve merge conflicts and Address review comments reuse a clean linked worktree of the PR's branch.
+- Rejecting a job restores a reused worktree; approving leaves it; it is never deleted.
+- Review PR finds the branch in any worktree or clone before falling back to the shared review worktree.
+- One Continue in Claude Code button replaces Discuss, Start fix and Resume in the report and Ticket workspace.
+- Start fix reuses an existing checkout of the ticket's branch and asks before making a worktree or branch.
+- The Ticket workspace is also offered on pull requests and CI builds.
+- `companion worktrees` lists every worktree of your repos; `--prune` removes the tool's finished ones.
+- Any linked worktree git has registered for a mapped repo can be used to resume a Claude session.
+- New work-unit registry (`core/work-units.js`) records each branch's worktree, ticket, PR and Claude sessions.
 
 ## 0.2.0
 
-- GitHub as a git host (github.com and GitHub Enterprise): a provider with the same pull request, review-comment, build-status, dashboard and merge-status behaviour as the Bitbucket one, using a personal access token. Review threads come from GraphQL, so resolved and outdated threads are skipped.
-- Token-only sites: a site can declare that its browser login is no use (GitHub's isn't for its API); a 403 or 429 on such a site is reported as a rate limit or a missing permission, not as a bad token.
-- Pull request keys and addresses follow the profile's git host: `github:owner/repo#n` next to `bitbucket:PROJECT/repo#n`, GitHub's `/owner/repo/pull/n` pages, clone URLs without a `.git` suffix, and repository names with a leading dot (`.github`).
-- `GET /prs/status`: the state, conflicts, branches and fork status of a pull request, read through the git provider and cached for a few seconds, for the extension to ask instead of calling the git host itself.
-- Settings lists every site of the profile, not just Jira, Jenkins and Bitbucket, and shows the git host under its own name; a token-only site asks for a personal access token.
-- The extension reads pull request pages through `PaiGit` (`git-host.js`): GitHub's `/owner/repo/pull/n` pages, asked of the companion; Bitbucket's unchanged. Resolve conflict, Address review comments and Review PR no longer assume Bitbucket, and skip fork PRs. Settings group `bitbucket` is now `git`.
-- Sites can be `tokenOnly` (no host permission, no cookie relay) and can limit where the extension runs with `pageMatches` (GitHub: pull request pages only). `/targets` reports the git provider.
-- `docs/DESIGN.md`: the technical design, written host-neutral; a new section on the environment profile, packs and distributions, and one on the Bitbucket and GitHub providers.
+- GitHub (and GitHub Enterprise) supported as a git host, using a personal access token.
+- Token-only sites report a 403 or 429 as a rate limit or missing permission, not a bad token.
+- Pull request keys, addresses and clone URLs now follow the profile's git host.
+- New `GET /prs/status` returns a pull request's state, conflicts, branches and fork status.
+- Settings lists every site of the profile and shows the git host under its own name.
+- The extension reads pull request pages through `PaiGit` (`git-host.js`); Resolve conflict, Address review comments and Review PR skip fork PRs.
+- Sites can be `tokenOnly` and limit where the extension runs with `pageMatches`.
+- `docs/DESIGN.md`: the host-neutral technical design, with new profile, pack and provider sections.
 - `examples/minimal-env`: a GitHub + Jira + Jenkins profile with its own test (`npm run test:example`).
 
 ## 0.1.0
