@@ -378,7 +378,7 @@ impl AppHooks for ServiceHooks {
     }
 
     async fn data_folder(&self) -> HookResult {
-        self.cfg.data_folder()
+        self.cfg.data_folder().await
     }
 
     async fn data_folder_open(&self) -> HookResult {
@@ -386,7 +386,7 @@ impl AppHooks for ServiceHooks {
     }
 
     async fn data_folder_purge(&self) -> HookResult {
-        self.cfg.data_folder_purge()
+        self.cfg.data_folder_purge().await
     }
 
     async fn open_location(&self, body: &Value) -> HookResult {

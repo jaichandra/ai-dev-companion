@@ -170,7 +170,10 @@
     // of the service by page: each probe starts the first time a page that shows it is opened
     // (or a search could show it), and a failed one is tried again on the next visit.
     const probed = new Set();
+    const loaders = {};
+    const probeApplies = {};
     function probesFor(id) {
+      if (id === "data") return [["dataFolder", (data) => probeApplies.dataFolder && probeApplies.dataFolder(data)]];
       if (id === "features") return [["checks", applyChecks], ["editors", applyEditors]];
       if (id === "conn") return [["repos", applyRepos]];
       if (extraPages.some((x) => x.def.id === id)) return [["background", applyBackground]];
@@ -180,7 +183,7 @@
       for (const [name, apply] of probesFor(id)) {
         if (probed.has(name)) continue;
         probed.add(name);
-        Promise.resolve(typeof opts.loadProbe === "function" ? opts.loadProbe(name) : null)
+        Promise.resolve(loaders[name] ? loaders[name]() : typeof opts.loadProbe === "function" ? opts.loadProbe(name) : null)
           .then((data) => {
             if (data) apply(data, null);
             else probed.delete(name);
@@ -1072,7 +1075,8 @@
       purgeData.disabled = usage.purgeableBytes === 0;
     };
     const dataFailure = (response) => (chrome.runtime.lastError ? chrome.runtime.lastError.message : response && response.error);
-    chrome.runtime.sendMessage({ type: "data-folder-get" }, (response) => {
+    // Walks every file under the data folder, so it is asked for only when the Data page is opened.
+    const applyDataFolder = (response) => {
       const failure = dataFailure(response);
       if (failure || !response || !response.usage) {
         dataPath.textContent = "Not available";
@@ -1081,7 +1085,10 @@
         return;
       }
       showUsage(response.usage);
-    });
+    };
+    loaders.dataFolder = () =>
+      new Promise((resolve) => chrome.runtime.sendMessage({ type: "data-folder-get" }, (response) => resolve(response || {})));
+    probeApplies.dataFolder = applyDataFolder;
     openFolder.addEventListener("click", () => {
       dataMessage.textContent = "";
       chrome.runtime.sendMessage({ type: "data-folder-open" }, (response) => {

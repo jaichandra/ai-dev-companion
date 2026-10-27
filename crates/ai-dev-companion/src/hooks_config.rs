@@ -147,8 +147,11 @@ impl ConfigHooks {
 
     // ---- data folder ----
 
-    pub fn data_folder(&self) -> HookResult {
-        Ok(serde_json::to_value(data_folder_usage(&self.state_dir())).expect("usage serializes"))
+    pub async fn data_folder(&self) -> HookResult {
+        // Walks every file under the folder (gigabytes of clones): never on an async worker.
+        let dir = self.state_dir();
+        let usage = blocking_probe(move || data_folder_usage(&dir)).await;
+        Ok(serde_json::to_value(usage).expect("usage serializes"))
     }
 
     pub async fn data_folder_open(&self) -> HookResult {
@@ -158,17 +161,22 @@ impl ConfigHooks {
         Ok(json!({ "ok": true, "path": dir.to_string_lossy() }))
     }
 
-    pub fn data_folder_purge(&self) -> HookResult {
+    pub async fn data_folder_purge(&self) -> HookResult {
         // A running job is using its worktree; a restart-safe purge waits for it.
         if self.store.active_count() > 0 {
             return Err(ApiError::with_body(409, json!({ "code": "jobs-running", "error": "Jobs are still running. Wait for them to finish (or cancel them), then purge." })));
         }
         let dir = self.state_dir();
-        let result = purge_data_folder(&dir);
+        let (result, usage) = blocking_probe(move || {
+            let result = purge_data_folder(&dir);
+            let usage = data_folder_usage(&dir);
+            (result, usage)
+        })
+        .await;
         println!("[data] purged {} ({} bytes)", if result.removed.is_empty() { "nothing".to_string() } else { result.removed.join(", ") }, result.freed_bytes);
         let mut body = serde_json::to_value(&result).expect("purged serializes");
         body["ok"] = json!(true);
-        body["usage"] = serde_json::to_value(data_folder_usage(&dir)).expect("usage serializes");
+        body["usage"] = serde_json::to_value(usage).expect("usage serializes");
         Ok(body)
     }
 
