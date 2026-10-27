@@ -469,9 +469,15 @@ impl<F> Settings<'_, F> {
     /// Results of every check any feature can require, keyed by check name:
     /// lets the panel show whether a feature is ready before it's enabled.
     pub fn run_all_checks(&self, checks: &dyn Fn(&str) -> Check) -> Map<String, Value> {
+        self.required_check_names().into_iter().map(|n| (n.clone(), { let c = checks(&n); json!({ "ok": c.ok, "message": c.message }) })).collect()
+    }
+
+    /// The names of every check some feature requires (what [`Self::run_all_checks`] runs), for a
+    /// caller that wants to run them itself, e.g. concurrently.
+    pub fn required_check_names(&self) -> Vec<String> {
         let all = self.features.all_feature_ids();
         let refs: Vec<&str> = all.iter().map(String::as_str).collect();
-        self.features.required_checks_for(&refs).into_iter().map(|n| (n.clone(), { let c = checks(&n); json!({ "ok": c.ok, "message": c.message }) })).collect()
+        self.features.required_checks_for(&refs)
     }
 
     /// Whether the saved settings differ from what the running service loaded.

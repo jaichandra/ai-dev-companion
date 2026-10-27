@@ -405,6 +405,10 @@ impl AppHooks for ServiceHooks {
         self.cfg.settings_get().await
     }
 
+    async fn settings_probe(&self, name: &str) -> HookResult {
+        self.cfg.settings_probe(name).await
+    }
+
     async fn settings_put(&self, body: &Value) -> HookResult {
         self.cfg.settings_put(body).await
     }

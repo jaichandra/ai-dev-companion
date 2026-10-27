@@ -4396,7 +4396,11 @@
       body.textContent = "";
       const banner = restartBanner(view.restart);
       if (banner) body.appendChild(banner);
-      form = window.renderSettingsForm(view, { page });
+      form = window.renderSettingsForm(view, {
+        page,
+        // The slow parts of the view (checks, editors, repository state), asked for as their page opens.
+        loadProbe: (name) => sendToBackground({ type: "settings-probe", name }).then((r) => r.probe),
+      });
       form.onDirtyChange = onDirty;
       body.appendChild(form.node);
       onDirty(0);

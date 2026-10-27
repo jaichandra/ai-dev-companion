@@ -303,6 +303,8 @@ async function handle(message) {
       return { status: await callService("/update/apply", { method: "POST" }) };
     case "settings-get":
       return { view: await callService("/settings") };
+    case "settings-probe":
+      return { probe: await callService(`/settings/probe/${encodeURIComponent(message.name)}`) };
     case "settings-save": {
       const view = await callService("/settings", { method: "PUT", body: message.settings });
       // Picks up a heartbeat toggle immediately, instead of waiting up to 5

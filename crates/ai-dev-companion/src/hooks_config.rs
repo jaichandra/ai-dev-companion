@@ -112,6 +112,15 @@ fn check_named(name: &str) -> Check {
     prereqs::run_check_by_name(name).unwrap_or(Check { ok: false, message: format!("Unknown check \"{name}\".") })
 }
 
+fn check_json(c: &Check) -> Value {
+    json!({ "ok": c.ok, "message": c.message })
+}
+
+/// Runs process-spawning probes on a blocking thread, off the async workers.
+async fn blocking_probe<T: Send + 'static>(work: impl FnOnce() -> T + Send + 'static) -> T {
+    tokio::task::spawn_blocking(work).await.expect("the probes do not panic")
+}
+
 fn registered_json(r: &Option<Registered>) -> Value {
     r.as_ref().map_or(Value::Null, |r| json!({ "ok": r.ok, "message": r.message }))
 }
@@ -262,13 +271,6 @@ impl ConfigHooks {
         let env = environment::current();
         let settings = Settings { features: &self.registry, packs: &self.packs };
         let credentials = CredentialView { saved: self.creds.list_token_names(), external: self.external_tokens.sources_for(&self.base_urls()) };
-        let repos = saved["repos"].as_object().cloned().unwrap_or_default();
-        let mut roots = prereqs::default_search_roots(&self.home);
-        roots.extend(repos.values().filter_map(Value::as_str).filter_map(|p| std::path::Path::new(p).parent().map(|d| d.to_path_buf())));
-        let clones: Vec<settings::Clone_> = prereqs::discover_local_clones(&roots, prereqs::git_remote_rules()).into_iter().map(|c| settings::Clone_ { key: c.key, path: c.path }).collect();
-        let suggested: Vec<Value> = settings::suggested_repos(&repos, &clones).into_iter().map(|c| json!({ "key": c.key, "path": c.path })).collect();
-        let repo_status: Map<String, Value> = repos.iter().map(|(k, p)| (k.clone(), { let c = check_repo_path(p.as_str().unwrap_or("")); json!({ "ok": c.ok, "message": c.message }) })).collect();
-        let detected: Vec<Value> = prereqs::detect_installed_editors().into_iter().map(|e| json!({ "id": e.id, "label": e.label })).collect();
         let supported: Vec<Value> = REVIEW_EDITORS.iter().map(|(id, label)| json!({ "id": id, "label": label })).collect();
         let sites: Vec<Value> = env.sites.iter().map(|s| json!({ "id": s.id, "kind": s.kind, "label": s.label, "provider": s.provider, "tokenOnly": s.token_only == Some(true), "withUsername": s.raw.get("withUsername") == Some(&json!(true)) })).collect();
         let site_base_urls: Map<String, Value> = env.site_ids().into_iter().map(|id| (id.to_string(), json!(env.default_base_url(id)))).collect();
@@ -277,17 +279,14 @@ impl ConfigHooks {
         restart["canRestart"] = json!(self.under_launchd);
         restart["manualCommand"] = json!(self.manual_start_command());
         restart["activeJobs"] = json!(self.store.active_count());
+        // Only what is in memory: the LLM backend's status can take a network round trip, so it is a probe.
         let mut background = Map::new();
         background.insert("scheduler".into(), self.scheduler.status());
-        background.extend(self.llm.background_status().await);
         json!({
             "settings": settings.public_settings(saved, &credentials),
             "lockedSettings": LOCKED_KEYS,
             "features": settings::feature_summaries(&self.registry),
-            "checks": settings.run_all_checks(&check_named),
-            "editors": { "supported": supported, "detected": detected },
-            "repoStatus": repo_status,
-            "suggestedRepos": suggested,
+            "editors": { "supported": supported },
             "branding": env.profile.get("branding").cloned().unwrap_or_else(|| json!({})),
             "sites": sites,
             "defaults": {
@@ -302,6 +301,57 @@ impl ConfigHooks {
             "service": { "version": self.version, "startedAt": self.started_at },
             "background": background,
         })
+    }
+
+    /// The slow parts of the Settings panel, answered one at a time when the page that shows them is
+    /// opened (each runs processes or walks folders, about a second together), so that opening
+    /// Settings, or a page that needs none of them, never waits on them.
+    ///
+    /// - `checks`: whether git, the claude CLI and its login are usable, for the Features page.
+    /// - `editors`: which of the supported editors are installed, for the Features page.
+    /// - `background`: the LLM backend's status (it may ask the network), for a pack's page.
+    /// - `repos`: each mapped repository's state and the clones found on this computer, for the
+    ///   Code and accounts page.
+    pub async fn settings_probe(&self, name: &str) -> HookResult {
+        let saved = self.saved_config();
+        match name {
+            "checks" => {
+                let names = Settings { features: &self.registry, packs: &self.packs }.required_check_names();
+                let checks = blocking_probe(move || {
+                    std::thread::scope(|s| {
+                        let running: Vec<_> = names.iter().map(|n| (n, s.spawn(|| check_named(n)))).collect();
+                        running.into_iter().map(|(n, h)| (n.clone(), check_json(&h.join().expect("a check does not panic")))).collect::<Map<String, Value>>()
+                    })
+                })
+                .await;
+                Ok(json!({ "checks": checks }))
+            }
+            "background" => Ok(json!({ "background": self.llm.background_status().await })),
+            "editors" => {
+                let detected = blocking_probe(prereqs::detect_installed_editors).await;
+                Ok(json!({ "detected": detected.into_iter().map(|e| json!({ "id": e.id, "label": e.label })).collect::<Vec<_>>() }))
+            }
+            "repos" => {
+                let repos = saved["repos"].as_object().cloned().unwrap_or_default();
+                let mut roots = prereqs::default_search_roots(&self.home);
+                roots.extend(repos.values().filter_map(Value::as_str).filter_map(|p| std::path::Path::new(p).parent().map(|d| d.to_path_buf())));
+                let paths: Vec<(String, String)> = repos.iter().map(|(k, p)| (k.clone(), p.as_str().unwrap_or("").to_string())).collect();
+                let rules = prereqs::git_remote_rules();
+                let (clones, repo_status) = blocking_probe(move || {
+                    std::thread::scope(|s| {
+                        let clones = s.spawn(|| prereqs::discover_local_clones(&roots, rules));
+                        let running: Vec<_> = paths.iter().map(|(k, p)| (k, s.spawn(|| check_repo_path(p)))).collect();
+                        let status: Map<String, Value> = running.into_iter().map(|(k, h)| (k.clone(), check_json(&h.join().expect("a check does not panic")))).collect();
+                        (clones.join().expect("discovery does not panic"), status)
+                    })
+                })
+                .await;
+                let clones: Vec<settings::Clone_> = clones.into_iter().map(|c| settings::Clone_ { key: c.key, path: c.path }).collect();
+                let suggested: Vec<Value> = settings::suggested_repos(&repos, &clones).into_iter().map(|c| json!({ "key": c.key, "path": c.path })).collect();
+                Ok(json!({ "repoStatus": repo_status, "suggestedRepos": suggested }))
+            }
+            _ => Err(ApiError::new(404, &format!("Unknown settings probe \"{name}\"."))),
+        }
     }
 
     pub async fn settings_get(&self) -> HookResult {
@@ -439,8 +489,27 @@ mod tests {
         assert!(v["settings"]["sharedSecret"].is_null(), "the secret is never shown");
         assert!(v["features"].as_array().unwrap().iter().any(|f| f["id"] == "diagnose-build"));
         assert_eq!(v["editors"]["supported"][0], json!({ "id": "cursor", "label": "Cursor" }));
+        for slow in ["checks", "repoStatus", "suggestedRepos"] {
+            assert!(v.get(slow).is_none(), "{slow} is a probe, not part of opening Settings");
+        }
+        assert!(v["editors"].get("detected").is_none());
         assert!(v["background"]["scheduler"].is_object());
-        assert_eq!(v["background"].as_object().map(|b| b.len()), Some(1), "no LLM backend: only the scheduler");
+        assert_eq!(v["background"].as_object().map(|b| b.len()), Some(1), "only the scheduler: the LLM backend's status is a probe");
+        f.running.shutdown().await;
+    }
+
+    #[tokio::test]
+    async fn the_slow_settings_parts_are_probes_each_asked_for_on_its_own() {
+        let f = fx(None);
+        let (s, v) = call(&f, "GET", "/settings/probe/repos", None).await;
+        assert_eq!(s, 200, "{v}");
+        assert!(v["repoStatus"].is_object() && v["suggestedRepos"].is_array(), "{v}");
+        let (s, v) = call(&f, "GET", "/settings/probe/editors", None).await;
+        assert_eq!(s, 200, "{v}");
+        assert!(v["detected"].is_array(), "{v}");
+        let (s, v) = call(&f, "GET", "/settings/probe/background", None).await;
+        assert_eq!((s, v), (200, json!({ "background": {} })), "no LLM backend: nothing to report");
+        assert_eq!(call(&f, "GET", "/settings/probe/bogus", None).await.0, 404);
         f.running.shutdown().await;
     }
 

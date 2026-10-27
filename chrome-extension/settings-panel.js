@@ -151,10 +151,11 @@
   ];
 
   function renderSettingsForm(view, opts = {}) {
-    const { settings, features, checks, editors, repoStatus, suggestedRepos, defaults } = view;
+    const { settings, features, editors, defaults } = view;
     const branding = view.branding || {};
     const usedBy = usedByGroups();
-    const background = view.background || {};
+    // The scheduler's status; the "background" probe adds the LLM backend's (see applyBackground).
+    const background = { ...(view.background || {}) };
     const root = el("div", "settings-form");
     const fieldErrors = new Map();
     const groups = [];
@@ -162,6 +163,34 @@
     const pageById = new Map();
     let currentPage = "features";
     let built = false;
+
+    // ---- Slow data, fetched when its page is first shown ----
+    // Opening Settings only loads what was saved. What needs processes run or folders walked (is git
+    // or claude usable, which editors are installed, the state of each mapped repository) is asked
+    // of the service by page: each probe starts the first time a page that shows it is opened
+    // (or a search could show it), and a failed one is tried again on the next visit.
+    const probed = new Set();
+    function probesFor(id) {
+      if (id === "features") return [["checks", applyChecks], ["editors", applyEditors]];
+      if (id === "conn") return [["repos", applyRepos]];
+      if (extraPages.some((x) => x.def.id === id)) return [["background", applyBackground]];
+      return [];
+    }
+    function loadProbes(id) {
+      for (const [name, apply] of probesFor(id)) {
+        if (probed.has(name)) continue;
+        probed.add(name);
+        Promise.resolve(typeof opts.loadProbe === "function" ? opts.loadProbe(name) : null)
+          .then((data) => {
+            if (data) apply(data, null);
+            else probed.delete(name);
+          })
+          .catch((err) => {
+            probed.delete(name);
+            apply(null, err);
+          });
+      }
+    }
 
     // ---- Frame: search, left navigation, the page area ----
     const searchRow = el("div", "settings-search-row");
@@ -228,6 +257,7 @@
         applySearch();
       }
       currentPage = id;
+      loadProbes(id);
       for (const pg of pages) {
         pg.node.classList.toggle("on", pg.id === id);
         pg.navItem.classList.toggle("on", pg.id === id);
@@ -281,9 +311,17 @@
       const head = el("div", "settings-block-head");
       const titleRow = el("div", "settings-block-title-row");
       titleRow.appendChild(el("div", "settings-section-title", title));
-      if (status) titleRow.appendChild(badge(status.kind, status.text));
+      let statusBadge = status ? badge(status.kind, status.text) : null;
+      if (statusBadge) titleRow.appendChild(statusBadge);
       node.actionSlot = el("span", "settings-block-action");
       titleRow.appendChild(node.actionSlot);
+      /** Replaces the section's status badge, for one that is only known after the page opened. */
+      node.setStatus = (next) => {
+        const replacement = badge(next.kind, next.text);
+        if (statusBadge) statusBadge.replaceWith(replacement);
+        else titleRow.insertBefore(replacement, node.actionSlot);
+        statusBadge = replacement;
+      };
       head.appendChild(titleRow);
       if (note) head.appendChild(el("div", "settings-note", note));
       if (usedBy) {
@@ -388,6 +426,30 @@
     featurePage.node.appendChild(featureList);
     featurePage.blocks.push({ node: featureList, custom: true });
     const featureRows = new Map();
+    // The features with checks to pass, until the "checks" probe says which do.
+    const featureChecks = [];
+    function applyChecks(data, err) {
+      const checks = (data && data.checks) || {};
+      for (const entry of featureChecks) {
+        for (const node of entry.problems) node.remove();
+        entry.problems = [];
+        if (err) {
+          entry.status.className = "status-badge neutral";
+          entry.status.textContent = "Not checked";
+          entry.status.title = err.message;
+          continue;
+        }
+        const failing = entry.feature.requiredChecks.filter((name) => checks[name] && !checks[name].ok);
+        entry.status.title = "";
+        entry.status.className = `status-badge ${failing.length > 0 ? "warn" : "ok"}`;
+        entry.status.textContent = failing.length > 0 ? `Needs ${failing.map((n) => CHECK_LABELS[n] || n).join(", ")}` : "Ready";
+        for (const name of failing) {
+          const problem = el("div", "settings-feature-problem", checks[name].message);
+          entry.text.appendChild(problem);
+          entry.problems.push(problem);
+        }
+      }
+    }
     for (const feature of features) {
       const row = el("div", "settings-feature");
       const head = el("div", "settings-feature-head");
@@ -397,15 +459,11 @@
       box.checked = settings.enabledFeatures.includes(feature.id);
       const text = el("div", "settings-feature-text");
       const title = el("div", "settings-feature-title", feature.label);
-      const failing = feature.requiredChecks.filter((name) => checks[name] && !checks[name].ok);
+      const status = badge("neutral", feature.requiredChecks.length > 0 ? "Checking…" : "Ready");
       title.appendChild(document.createTextNode(" "));
-      title.appendChild(
-        failing.length > 0
-          ? badge("warn", `Needs ${failing.map((n) => CHECK_LABELS[n] || n).join(", ")}`)
-          : badge("ok", "Ready"),
-      );
+      title.appendChild(status);
       text.append(title, el("div", "settings-feature-desc", feature.description));
-      for (const name of failing) text.appendChild(el("div", "settings-feature-problem", checks[name].message));
+      if (feature.requiredChecks.length > 0) featureChecks.push({ feature, status, text, problems: [] });
       const entry = PaiRegistry.all().find((e) => e.id === feature.id);
       const tile = el("span", "settings-feature-tile");
       tile.style.setProperty("--pai-row-icon", PaiIcons.mask((entry && entry.icon) || "AI"));
@@ -447,21 +505,28 @@
 
     // Review PR.
     const editorSelect = el("select", "settings-input");
-    const detectedIds = editors.detected.map((e) => e.id);
-    if (!settings.reviewEditor) editorSelect.appendChild(new Option("Pick automatically (first one installed)", ""));
-    for (const editor of editors.supported) {
-      const installed = detectedIds.includes(editor.id);
-      if (!installed && editor.id !== settings.reviewEditor) continue;
-      const label = installed ? editor.label : `${editor.label} — not found on this computer`;
-      editorSelect.appendChild(new Option(label, editor.id, false, editor.id === settings.reviewEditor));
+    // Only the saved choice is listed until the "editors" probe says which are installed.
+    function fillEditors(detectedIds) {
+      const ids = detectedIds || [];
+      const chosen = editorSelect.value;
+      editorSelect.textContent = "";
+      if (!settings.reviewEditor) editorSelect.appendChild(new Option("Pick automatically (first one installed)", ""));
+      for (const editor of editors.supported) {
+        const installed = ids.includes(editor.id);
+        if (!installed && editor.id !== settings.reviewEditor) continue;
+        const label = installed || !detectedIds ? editor.label : `${editor.label} — not found on this computer`;
+        editorSelect.appendChild(new Option(label, editor.id, false, editor.id === settings.reviewEditor));
+      }
+      editorSelect.value = chosen || settings.reviewEditor || "";
     }
-    field(
-      optionsOf("review-in-editor"),
-      'Open "Review PR" checkouts in',
-      editorSelect,
-      "reviewEditor",
-      detectedIds.length === 0 ? "No supported editor (Cursor or Claude Code) was found on this computer." : null,
-    );
+    fillEditors(null);
+    const editorField = field(optionsOf("review-in-editor"), 'Open "Review PR" checkouts in', editorSelect, "reviewEditor");
+    function applyEditors(data) {
+      if (!data) return;
+      const detectedIds = data.detected.map((e) => e.id);
+      fillEditors(detectedIds);
+      if (detectedIds.length === 0) editorField.insertBefore(el("span", "settings-hint", "No supported editor (Cursor or Claude Code) was found on this computer."), editorField.lastChild);
+    }
 
     // Diagnose failed builds: the optional risk-facts/v1 feed (core/risk-facts.js).
     // `settings.riskFacts` is absent from an older companion service.
@@ -657,7 +722,8 @@
       syncRepoList();
     });
 
-    function addRepoRow(key, clonePath, status) {
+    // `status` is the probe's answer; `pending` marks a saved row still waiting for it.
+    function addRepoRow(key, clonePath, status, pending = false) {
       const row = el("div", "settings-repo settings-item");
       row.dataset.search = `repositories ${key} ${clonePath}`.toLowerCase();
       const line = el("div", "settings-repo-line");
@@ -667,14 +733,14 @@
       pathInput.className += " settings-repo-path";
       const state = status
         ? badge(status.ok ? "ok" : "bad", status.ok ? "OK" : "Problem")
-        : badge("neutral", "Checked on save");
+        : badge("neutral", pending ? "Checking…" : "Checked on save");
       if (status && !status.ok) state.title = status.message;
       const remove = el("button", "subtask-row-remove", "×");
       remove.type = "button";
       remove.title = "Remove";
       const box = errorBox();
       if (status && !status.ok) showError(box, status.message);
-      const entry = { row, keyInput, pathInput, box };
+      const entry = { row, keyInput, pathInput, box, state, edited: false };
       remove.addEventListener("click", () => {
         if (baseline.get(keyInput) || baseline.get(pathInput)) removedRepos += 1;
         row.remove();
@@ -684,6 +750,7 @@
       });
       for (const input of [keyInput, pathInput]) {
         input.addEventListener("input", () => {
+          entry.edited = true;
           state.className = "status-badge neutral";
           state.textContent = "Checked on save";
           state.title = "";
@@ -697,7 +764,7 @@
       return entry;
     }
 
-    for (const [key, clonePath] of Object.entries(settings.repos)) addRepoRow(key, clonePath, repoStatus[key]);
+    for (const [key, clonePath] of Object.entries(settings.repos)) addRepoRow(key, clonePath, null, true);
     if (repoRows.length > REPOS_SHOWN) repoList.classList.add("collapsed");
     syncRepoList();
     repoSection.appendChild(repoMore);
@@ -710,10 +777,35 @@
     });
     repoSection.actionSlot.append(addRepo);
 
-    if (suggestedRepos.length > 0) {
+    // The "repos" probe: each saved row's state, and the clones found on this computer.
+    function applyRepos(data, err) {
+      if (!data) {
+        for (const entry of repoRows) {
+          if (entry.edited || entry.state.textContent !== "Checking…") continue;
+          entry.state.className = "status-badge neutral";
+          entry.state.textContent = "Not checked";
+          entry.state.title = err ? err.message : "";
+        }
+        return;
+      }
+      const { repoStatus, suggestedRepos } = data;
+      for (const entry of repoRows) {
+        const status = repoStatus[entry.keyInput.value];
+        if (entry.edited || !status) continue;
+        entry.state.className = `status-badge ${status.ok ? "ok" : "bad"}`;
+        entry.state.textContent = status.ok ? "OK" : "Problem";
+        entry.state.title = status.ok ? "" : status.message;
+        // Not showError(): the person may have moved to another page since the question was asked.
+        if (!status.ok) {
+          entry.box.textContent = status.message;
+          entry.box.style.display = "block";
+        }
+      }
+      const unlisted = suggestedRepos.filter((clone) => !repoRows.some((r) => r.keyInput.value === clone.key));
+      if (unlisted.length === 0) return;
       const found = el("details", "settings-found");
-      found.appendChild(el("summary", null, `${suggestedRepos.length} more clone(s) found on this computer`));
-      for (const clone of suggestedRepos) {
+      found.appendChild(el("summary", null, `${unlisted.length} more clone(s) found on this computer`));
+      for (const clone of unlisted) {
         const item = el("div", "settings-found-item");
         const text = el("div", "settings-found-text");
         text.append(el("span", "settings-found-key", clone.key), el("span", "settings-found-path", clone.path));
@@ -1023,9 +1115,23 @@
     // Each one builds its own page from the same helpers the built-in pages use and returns a function
     // giving its part of the update (see PaiSettingsPages at the end of this file).
     const extraUpdates = [];
+    // A page that shows the LLM backend's status asks for it here and is called once the probe answers
+    // (with the error, and the status unchanged, when it can't be had).
+    const backgroundListeners = [];
+    const whenBackground = (listener) => backgroundListeners.push(listener);
+    function applyBackground(data, err) {
+      if (data) Object.assign(background, data.background);
+      for (const listener of backgroundListeners) {
+        try {
+          listener(background, err);
+        } catch (e) {
+          console.warn("[settings] a page's status failed to update:", e);
+        }
+      }
+    }
     for (const { def, page: pg } of extraPages) {
       try {
-        const collect = def.build({ page: pg, view, settings, branding, background, el, block, field, toggleRow, textInput });
+        const collect = def.build({ page: pg, view, settings, branding, background, whenBackground, el, block, field, toggleRow, textInput });
         if (typeof collect === "function") extraUpdates.push(collect);
       } catch (err) {
         console.warn(`[settings] the "${def.id}" page failed to build:`, err);
@@ -1280,6 +1386,7 @@
     function applySearch() {
       const q = searchInput.value.trim().toLowerCase();
       const searching = q !== "";
+      if (searching) for (const id of ["features", "conn", ...extraPages.map((x) => x.def.id)]) loadProbes(id);
       root.classList.toggle("searching", searching);
       let total = 0;
       for (const pg of pages) {
@@ -1468,8 +1575,11 @@
   // A pack's extension script adds a page to this panel by pushing a definition onto self.PaiSettingsPages
   // (the panel reads the list each time it opens, so load order doesn't matter):
   //   { id, icon?: dataUri, title(branding), sub?, intro?(branding), visible(view) -> bool,
-  //     build({ page, view, settings, branding, background, el, block, field, toggleRow, textInput })
+  //     build({ page, view, settings, branding, background, whenBackground, el, block, field, toggleRow, textInput })
   //       -> () => the part of the PUT /settings body this page owns }
+  // `background` is what is cheap to know when Settings opens (the scheduler). What is slow (the LLM backend's
+  // status, a network call) arrives when the page is first shown: `whenBackground(listener)` calls
+  // `listener(background, error)` then, and a section's badge can be replaced with `block.setStatus({ kind, text })`.
   // `settings.<key>` is what a SettingsSection of that pack returns from GET /settings; the server validates
   // and saves what the returned function gives.
   self.PaiSettingsPages = self.PaiSettingsPages || [];

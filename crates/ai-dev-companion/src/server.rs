@@ -153,6 +153,10 @@ pub trait AppHooks: Send + Sync {
     async fn settings_get(&self) -> HookResult {
         unavailable("Settings")
     }
+    /// One slow part of the Settings panel (`checks`, `editors` or `repos`), asked for when its page opens.
+    async fn settings_probe(&self, _name: &str) -> HookResult {
+        unavailable("Settings")
+    }
     async fn settings_put(&self, _body: &Value) -> HookResult {
         unavailable("Settings")
     }
@@ -493,6 +497,10 @@ async fn update_apply(State(state): State<Shared>) -> Response {
 
 async fn settings_get(State(state): State<Shared>) -> Response {
     hook_reply(state.hooks.settings_get().await)
+}
+
+async fn settings_probe(State(state): State<Shared>, Path(name): Path<String>) -> Response {
+    hook_reply(state.hooks.settings_probe(&name).await)
 }
 
 async fn settings_put(State(state): State<Shared>, body: Bytes) -> Response {
@@ -957,6 +965,7 @@ pub fn app(state: Arc<AppState>) -> Router {
         .route("/update/apply", post(update_apply))
         .route("/settings", get(settings_get).put(settings_put))
         .route("/settings/restart", post(settings_restart))
+        .route("/settings/probe/{name}", get(settings_probe))
         .route("/status/{job_id}", get(job_status))
         .route("/jobs/{job_id}/open-in-claude-code", post(open_in_claude_code))
         .route("/jobs/{job_id}/focus-terminal", post(focus_job_terminal))
