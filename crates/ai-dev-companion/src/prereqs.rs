@@ -16,9 +16,10 @@ use crate::uri::encode_uri_component;
 use regex::{Regex, RegexBuilder};
 use serde::Serialize;
 use serde_json::Value;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::sync::LazyLock;
+use std::sync::{LazyLock, Mutex};
 use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -146,6 +147,18 @@ pub fn check_repo_path(repo_path: &str) -> Check {
     }
     if !Path::new(&format!("{repo_path}/.git")).exists() {
         return check(false, format!("{repo_path} is not a git repository (no .git found)."));
+    }
+    // An ordinary clone answers from its own `.git`, with no process: launching one costs tens of
+    // milliseconds, and seconds on a machine whose security agents inspect every launch, times two per
+    // repository. (A linked worktree's `.git` is a file pointing elsewhere, so git is asked for it.)
+    if Path::new(repo_path).join(".git").is_dir() {
+        if read_origin_from_git_config(Path::new(repo_path)).is_none() {
+            return check(false, format!("{repo_path} has no \"origin\" remote configured."));
+        }
+        if Path::new(repo_path).join(".git").join("shallow").exists() {
+            return check(false, format!("{repo_path} is a shallow clone \u{2014} run \"git fetch --unshallow\" there first (a shallow clone silently breaks merge-conflict detection)."));
+        }
+        return check(true, format!("{repo_path} OK."));
     }
     if git_ok(&["-C", repo_path, "remote", "get-url", "origin"]).is_none() {
         return check(false, format!("{repo_path} has no \"origin\" remote configured."));
@@ -502,13 +515,26 @@ pub fn infer_repo_path(existing_repos: &[PathBuf], project: &str, repo: &str, ex
 /// server run only the checks the *enabled* features actually need (e.g. skip
 /// requiring the `claude` CLI if no enabled feature uses it).
 pub fn run_check_by_name(name: &str) -> Option<Check> {
-    match name {
-        "git" => Some(check_git()),
-        "claudeCli" => Some(check_claude_cli()),
-        "claudeAuth" => Some(check_claude_auth()),
-        _ => None,
+    if let Some(passed) = PASSED_CHECKS.lock().unwrap().get(name).filter(|(at, _)| at.elapsed() < PASSED_CHECK_TTL) {
+        return Some(passed.1.clone());
     }
+    let result = match name {
+        "git" => check_git(),
+        "claudeCli" => check_claude_cli(),
+        "claudeAuth" => check_claude_auth(),
+        _ => return None,
+    };
+    if result.ok {
+        PASSED_CHECKS.lock().unwrap().insert(name.to_string(), (Instant::now(), result.clone()));
+    }
+    Some(result)
 }
+
+/// How long a passing check is trusted. Each is a process (`claude auth status` takes a fifth of a
+/// second when the machine is idle), Settings asks every time it opens, and a tool that works
+/// doesn't stop working in ten minutes. A failing check is never remembered, so fixing it shows at once.
+const PASSED_CHECK_TTL: Duration = Duration::from_secs(600);
+static PASSED_CHECKS: LazyLock<Mutex<HashMap<String, (Instant, Check)>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Editor {
@@ -527,7 +553,7 @@ pub fn detect_installed_editors() -> Vec<Editor> {
     }
     // Claude Code first: it's the default editor offered by the setup wizard
     // (and the runtime fallback) whenever it's on PATH.
-    if run_stdout("claude", &["--version"]).is_some() {
+    if run_check_by_name("claudeCli").is_some_and(|c| c.ok) {
         found.push(Editor { id: "claude-code", label: "Claude Code (opens a new terminal)" });
     }
     if Path::new("/Applications/Cursor.app").exists() {
@@ -582,6 +608,27 @@ mod tests {
         assert_eq!(check_repo_path(&s(ok.path())), check(true, format!("{} OK.", s(ok.path()))));
         assert_eq!(get_origin_url(&s(ok.path())).as_deref(), Some("https://github.com/o/r.git"));
         assert_eq!(get_origin_url("/no/such"), None);
+    }
+
+    #[test]
+    fn an_ordinary_clone_is_checked_from_its_own_git_folder_without_running_git() {
+        // Built from plain files: nothing here could pass if the check needed the git program.
+        let clone = |config: &str, shallow: bool| {
+            let d = tempfile::tempdir().unwrap();
+            fs::create_dir_all(d.path().join(".git")).unwrap();
+            fs::write(d.path().join(".git/config"), config).unwrap();
+            if shallow {
+                fs::write(d.path().join(".git/shallow"), "abc\n").unwrap();
+            }
+            d
+        };
+        let origin = "[core]\n\trepositoryformatversion = 0\n[remote \"origin\"]\n\turl = https://github.com/o/r.git\n";
+        let ok = clone(origin, false);
+        assert_eq!(check_repo_path(&s(ok.path())), check(true, format!("{} OK.", s(ok.path()))));
+        let shallow = clone(origin, true);
+        assert!(check_repo_path(&s(shallow.path())).message.contains("shallow clone"));
+        let none = clone("[core]\n\tbare = false\n", false);
+        assert!(check_repo_path(&s(none.path())).message.contains("no \"origin\" remote"));
     }
 
     fn fake_claude(dir: &Path, script: &str) -> String {

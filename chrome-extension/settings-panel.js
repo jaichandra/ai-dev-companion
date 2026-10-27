@@ -1249,34 +1249,66 @@
         });
       });
     // ---- Change log: this install's own CHANGELOG.md, always here (What's new in the update panel only
-    // exists while an update is on offer). No refresh, so opening About never waits on git. ----
+    // exists while an update is on offer). No refresh, so opening About never waits on git. The last copy
+    // seen is kept in the browser and shown at once, then replaced if the service says it changed (it only
+    // does when an update was installed), so this page never waits on the service at all but the first time. ----
     const changelog = block(aboutPage, "Change log");
     const changelogBody = el("div", "settings-item");
     changelogBody.appendChild(el("div", "settings-row-text", "Loading…"));
     changelog.appendChild(changelogBody);
+    const CHANGELOG_CACHE_KEY = "paiChangelogCache";
+    let shownChangelog = null;
+    let changelogItems = [];
+    const showChangelog = (info) => {
+      const entries = (Array.isArray(info.changelog) ? info.changelog : []).filter(
+        (e) => e && typeof e.version === "string" && Array.isArray(e.notes) && e.notes.length > 0,
+      );
+      const fingerprint = JSON.stringify([info.current, entries]);
+      if (fingerprint === shownChangelog) return;
+      shownChangelog = fingerprint;
+      for (const item of changelogItems) item.remove();
+      changelogItems = [];
+      if (entries.length === 0) {
+        changelogBody.textContent = "No change log in this install.";
+        changelog.appendChild(changelogBody);
+        return;
+      }
+      changelogBody.remove();
+      for (const entry of entries) {
+        const item = el("div", "settings-item");
+        item.dataset.search = `change log ${entry.version} ${entry.notes.join(" ")}`.toLowerCase();
+        const head = el("div", "settings-changelog-version", `v${entry.version}`);
+        if (entry.version === info.current) head.appendChild(el("span", "settings-changelog-installed", " · installed"));
+        const list = el("ul", "settings-changelog-notes");
+        for (const note of entry.notes) list.appendChild(el("li", "", String(note)));
+        item.append(head, list);
+        changelog.appendChild(item);
+        changelogItems.push(item);
+      }
+    };
+    const cachedChangelog = new Promise((resolve) => {
+      try {
+        chrome.storage.local.get([CHANGELOG_CACHE_KEY], (r) => resolve((r && r[CHANGELOG_CACHE_KEY]) || null));
+      } catch {
+        resolve(null);
+      }
+    });
     (async () => {
+      let fresh = false;
+      cachedChangelog.then((cached) => {
+        if (cached && !fresh) showChangelog(cached);
+      });
       try {
         const { info } = await bgMessage({ type: "update-info" });
-        const entries = (Array.isArray(info.changelog) ? info.changelog : []).filter(
-          (e) => e && typeof e.version === "string" && Array.isArray(e.notes) && e.notes.length > 0,
-        );
-        if (entries.length === 0) {
-          changelogBody.textContent = "No change log in this install.";
-          return;
-        }
-        changelogBody.remove();
-        for (const entry of entries) {
-          const item = el("div", "settings-item");
-          item.dataset.search = `change log ${entry.version} ${entry.notes.join(" ")}`.toLowerCase();
-          const head = el("div", "settings-changelog-version", `v${entry.version}`);
-          if (entry.version === info.current) head.appendChild(el("span", "settings-changelog-installed", " · installed"));
-          const list = el("ul", "settings-changelog-notes");
-          for (const note of entry.notes) list.appendChild(el("li", "", String(note)));
-          item.append(head, list);
-          changelog.appendChild(item);
+        fresh = true;
+        showChangelog(info);
+        try {
+          chrome.storage.local.set({ [CHANGELOG_CACHE_KEY]: { current: info.current, changelog: info.changelog } });
+        } catch {
+          // Only a convenience: the next visit just asks the service again.
         }
       } catch {
-        changelogBody.textContent = "Couldn't load the change log (is the companion service running?).";
+        if (!(await cachedChangelog)) changelogBody.textContent = "Couldn't load the change log (is the companion service running?).";
       }
     })();
 
