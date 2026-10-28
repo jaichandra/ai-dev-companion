@@ -389,7 +389,7 @@ impl Feature for TicketWorkspace {
                 let Some(session) = session else { return Err(FeatureError::JobStatus("That session isn't part of this workspace.".into())) };
                 let header = vec![vec![HeaderSegment::styled(&format!("Ticket workspace  {}", ws["issueKey"].as_str().unwrap_or("")), HeaderStyle::Title)], vec![HeaderSegment::styled("Resuming Claude Code\u{2026}", HeaderStyle::Status)], vec![]];
                 let config = (self.config)();
-                match resume_session_in_terminal(&self.terminal, &config, &session, &header, None, &self.home).await? {
+                match resume_session_in_terminal(&self.terminal, &config, &session, &header, Some(crate::terminal::ticket_title(ws["issueKey"].as_str().unwrap_or(""), ws["summary"].as_str())), None, &self.home).await? {
                     ResumeOutcome::Resumed => Ok(json!({ "ok": true })),
                     _ => Err(FeatureError::WorktreeGone("That Claude Code session has expired (its folder or transcript is gone).".into())),
                 }

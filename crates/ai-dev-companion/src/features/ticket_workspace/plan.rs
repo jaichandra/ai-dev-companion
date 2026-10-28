@@ -103,6 +103,8 @@ pub struct HistoryFacts {
     pub prs: Vec<PrFact>,
     pub analyses: Vec<Value>,
     pub sessions: Vec<Value>,
+    /// The ticket's Jira title as the history recorded it.
+    pub title: Option<String>,
     pub notes: Vec<String>,
 }
 
@@ -126,6 +128,7 @@ fn item_of<'a>(related: &'a Map<String, Value>, key: &str) -> Option<&'a Value> 
 pub fn history_facts(ticket: Option<&Value>, related: &Map<String, Value>, policy: &HistoryPolicy<'_>) -> HistoryFacts {
     let mut facts = HistoryFacts::default();
     let Some(ticket) = ticket.filter(|t| js_truthy(Some(t))) else { return facts };
+    facts.title = ticket["item"]["title"].as_str().map(str::trim).filter(|t| !t.is_empty()).map(String::from);
     let keys = related_keys(ticket);
     for key in &keys.worktree {
         let Some(d) = item_of(related, key).map(|i| &i["data"]) else { continue };
@@ -291,7 +294,7 @@ pub fn build_workspace(input: WorkspaceInput<'_>) -> Value {
     let preferred = ticket_worktree.and_then(|w| sessions.iter().find(|s| s["cwd"] == w["dir"]));
     let resume_dir = ticket_worktree.into_iter().chain(live.iter().copied()).find(|w| w["dir"].as_str().is_some_and(|d| (input.cwd_allowed)(d))).and_then(|w| w["dir"].as_str());
     json!({
-        "issueKey": input.issue_key, "worktrees": worktrees, "branches": branches, "prs": prs, "analyses": h.analyses, "sessions": sessions, "notes": notes,
+        "issueKey": input.issue_key, "summary": h.title, "worktrees": worktrees, "branches": branches, "prs": prs, "analyses": h.analyses, "sessions": sessions, "notes": notes,
         "suggestions": { "startFix": start_fix, "createPr": create_pr },
         "resume": { "session": preferred.or(sessions.first()).cloned().unwrap_or(Value::Null), "worktreeDir": resume_dir },
     })
@@ -418,6 +421,7 @@ mod tests {
         let ws = build_workspace(WorkspaceInput { cwd_allowed: &|_| true, ..input(&repos, Some(&h)) });
         assert_eq!((ws["worktrees"].as_array().unwrap().len(), ws["prs"].as_array().unwrap().len()), (1, 1));
         assert_eq!(ws["prs"][0]["source"], "history");
+        assert_eq!(ws["summary"], "Login fails", "the ticket's Jira title rides along for the terminal title");
         assert_eq!(ws["suggestions"]["startFix"], false);
         assert_eq!(ws["suggestions"]["createPr"], json!({ "repoKey": "ACME/sample-app", "dir": WT, "branch": "bugfix/PROJ-7-login" }));
         assert_eq!(ws["resume"]["session"]["id"], S1, "the session in the ticket worktree wins over a newer one elsewhere");

@@ -186,7 +186,7 @@ pub trait AppHooks: Send + Sync {
     async fn focus_terminal(&self, _location: &Value) -> Result<bool, String> {
         Err("Focusing a terminal isn't available in this build.".into())
     }
-    async fn resume_session(&self, _session: &Value, _header: &[Vec<HeaderSegment>], _job_worktree: Option<&str>) -> Result<ResumeResult, String> {
+    async fn resume_session(&self, _session: &Value, _header: &[Vec<HeaderSegment>], _title: Option<String>, _job_worktree: Option<&str>) -> Result<ResumeResult, String> {
         Err("Resuming a session isn't available in this build.".into())
     }
 }
@@ -643,7 +643,7 @@ async fn open_in_claude_code(State(state): State<Shared>, Path(job_id): Path<Str
     }
     let feature_id = job["featureId"].as_str().unwrap_or("");
     let header = state.feature(feature_id).map(|f| build_resume_header(f.label(), &job)).unwrap_or_default();
-    match state.hooks.resume_session(&job["data"]["claudeSession"], &header, job["data"]["worktree"]["dir"].as_str()).await {
+    match state.hooks.resume_session(&job["data"]["claudeSession"], &header, terminal_title(&state, &job), job["data"]["worktree"]["dir"].as_str()).await {
         Ok(ResumeResult::Resumed(location)) => {
             record_terminal(&state, &job_id, location);
             reply(200, json!({ "ok": true }))
@@ -654,10 +654,15 @@ async fn open_in_claude_code(State(state): State<Shared>, Path(job_id): Path<Str
     }
 }
 
-/// What the terminal's tab is called: the feature and the PR or ticket it is for, so its window
+/// What the terminal's tab is called: a ticket's key and a few words of its title, else the feature and the PR or ticket it is for, so its window
 /// can be told from the others'.
 fn terminal_title(state: &Shared, job: &Value) -> Option<String> {
     let label = state.feature(job["featureId"].as_str().unwrap_or("")).map(|f| f.label().to_string())?;
+    if let (Some(key), true) = (job["data"]["issueKey"].as_str().filter(|k| !k.is_empty()), job["data"]["payload"]["prId"].is_null()) {
+        if let Some(summary) = job["data"]["summary"].as_str().filter(|s| !s.trim().is_empty()) {
+            return Some(crate::terminal::ticket_title(key, Some(summary)));
+        }
+    }
     Some(match resume_header_key(job) {
         Some(key) => format!("{label} {key}"),
         None => label,
@@ -1055,7 +1060,7 @@ mod tests {
             self.calls.lock().unwrap().push(format!("focus:{}", location["tty"].as_str().unwrap_or("")));
             Ok(location["windowId"] == "7")
         }
-        async fn resume_session(&self, session: &Value, header: &[Vec<HeaderSegment>], _: Option<&str>) -> Result<ResumeResult, String> {
+        async fn resume_session(&self, session: &Value, header: &[Vec<HeaderSegment>], _: Option<String>, _: Option<&str>) -> Result<ResumeResult, String> {
             self.calls.lock().unwrap().push(format!("resume:{}:{}", session["id"], header.len()));
             Ok(match session["id"].as_str() {
                 Some("gone") => ResumeResult::Gone,

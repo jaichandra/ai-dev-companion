@@ -225,8 +225,8 @@ impl ConfigHooks {
         focus_terminal(&loc, &self.terminal.osascript).await
     }
 
-    pub async fn resume_session(&self, session: &Value, header: &[Vec<HeaderSegment>], job_worktree: Option<&str>) -> Result<ResumeResult, String> {
-        Ok(match resume_session_located(&self.terminal, &(self.config)(), session, header, job_worktree, &self.home).await? {
+    pub async fn resume_session(&self, session: &Value, header: &[Vec<HeaderSegment>], title: Option<String>, job_worktree: Option<&str>) -> Result<ResumeResult, String> {
+        Ok(match resume_session_located(&self.terminal, &(self.config)(), session, header, title, job_worktree, &self.home).await? {
             (ResumeOutcome::Resumed, loc) => ResumeResult::Resumed(loc.map(|l| l.to_json())),
             (ResumeOutcome::Invalid, _) => ResumeResult::Invalid,
             (ResumeOutcome::Gone, _) => ResumeResult::Gone,

@@ -99,6 +99,28 @@ pub struct TerminalOptions {
 /// script still runs (a foreground job killed by SIGINT would abort it).
 const RECORD_AND_RUN: &str = r#"printf 'agent %s %s\n' "$$" "$(LC_ALL=C ps -o lstart= -p $$)" >> "$0" && "$@""#;
 
+/// The tab title for a ticket's terminal: the key and a few words of the Jira title, cut at a word
+/// (`PROJ-12 Fix login redirect loop`). Just the key when there is no title.
+pub fn ticket_title(key: &str, summary: Option<&str>) -> String {
+    const MAX: usize = 40;
+    let words: Vec<&str> = summary.map(|s| s.split_whitespace().collect()).unwrap_or_default();
+    let mut short = String::new();
+    for w in &words {
+        if !short.is_empty() && short.chars().count() + 1 + w.chars().count() > MAX {
+            short.push('\u{2026}');
+            break;
+        }
+        if !short.is_empty() {
+            short.push(' ');
+        }
+        short.push_str(w);
+    }
+    if short.chars().count() > MAX + 1 {
+        short = short.chars().take(MAX).collect::<String>() + "\u{2026}";
+    }
+    strip_controls(&if short.is_empty() { key.to_string() } else { format!("{key} {short}") })
+}
+
 /// Control and C1 characters, which can't go into a title or badge.
 fn strip_controls(s: &str) -> String {
     s.chars().map(|c| if matches!(c, '\u{0}'..='\u{1f}' | '\u{7f}'..='\u{9f}') { ' ' } else { c }).collect()
@@ -336,6 +358,17 @@ mod tests {
         assert_eq!(cmd, r"cd '/' && clear && printf '\033[1;36m%s\033[0m%s\n\033[36m%s\033[0m\n' 'Review %s \033[31m' ' PR #4' 'x' && 'pwd'");
         let out = sh(&cmd.replace("clear && ", ""));
         assert_eq!(out, "\u{1b}[1;36mReview %s \\033[31m\u{1b}[0m PR #4\n\u{1b}[36mx\u{1b}[0m\n/\n");
+    }
+
+    #[test]
+    fn a_ticket_title_is_the_key_and_a_few_words_cut_at_a_word() {
+        assert_eq!(ticket_title("PROJ-1", Some("  Fix   the login\n redirect ")), "PROJ-1 Fix the login redirect");
+        assert_eq!(ticket_title("PROJ-1", None), "PROJ-1");
+        assert_eq!(ticket_title("PROJ-1", Some("  ")), "PROJ-1");
+        let long = ticket_title("PROJ-1", Some("Activity colour is not displayed in the tooltip when hovering over a chart"));
+        assert_eq!(long, "PROJ-1 Activity colour is not displayed in the\u{2026}");
+        assert!(ticket_title("P-1", Some(&"x".repeat(200))).chars().count() <= 3 + 1 + 40 + 1);
+        assert_eq!(ticket_title("P-1", Some("a\u{7}b\u{1b}]0;x")), "P-1 a b ]0;x");
     }
 
     #[test]

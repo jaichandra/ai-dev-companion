@@ -663,12 +663,12 @@
         "Checks every few minutes for a pull request from a fix you started, and moves the ticket when there is one. Off: use the Move ticket to review button.",
       );
       createWorktreeCheck = el("input");
-      createWorktreeCheck.checked = settings.ticketToPr.createWorktreeWithoutAsking === true;
+      createWorktreeCheck.checked = settings.ticketToPr.createWorktreeWithoutAsking !== false;
       toggleRow(
         ticketOptions,
         "Create a worktree without asking",
         createWorktreeCheck,
-        "Continue in Claude Code reuses a checkout of the ticket's branch when there is one. Off (default): it asks before it makes a new worktree or branch. On: it makes one straight away.",
+        "Continue in Claude Code reuses a checkout of the ticket's branch when there is one. On (default): once the repository is identified, it makes a new worktree and branch straight away. Off: it asks first.",
       );
     }
 

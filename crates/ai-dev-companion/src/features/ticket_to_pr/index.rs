@@ -150,7 +150,7 @@ pub trait StartFixIo: Send + Sync {
     /// Asks before a worktree is made; true means go ahead.
     async fn confirm_worktree(&self, job_id: &str, q: &WorktreeQuestion) -> bool;
     /// Reopens a recorded Claude session in a terminal: whether it did, and where it opened.
-    async fn resume_session(&self, config: &Value, session: &Value, header: &[Vec<HeaderSegment>], dir: &str) -> (bool, Option<Value>);
+    async fn resume_session(&self, config: &Value, session: &Value, header: &[Vec<HeaderSegment>], title: Option<String>, dir: &str) -> (bool, Option<Value>);
 }
 
 /// The real thing: the providers, the terminal and the repo-choice question.
@@ -190,8 +190,8 @@ impl StartFixIo for RealStartFixIo {
         };
         matches!(self.choices.ask(job_id, None, &question, "continue again.").await, Ok(Some(_)))
     }
-    async fn resume_session(&self, config: &Value, session: &Value, header: &[Vec<HeaderSegment>], dir: &str) -> (bool, Option<Value>) {
-        match resume_session_located(&self.terminal, config, session, header, Some(dir), &self.home).await {
+    async fn resume_session(&self, config: &Value, session: &Value, header: &[Vec<HeaderSegment>], title: Option<String>, dir: &str) -> (bool, Option<Value>) {
+        match resume_session_located(&self.terminal, config, session, header, title, Some(dir), &self.home).await {
             Ok((ResumeOutcome::Resumed, loc)) => (true, loc.map(|l| l.to_json())),
             _ => (false, None),
         }
@@ -407,8 +407,9 @@ impl<G: Git + 'static> Inner<G> {
         }
 
         // What exists comes first: a checkout of the ticket's branch anywhere (a worktree of yours,
-        // the clone itself), then the ticket's own worktree. Nothing is made without asking, unless
-        // the setting says not to.
+        // the clone itself), then the ticket's own worktree. By now the repository is settled (an
+        // analysis, a confident match, or the user's pick), so a worktree is made without asking
+        // unless the setting says to ask.
         self.progress(job_id, "worktree", "Looking for an existing checkout\u{2026}");
         let repo_p = Path::new(&repo_path);
         let found = resolve_workspace(repo_p, None, Some(issue_key), &self.d.git).await?;
@@ -426,7 +427,7 @@ impl<G: Git + 'static> Inner<G> {
                 Some(b) => branch_worktree_path(repo_p, b, home),
                 None => ticket_dir.clone(),
             };
-            if config["ticketToPr"]["createWorktreeWithoutAsking"] != json!(true) {
+            if config["ticketToPr"]["createWorktreeWithoutAsking"] == json!(false) {
                 self.progress(job_id, "worktree", "Waiting for you to confirm a new worktree\u{2026}");
                 // Worktrees are cheap to make and easy to lose track of: past a handful, say so.
                 let owned = count_owned(repo_p, None, home, &self.d.git).await.unwrap_or(0);
@@ -492,7 +493,7 @@ impl<G: Git + 'static> Inner<G> {
                     vec![HeaderSegment::styled("Resuming your Claude Code session", HeaderStyle::Status)],
                     vec![],
                 ];
-                let (ok, location) = io.resume_session(&config, &session, &header, &wt_dir).await;
+                let (ok, location) = io.resume_session(&config, &session, &header, Some(crate::terminal::ticket_title(issue_key, summary.as_deref())), &wt_dir).await;
                 resumed = ok;
                 if resumed {
                     data_patch(store, job_id, json!({ "claudeSession": session }));
@@ -522,7 +523,7 @@ impl<G: Git + 'static> Inner<G> {
             ];
             // Every argv word is quoted by the terminal; the prompt is one word.
             let args = ["--session-id".to_string(), session_id, "--permission-mode".to_string(), mode, prompt];
-            if let Some(location) = io.open_terminal(&wt_dir, &args, &header, &TerminalOptions { title: Some(format!("{issue_key} fix")), ..Default::default() }).await? {
+            if let Some(location) = io.open_terminal(&wt_dir, &args, &header, &TerminalOptions { title: Some(crate::terminal::ticket_title(issue_key, summary.as_deref())), ..Default::default() }).await? {
                 data_patch(store, job_id, json!({ "terminal": location }));
             }
         }
@@ -805,7 +806,7 @@ impl<G: Git + 'static> Feature for TicketToPr<G> {
             // session; this is for an adopted worktree without one).
             "open-terminal" => {
                 let w = inner.ready_worktree(&job, &(inner.d.config)())?;
-                let title = job["data"]["issueKey"].as_str().map(|k| format!("{k} fix"));
+                let title = job["data"]["issueKey"].as_str().map(|k| crate::terminal::ticket_title(k, job["data"]["summary"].as_str()));
                 if let Some(location) = inner.d.terminal.open_claude_code(&w.dir, &[], &[], &TerminalOptions { title, ..Default::default() }).await? {
                     data_patch(&inner.d.store, job["id"].as_str().unwrap_or(""), json!({ "terminal": location.to_json() }));
                 }
@@ -920,7 +921,7 @@ mod tests {
             self.asked.lock().unwrap().push(q.clone());
             self.confirm.expect("must not ask")
         }
-        async fn resume_session(&self, _: &Value, session: &Value, _: &[Vec<HeaderSegment>], _: &str) -> (bool, Option<Value>) {
+        async fn resume_session(&self, _: &Value, session: &Value, _: &[Vec<HeaderSegment>], _: Option<String>, _: &str) -> (bool, Option<Value>) {
             self.resumes.lock().unwrap().push(session.clone());
             (self.resume_ok, None)
         }
@@ -966,6 +967,14 @@ mod tests {
     fn fx(io: FakeIo) -> Fx {
         let r = Arc::new(make_repos());
         let config = config_for(&r);
+        build(r, io, config, Ok(BB.into()))
+    }
+
+    /// The same, with the opt-out set: a new worktree is confirmed first.
+    fn fx_asking(io: FakeIo) -> Fx {
+        let r = Arc::new(make_repos());
+        let mut config = config_for(&r);
+        config["ticketToPr"] = json!({ "createWorktreeWithoutAsking": false });
         build(r, io, config, Ok(BB.into()))
     }
 
@@ -1287,7 +1296,7 @@ mod tests {
     async fn a_ticket_branch_with_no_checkout_asks_first_declining_creates_nothing_accepting_makes_a_worktree_of_that_branch() {
         let mut no = io(analysis());
         no.confirm = Some(false);
-        let f = fx(no);
+        let f = fx_asking(no);
         sh(&f.r.clone, &["push", "-q", "origin", "HEAD:refs/heads/feature/PROJ-21-logout"]);
         sh(&f.r.clone, &["fetch", "-q", "origin"]);
         let declined = run(&f, json!({ "issueKey": "PROJ-21" })).await;
@@ -1305,10 +1314,10 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn a_ticket_with_no_branch_at_all_asks_before_making_one_unless_the_setting_says_to_just_do_it() {
+    async fn a_ticket_with_no_branch_at_all_asks_before_making_one_only_when_the_setting_says_to_ask_and_otherwise_just_does_it() {
         let mut no = io(analysis());
         no.confirm = Some(false);
-        let f = fx(no);
+        let f = fx_asking(no);
         let declined = run(&f, json!({ "issueKey": "PROJ-22" })).await;
         assert_eq!(declined["status"], "failed");
         let asked = f.io.asked.lock().unwrap()[0].clone();
@@ -1318,9 +1327,7 @@ mod tests {
 
         let mut never = io(analysis());
         never.confirm = None;
-        let mut cfg = config_for(&f.r);
-        cfg["ticketToPr"] = json!({ "createWorktreeWithoutAsking": true });
-        let g = again(&f, never, cfg);
+        let g = again(&f, never, config_for(&f.r));
         let made = run(&g, json!({ "issueKey": "PROJ-22" })).await;
         assert_eq!(made["status"], "awaiting-approval", "{made}");
         assert_eq!(wt_dir(&made), repo_worktrees_root(&f.r.clone, &f.r.home).join("PROJ-22").to_string_lossy());

@@ -26,13 +26,13 @@ pub enum ResumeOutcome {
 }
 
 /// `job_worktree_dir`: the job's own worktree, also allowed when the session ran in it.
-pub async fn resume_session_in_terminal(terminal: &Terminal, config: &Value, session: &Value, header: &[Vec<HeaderSegment>], job_worktree_dir: Option<&str>, home: &Path) -> Result<ResumeOutcome, String> {
-    resume_session_located(terminal, config, session, header, job_worktree_dir, home).await.map(|(outcome, _)| outcome)
+pub async fn resume_session_in_terminal(terminal: &Terminal, config: &Value, session: &Value, header: &[Vec<HeaderSegment>], title: Option<String>, job_worktree_dir: Option<&str>, home: &Path) -> Result<ResumeOutcome, String> {
+    resume_session_located(terminal, config, session, header, title, job_worktree_dir, home).await.map(|(outcome, _)| outcome)
 }
 
 /// `resume_session_in_terminal`, plus where the terminal opened (when it said), so the caller can
 /// record it for "bring this terminal to the front".
-pub async fn resume_session_located(terminal: &Terminal, config: &Value, session: &Value, header: &[Vec<HeaderSegment>], job_worktree_dir: Option<&str>, home: &Path) -> Result<(ResumeOutcome, Option<TerminalLocation>), String> {
+pub async fn resume_session_located(terminal: &Terminal, config: &Value, session: &Value, header: &[Vec<HeaderSegment>], title: Option<String>, job_worktree_dir: Option<&str>, home: &Path) -> Result<(ResumeOutcome, Option<TerminalLocation>), String> {
     if !validate_session(Some(session)) {
         return Ok((ResumeOutcome::Invalid, None));
     }
@@ -52,7 +52,7 @@ pub async fn resume_session_located(terminal: &Terminal, config: &Value, session
     if !Path::new(cwd).exists() || !Path::new(&transcript).exists() {
         return Ok((ResumeOutcome::Gone, None));
     }
-    let location = terminal.open_claude_code(cwd, &build_resume_args(id, mode), header, &TerminalOptions::default()).await?;
+    let location = terminal.open_claude_code(cwd, &build_resume_args(id, mode), header, &TerminalOptions { title, ..Default::default() }).await?;
     Ok((ResumeOutcome::Resumed, location))
 }
 
@@ -105,7 +105,7 @@ mod tests {
         let f = fx();
         transcript(&f, &f.repo);
         let config = json!({ "repos": { "app": f.repo } });
-        let r = resume_session_in_terminal(&f.terminal, &config, &session(&f.repo), &[], None, &f.home).await.unwrap();
+        let r = resume_session_in_terminal(&f.terminal, &config, &session(&f.repo), &[], None, None, &f.home).await.unwrap();
         assert_eq!(r, ResumeOutcome::Resumed);
         assert!(fs::read_to_string(&f.log).unwrap().contains("do script"));
         let script = fs::read_dir(&f.terminal.tmp_dir).unwrap().next().unwrap().unwrap().path().join("review.sh");
@@ -120,20 +120,20 @@ mod tests {
         let other = other.path().to_string_lossy().into_owned();
         transcript(&f, &other);
         for bad in [json!({ "id": "not-a-uuid", "cwd": f.repo, "permissionMode": "plan" }), json!({ "id": ID, "cwd": "relative", "permissionMode": "plan" }), json!({ "id": ID, "cwd": f.repo, "permissionMode": "bypassPermissions" }), session(&other), json!(null)] {
-            assert_eq!(resume_session_in_terminal(&f.terminal, &config, &bad, &[], None, &f.home).await.unwrap(), ResumeOutcome::Invalid, "{bad}");
+            assert_eq!(resume_session_in_terminal(&f.terminal, &config, &bad, &[], None, None, &f.home).await.unwrap(), ResumeOutcome::Invalid, "{bad}");
         }
         assert!(!f.log.exists(), "no terminal was opened");
         // The job's own worktree is allowed even though no mapped repo covers it.
-        assert_eq!(resume_session_in_terminal(&f.terminal, &config, &session(&other), &[], Some(&other), &f.home).await.unwrap(), ResumeOutcome::Resumed);
+        assert_eq!(resume_session_in_terminal(&f.terminal, &config, &session(&other), &[], None, Some(&other), &f.home).await.unwrap(), ResumeOutcome::Resumed);
     }
 
     #[tokio::test]
     async fn a_missing_folder_or_transcript_is_gone() {
         let f = fx();
         let config = json!({ "repos": { "app": f.repo } });
-        assert_eq!(resume_session_in_terminal(&f.terminal, &config, &session(&f.repo), &[], None, &f.home).await.unwrap(), ResumeOutcome::Gone, "no transcript");
+        assert_eq!(resume_session_in_terminal(&f.terminal, &config, &session(&f.repo), &[], None, None, &f.home).await.unwrap(), ResumeOutcome::Gone, "no transcript");
         let gone = format!("{}/vanished", f.repo);
-        assert_eq!(resume_session_in_terminal(&f.terminal, &config, &session(&gone), &[], Some(&gone), &f.home).await.unwrap(), ResumeOutcome::Gone, "no folder");
+        assert_eq!(resume_session_in_terminal(&f.terminal, &config, &session(&gone), &[], None, Some(&gone), &f.home).await.unwrap(), ResumeOutcome::Gone, "no folder");
         assert!(!f.log.exists());
     }
 
@@ -143,6 +143,6 @@ mod tests {
         transcript(&f, &f.repo);
         let config = json!({ "repos": { "app": f.repo } });
         let broken = Terminal { osascript: "/no/osascript".into(), ..f.terminal.clone() };
-        assert!(resume_session_in_terminal(&broken, &config, &session(&f.repo), &[], None, &f.home).await.is_err());
+        assert!(resume_session_in_terminal(&broken, &config, &session(&f.repo), &[], None, None, &f.home).await.is_err());
     }
 }

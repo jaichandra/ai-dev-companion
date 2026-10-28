@@ -139,7 +139,7 @@ impl<F> Settings<'_, F> {
             json!({
                 "reviewTransitionName": config["ticketToPr"]["reviewTransitionName"].as_str().filter(|s| !s.is_empty()).unwrap_or(default_transition),
                 "autoMoveToReview": config["ticketToPr"]["autoMoveToReview"] != json!(false),
-                "createWorktreeWithoutAsking": config["ticketToPr"]["createWorktreeWithoutAsking"] == json!(true),
+                "createWorktreeWithoutAsking": config["ticketToPr"]["createWorktreeWithoutAsking"] != json!(false),
             }),
         );
         let pick = |k: &str, default: Value| config["sessionCache"].get(k).filter(|v| !v.is_null()).cloned().unwrap_or(default);
@@ -417,7 +417,7 @@ impl<F> Settings<'_, F> {
         }
         if let Some(u) = upd.get("ticketToPr") {
             if ["reviewTransitionName", "autoMoveToReview", "createWorktreeWithoutAsking"].iter().any(|k| u.get(*k).is_some()) {
-                // The defaults (In Review, automatic) aren't persisted, like reviewEditor's "auto".
+                // The defaults (In Review, automatic, no worktree prompt) aren't persisted, like reviewEditor's "auto".
                 let saved = next.get("ticketToPr").cloned().unwrap_or(Value::Null);
                 let default_name = env.section("issues").and_then(|i| i["reviewTransitionName"].as_str()).unwrap_or("In Review");
                 let name = match u.get("reviewTransitionName").and_then(Value::as_str) {
@@ -425,7 +425,7 @@ impl<F> Settings<'_, F> {
                     None => saved["reviewTransitionName"].as_str().unwrap_or("").to_string(),
                 };
                 let auto = u.get("autoMoveToReview").and_then(Value::as_bool).unwrap_or(saved["autoMoveToReview"] != json!(false));
-                let create = u.get("createWorktreeWithoutAsking").and_then(Value::as_bool).unwrap_or(saved["createWorktreeWithoutAsking"] == json!(true));
+                let create = u.get("createWorktreeWithoutAsking").and_then(Value::as_bool).unwrap_or(saved["createWorktreeWithoutAsking"] != json!(false));
                 let mut out = Map::new();
                 if !name.is_empty() && name != default_name {
                     out.insert("reviewTransitionName".into(), json!(name));
@@ -433,8 +433,8 @@ impl<F> Settings<'_, F> {
                 if !auto {
                     out.insert("autoMoveToReview".into(), json!(false));
                 }
-                if create {
-                    out.insert("createWorktreeWithoutAsking".into(), json!(true));
+                if !create {
+                    out.insert("createWorktreeWithoutAsking".into(), json!(false));
                 }
                 if out.is_empty() {
                     next.shift_remove("ticketToPr");
@@ -988,7 +988,7 @@ mod tests {
         assert_eq!(public(&json!({ "history": { "retentionDays": 30 } }), &[])["history"]["retentionDays"], 30);
         assert_eq!(public(&current(), &[])["riskFacts"]["url"], "");
         assert_eq!(public(&json!({ "riskFacts": { "url": "https://facts.example/risk.json" } }), &[])["riskFacts"]["url"], "https://facts.example/risk.json");
-        assert_eq!(public(&current(), &[])["ticketToPr"], json!({ "reviewTransitionName": "In Review", "autoMoveToReview": true, "createWorktreeWithoutAsking": false }));
+        assert_eq!(public(&current(), &[])["ticketToPr"], json!({ "reviewTransitionName": "In Review", "autoMoveToReview": true, "createWorktreeWithoutAsking": true }));
         assert_eq!(public(&json!({ "ticketToPr": { "reviewTransitionName": "Code Review", "autoMoveToReview": false } }), &[])["ticketToPr"]["reviewTransitionName"], "Code Review");
         assert_eq!(public(&current(), &[])["summarizeComments"]["model"], "");
         assert_eq!(public(&current(), &[])["addressReviewComments"]["model"], "");
@@ -1327,7 +1327,7 @@ mod tests {
         assert_eq!(both["ticketToPr"], json!({ "reviewTransitionName": "Code Review", "autoMoveToReview": false }));
         assert_eq!(merge(&both, json!({ "ticketToPr": { "reviewTransitionName": "In Review" } })).0["ticketToPr"], json!({ "autoMoveToReview": false }));
         assert!(merge(&both, json!({ "ticketToPr": { "reviewTransitionName": "", "autoMoveToReview": true } })).0.get("ticketToPr").is_none());
-        assert_eq!(merge(&current(), json!({ "ticketToPr": { "createWorktreeWithoutAsking": true } })).0["ticketToPr"], json!({ "createWorktreeWithoutAsking": true }));
+        assert_eq!(merge(&current(), json!({ "ticketToPr": { "createWorktreeWithoutAsking": false } })).0["ticketToPr"], json!({ "createWorktreeWithoutAsking": false }));
     }
 
     #[test]

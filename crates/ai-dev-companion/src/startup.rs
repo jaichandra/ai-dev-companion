@@ -433,8 +433,8 @@ impl AppHooks for ServiceHooks {
         self.cfg.focus_terminal(location).await
     }
 
-    async fn resume_session(&self, session: &Value, header: &[Vec<crate::terminal::HeaderSegment>], job_worktree: Option<&str>) -> Result<server::ResumeResult, String> {
-        self.cfg.resume_session(session, header, job_worktree).await
+    async fn resume_session(&self, session: &Value, header: &[Vec<crate::terminal::HeaderSegment>], title: Option<String>, job_worktree: Option<&str>) -> Result<server::ResumeResult, String> {
+        self.cfg.resume_session(session, header, title, job_worktree).await
     }
 
     fn restart_process(&self) {
