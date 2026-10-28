@@ -2,7 +2,12 @@
 
 const TICKET_TO_PR_STEP_TONES = { done: "ok", skipped: "neutral", warn: "warn", failed: "bad" };
 
-function renderTicketToPrPanel(job) {
+/** Whether the job has a worktree the footer's open actions can use (the service re-validates it). */
+function ticketToPrHasWorktree(job) {
+  return !!job.data?.ticketWorktree?.dir && ["awaiting-approval", "approved", "rejected", "failed"].includes(job.status);
+}
+
+function renderTicketToPrPanel(job, panelApi) {
   const container = document.createElement("div");
   const d = job.data || {};
   if (job.status === "failed") {
@@ -17,10 +22,32 @@ function renderTicketToPrPanel(job) {
   headline.textContent = job.result?.summary || `${d.issueKey || ""} fix`;
   container.appendChild(headline);
   if (d.ticketWorktree?.dir) {
-    const where = document.createElement("p");
-    where.style.overflowWrap = "anywhere";
-    where.textContent = `${d.repoKey}: ${d.branch} (from origin/${d.base}) — ${d.ticketWorktree.dir}`;
-    container.appendChild(where);
+    // The folder is not a URL: its row asks the service to open it in the editor (the panel's api is absent on the re-render after Approve).
+    const worktreeRow = paiRow({
+      icon: "folder",
+      tone: "info",
+      title: d.ticketWorktree.dir,
+      sub: `${d.repoKey}: ${d.branch} (from origin/${d.base})`,
+      ...(panelApi
+        ? {
+            hint: "Open in your editor",
+            async onClick() {
+              try {
+                await panelApi.action("open-worktree");
+              } catch (err) {
+                panelApi.showError(err && err.message ? err.message : "Couldn't open the worktree.");
+              }
+            },
+          }
+        : {}),
+    });
+    const prRow = d.pr?.url ? paiRow({ icon: "copy_replicate", tone: "ok", title: `#${d.pr.id} ${d.pr.title || ""}`, href: d.pr.url }) : null;
+    const card = paiCard("Worktree", "folder", [worktreeRow, prRow]);
+    if (card) container.appendChild(card);
+    const hint = document.createElement("p");
+    hint.className = "comment-compose-hint";
+    hint.textContent = "Other worktrees, branches and Claude Code sessions for this ticket are in the Ticket workspace.";
+    container.appendChild(hint);
   }
 
   if (Array.isArray(d.steps) && d.steps.length > 0) {
@@ -86,8 +113,8 @@ PaiRegistry.register({
     { id: "claude", label: "Open Claude Code" },
   ],
 
-  renderPanel(job) {
-    return renderTicketToPrPanel(job);
+  renderPanel(job, panelApi) {
+    return renderTicketToPrPanel(job, panelApi);
   },
 
   footerActions: [
@@ -102,17 +129,39 @@ PaiRegistry.register({
         api.rerender(await api.action("move-to-review"));
       },
     },
-    // No "Continue in Claude Code" here: it has already opened that session,
-    // and a second click would open a duplicate terminal. To pick it up
-    // later, use Continue in Claude Code in the Ticket workspace panel.
+    // The ticket's worktree stays usable after the fix is approved, rejected or has failed; the
+    // service re-checks that the folder is still this ticket's checkout before it opens anything.
     {
-      id: "open-terminal",
-      label: "Open in Claude Code",
+      id: "continue-claude-code",
+      label: "Continue in Claude Code",
+      hint: "Reopens the Claude Code session that worked on this ticket in a terminal, in its worktree.",
       when(job) {
-        return job.status === "awaiting-approval" && !job.data?.claudeSession;
+        return ticketToPrHasWorktree(job) && !!job.data?.claudeSession;
       },
       async run(job, api) {
+        try {
+          await api.send("open-in-claude-code", { body: { resume: true } });
+        } catch (err) {
+          api.showError(`Continue in Claude Code failed:\n\n${err.message}`);
+        }
+      },
+    },
+    {
+      id: "open-terminal",
+      label: "Open new Claude Code here",
+      hint: "Starts a new Claude Code session in this ticket's worktree.",
+      when: ticketToPrHasWorktree,
+      async run(job, api) {
         await api.action("open-terminal");
+      },
+    },
+    {
+      id: "open-worktree",
+      label: "Open in editor",
+      hint: "Opens this ticket's worktree in your editor.",
+      when: ticketToPrHasWorktree,
+      async run(job, api) {
+        await api.action("open-worktree");
       },
     },
   ],

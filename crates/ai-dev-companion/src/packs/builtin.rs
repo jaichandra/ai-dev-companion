@@ -196,6 +196,7 @@ fn ticket_to_pr_factory() -> FeatureFactory {
             work_units: s.work_units.clone(),
             history,
             terminal: s.terminal.clone(),
+            editors: s.editors.clone(),
             rules: s.rules,
             permission_mode: (s.permission_mode)("ticket-to-pr"),
         })

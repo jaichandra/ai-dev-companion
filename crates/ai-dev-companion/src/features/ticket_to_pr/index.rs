@@ -18,6 +18,7 @@ use crate::bitbucket_endpoints::is_safe_branch_name;
 use crate::claude::{ClaudeRunOptions, ClaudeRunner};
 use crate::claude_args::Policy;
 use crate::config::ConfigFn;
+use crate::editor::{EditorId, Editors};
 use crate::features::analyze_issue::plan::{format_analysis_as_markdown_comment, read_analysis_cache, CommentInput};
 use crate::features::ticket_workspace::index::WorkspaceHistory;
 use crate::features::ticket_workspace::plan::pr_url_allowed;
@@ -26,7 +27,7 @@ use crate::history_record::redact_secrets;
 use crate::jira_workflow::Transition;
 use crate::jobs::{Feature, FeatureContext, FeatureError, FeatureResult, JobStore};
 use crate::node_path;
-use crate::prereqs::GitRemoteRules;
+use crate::prereqs::{resolve_review_editor, GitRemoteRules};
 use crate::providers::{GitHost, IssueTracker, NewPullRequest, Providers, ReviewerIds};
 use crate::repo_choice::{RepoChoices, RepoOption, RepoQuestion};
 use crate::resume_session::{resume_session_located, ResumeOutcome};
@@ -248,6 +249,7 @@ pub struct TicketToPrDeps<G> {
     pub work_units: Arc<WorkUnits>,
     pub history: Option<Arc<dyn WorkspaceHistory>>,
     pub terminal: Terminal,
+    pub editors: Editors,
     pub rules: GitRemoteRules,
     /// The profile's permission mode for the Claude Code sessions this feature starts.
     pub permission_mode: String,
@@ -285,6 +287,21 @@ impl<G: Git + 'static> Inner<G> {
         if status != "awaiting-approval" {
             return Err(job_err(format!("This job is \"{status}\", not waiting for a pull request.")));
         }
+        self.owned_worktree(job, config)
+    }
+
+    /// The worktree for the actions that only open it (a terminal, an editor): the same checks as
+    /// `ready_worktree`, but a job that was approved, stopped or failed keeps its folder, so it
+    /// still opens. Approve and draft keep the strict gate.
+    fn openable_worktree(&self, job: &Value, config: &Value) -> FeatureResult<Ready> {
+        let status = job["status"].as_str().unwrap_or("");
+        if !matches!(status, "awaiting-approval" | "approved" | "rejected" | "failed") {
+            return Err(job_err(format!("This job is \"{status}\", so its worktree can't be opened.")));
+        }
+        self.owned_worktree(job, config)
+    }
+
+    fn owned_worktree(&self, job: &Value, config: &Value) -> FeatureResult<Ready> {
         let d = &job["data"];
         let text = |k: &str| d[k].as_str().filter(|v| !v.is_empty()).map(String::from);
         let (Some(dir), Some(branch), Some(base), Some(repo_key)) = (d["ticketWorktree"]["dir"].as_str().filter(|v| !v.is_empty()), text("branch"), text("base"), text("repoKey")) else {
@@ -769,7 +786,7 @@ impl<G: Git + 'static> Feature for TicketToPr<G> {
     }
 
     fn action_names(&self) -> Vec<&'static str> {
-        vec!["confirm-repo", "move-to-review", "draft-pr", "open-terminal"]
+        vec!["confirm-repo", "move-to-review", "draft-pr", "open-terminal", "open-worktree"]
     }
 
     async fn run_action(&self, name: &str, job: Value, ctx: FeatureContext) -> FeatureResult<Value> {
@@ -805,12 +822,20 @@ impl<G: Git + 'static> Feature for TicketToPr<G> {
             // A fresh Claude Code in the worktree (Continue in Claude Code covers the recorded
             // session; this is for an adopted worktree without one).
             "open-terminal" => {
-                let w = inner.ready_worktree(&job, &(inner.d.config)())?;
+                let w = inner.openable_worktree(&job, &(inner.d.config)())?;
                 let title = job["data"]["issueKey"].as_str().map(|k| crate::terminal::ticket_title(k, job["data"]["summary"].as_str()));
                 if let Some(location) = inner.d.terminal.open_claude_code(&w.dir, &[], &[], &TerminalOptions { title, ..Default::default() }).await? {
                     data_patch(&inner.d.store, job["id"].as_str().unwrap_or(""), json!({ "terminal": location.to_json() }));
                 }
                 Ok(json!({ "ok": true }))
+            }
+            // No body: the folder is the job's own, re-checked like the terminal's.
+            "open-worktree" => {
+                let config = (inner.d.config)();
+                let w = inner.openable_worktree(&job, &config)?;
+                let editor = resolve_review_editor(config["reviewEditor"].as_str()).and_then(EditorId::parse).unwrap_or(EditorId::ClaudeCode);
+                inner.d.editors.open_in_editor(&w.dir, editor).await?;
+                Ok(json!({ "ok": true, "editor": editor.as_str() }))
             }
             other => Err(FeatureError::Other(format!("No action \"{other}\"."))),
         }
@@ -827,6 +852,25 @@ mod tests {
     use crate::paths::repo_worktrees_root;
 
     const BB: &str = "https://bb.example.com";
+
+    /// Editors whose terminal is a stand-in `osascript` that opens nothing: the default editor,
+    /// Claude Code, would otherwise open a real terminal window.
+    fn fake_editors(root: &std::path::Path) -> Editors {
+        use std::os::unix::fs::PermissionsExt;
+        let osa = root.join("fake-osascript");
+        std::fs::write(&osa, "#!/bin/sh\necho ''\n").unwrap();
+        std::fs::set_permissions(&osa, std::fs::Permissions::from_mode(0o755)).unwrap();
+        let tmp = root.join("fake-terminal-tmp");
+        std::fs::create_dir_all(&tmp).unwrap();
+        Editors {
+            terminal: Terminal { osascript: osa.to_string_lossy().into_owned(), iterm_app: "/no/iterm".into(), tmp_dir: tmp, require_macos: false },
+            open_command: "/no/open".into(),
+            vscode_bundled_cli: "/no/bundled-code".into(),
+            code_command: "/no/code".into(),
+            require_macos: false,
+            ..Editors::default()
+        }
+    }
 
     struct FakeApi {
         base: Result<String, String>,
@@ -954,6 +998,7 @@ mod tests {
             work_units: Arc::new(WorkUnits::open(r.root.join("work-units.json"))),
             history: None,
             terminal: Terminal { osascript: "/no/osascript".into(), iterm_app: "/no/iterm".into(), require_macos: true, ..Terminal::default() },
+            editors: fake_editors(&r.root),
             rules: GitRemoteRules::BitbucketDc,
             permission_mode: "auto".into(),
         });
@@ -1371,13 +1416,51 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn move_to_review_needs_a_waiting_job_and_the_action_names_are_the_four_the_panel_uses() {
+    async fn move_to_review_needs_a_waiting_job_and_the_action_names_are_the_five_the_panel_uses() {
         let f = fx(io(analysis()));
         let job = run(&f, json!({ "issueKey": "PROJ-25" })).await;
-        assert_eq!(f.f.action_names(), ["confirm-repo", "move-to-review", "draft-pr", "open-terminal"]);
+        assert_eq!(f.f.action_names(), ["confirm-repo", "move-to-review", "draft-pr", "open-terminal", "open-worktree"]);
         let mut closed = job.clone();
         closed["status"] = json!("rejected");
         assert!(msg(action(&f, "move-to-review", &closed, None).await).contains("not waiting for a pull request"));
         assert!(msg(action(&f, "nope", &job, None).await).contains("No action"));
+    }
+
+    #[tokio::test]
+    async fn open_worktree_opens_the_jobs_own_folder_and_survives_a_closed_job() {
+        let f = fx(io(analysis()));
+        let job = run(&f, json!({ "issueKey": "PROJ-26" })).await;
+        // No body: the folder comes from the job, and the editor from config (Claude Code by default).
+        let out = action(&f, "open-worktree", &job, None).await.unwrap();
+        assert_eq!(out, json!({ "ok": true, "editor": "claude-code" }));
+        for status in ["approved", "rejected", "failed"] {
+            let mut closed = job.clone();
+            closed["status"] = json!(status);
+            assert_eq!(action(&f, "open-worktree", &closed, None).await.unwrap()["ok"], true, "{status}");
+            assert!(msg(action(&f, "draft-pr", &closed, None).await).contains("not waiting for a pull request"));
+        }
+        let mut running = job.clone();
+        running["status"] = json!("running");
+        assert!(msg(action(&f, "open-worktree", &running, None).await).contains("can't be opened"));
+        let mut bare = job.clone();
+        bare["status"] = json!("approved");
+        bare["data"]["ticketWorktree"] = Value::Null;
+        assert!(msg(action(&f, "open-worktree", &bare, None).await).contains("no worktree yet"));
+    }
+
+    #[tokio::test]
+    async fn open_worktree_refuses_a_tampered_or_gone_folder() {
+        let f = fx(io(analysis()));
+        let job = run(&f, json!({ "issueKey": "PROJ-27" })).await;
+        let dir = wt_dir(&job);
+        f.store.patch_data(job["id"].as_str().unwrap(), json!({ "ticketWorktree": { "dir": f.r.root } }).as_object().unwrap().clone()).unwrap();
+        let tampered = f.store.get(job["id"].as_str().unwrap()).unwrap();
+        assert!(msg(action(&f, "open-worktree", &tampered, None).await).contains("isn't a checkout of this repository"));
+        f.store.patch_data(job["id"].as_str().unwrap(), json!({ "ticketWorktree": { "dir": dir } }).as_object().unwrap().clone()).unwrap();
+        let mut gone = f.store.get(job["id"].as_str().unwrap()).unwrap();
+        gone["status"] = json!("approved");
+        sh(&f.r.clone, &["worktree", "remove", "--force", &dir]);
+        let r = action(&f, "open-worktree", &gone, None).await;
+        assert!(matches!(r, Err(FeatureError::WorktreeGone(_))), "{r:?}");
     }
 }
