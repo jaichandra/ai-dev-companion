@@ -136,3 +136,51 @@ export function matchesAny(text: string, patterns: readonly string[]): boolean {
   const lower = text.toLowerCase()
   return patterns.some(pattern => pattern.trim() !== '' && lower.includes(pattern.trim().toLowerCase()))
 }
+
+export type PartKind = 'plain' | 'border' | 'url' | 'banner' | 'comment' | 'command' | 'heading' | 'error' | 'warning'
+
+export type Part = { text: string; kind: PartKind }
+
+const FRAME = '\u2502\u2503\u2551\u250c\u2510\u2514\u2518\u256d\u256e\u2570\u256f\u2500'
+const FRAMED = new RegExp(`^([\\s${FRAME}]*)(.*?)([\\s${FRAME}]*)$`)
+const URL = /https?:\/\/[^\s\u2502\u2503\u2551<>"']+/g
+const COMMAND = /^(sandbox|docker|docker-compose|curl|npm|npx|pnpm|yarn|make|cargo|git|kubectl|helm)\s/
+const ERROR = /\b(ERROR|FATAL|Error:|failed|Failed)\b/
+const WARNING = /\b(WARN|WARNING|warning:)\b/
+
+/** What a line of a command's output is, for colouring: its frame, URLs, `# notes`, `▶` banners,
+ * command lines to copy, headings that end in a colon, and error and warning words. */
+export function highlight(line: string): Part[] {
+  const framed = FRAMED.exec(line)
+  const [lead = '', core = line, tail = ''] = framed ? [framed[1], framed[2], framed[3]] : ['', line, '']
+  const text = core.trim()
+  const hasUrl = /https?:\/\//.test(core)
+  let kind: PartKind = 'plain'
+  if (text.startsWith('\u25b6')) kind = 'banner'
+  else if (text.startsWith('#')) kind = 'comment'
+  else if (COMMAND.test(text)) kind = 'command'
+  else if (text.endsWith(':') && !hasUrl) kind = 'heading'
+  else if (ERROR.test(text)) kind = 'error'
+  else if (WARNING.test(text)) kind = 'warning'
+
+  const parts: Part[] = []
+  if (lead) parts.push({ text: lead, kind: 'border' })
+  let at = 0
+  for (const match of core.matchAll(URL)) {
+    const index = match.index ?? 0
+    // A URL does not end in the punctuation of the sentence around it.
+    const url = match[0].replace(/[.,;:)\]]+$/, '')
+    if (index > at) parts.push({ text: core.slice(at, index), kind })
+    parts.push({ text: url, kind: 'url' })
+    at = index + url.length
+  }
+  if (at < core.length) parts.push({ text: core.slice(at).trimEnd(), kind })
+  const border = tail.trim()
+  if (border) parts.push({ text: ` ${border}`, kind: 'border' })
+  return parts.filter(part => part.text !== '')
+}
+
+/** Whether a scroll move leaves the window on the last rows (or the whole tree fits). */
+export function isAtBottom(move: { offset: number; bodyRows: number; contentRows: number }): boolean {
+  return move.contentRows <= move.bodyRows || move.offset >= move.contentRows - move.bodyRows
+}

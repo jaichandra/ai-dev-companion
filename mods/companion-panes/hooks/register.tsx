@@ -3,6 +3,8 @@ import type { EngineInterface, Register } from 'claude-code'
 
 import {
   descendants,
+  highlight,
+  isAtBottom,
   matchesAny,
   MAX_LINES,
   readPid,
@@ -12,11 +14,12 @@ import {
   suggestions,
   WRAPPER,
 } from './run'
-import type { RunStatus } from './run'
+import type { PartKind, RunStatus } from './run'
 
 const PANE = 'run'
 const TOOL = 'mcp__companion-panes__run_output'
 const REDRAW_MS = 120
+const FOLLOW_MS = 40
 const KEEP_RUNS = 12
 const POLL_MS = 500
 // How long a run gets to wind itself down after Ctrl+C (a stack tearing down its containers: 30 s),
@@ -44,12 +47,35 @@ type Run = {
   release?: () => void
 }
 
+// Theme keys, so the colours follow the person's theme. A URL is underlined, not a `Link`: a
+// terminal without OSC 8 links draws a Link's text and then its address, so it would show twice,
+// and terminals that open URLs on a click do so for plain text.
+const STYLE: Record<Exclude<PartKind, 'plain' | 'url'>, { color?: string; dimColor?: true; bold?: true }> = {
+  border: { dimColor: true },
+  banner: { color: 'success', bold: true },
+  comment: { dimColor: true },
+  command: { color: 'warning' },
+  heading: { bold: true },
+  error: { color: 'error' },
+  warning: { color: 'warning' },
+}
+
 const folderName = (cwd: string): string => cwd.split('/').filter(Boolean).pop() ?? cwd
 
 const runs: Run[] = []
 const hints = new Map<string, string[]>()
 let seq = 0
 let isRedrawQueued = false
+// Whether the pane is scrolled to its bottom: then new output keeps it there. Scrolling up (the
+// person's wheel or keys) ends that; scrolling back down to the bottom, or End, brings it back.
+let isFollowing = true
+
+// After a draw that grew the output: back to the bottom, if that is where the pane was.
+async function follow($: EngineInterface): Promise<void> {
+  if (!isFollowing) return
+  await $.clock.sleep(FOLLOW_MS)
+  if (isFollowing) await $.ui.scroll({ in: PANE, to: 'end' })
+}
 
 function redraw($: EngineInterface): void {
   if (isRedrawQueued) return
@@ -58,7 +84,7 @@ function redraw($: EngineInterface): void {
     .sleep(REDRAW_MS)
     .then(() => {
       isRedrawQueued = false
-      return update($, rev, n => n + 1)
+      return update($, rev, n => n + 1).then(() => follow($))
     })
     .catch(() => {
       isRedrawQueued = false
@@ -160,6 +186,7 @@ function finish($: EngineInterface, run: Run, status: RunStatus, code: number | 
 }
 
 async function start($: EngineInterface, cmd: string): Promise<Run> {
+  isFollowing = true
   const run: Run = { id: ++seq, cmd, cwd: await $.session.cwd(), status: 'running', code: null, log: new RunLog() }
   runs.push(run)
   const done = runs.filter(one => one.status !== 'running')
@@ -275,6 +302,13 @@ export const register: Register = on => {
       result: [`#${run.id} ${run.cmd} (${statusWords(run.status, run.code)}), last ${lines.length} of ${run.log.size} lines:`, ...lines].join('\n'),
     }
   })
+
+  // Every move of the pane's window, the person's or this mod's own, says whether it ends at the
+  // bottom.
+  on('ui.scroll', { requestId: PANE }, (_$, e, next) => {
+    isFollowing = isAtBottom(e)
+    return next(e)
+  }).catch((_$, e, next) => next(e))
 
   on('session.end', async ($, e, next) => {
     await Promise.all(runs.filter(run => run.status === 'running').map(run => stop($, run)))
@@ -400,7 +434,21 @@ export const register: Register = on => {
               #{picked.id} output ({picked.log.size} lines)
             </Text>
             {output.map(line => (
-              <Text wrap="truncate-end">{line === '' ? ' ' : line}</Text>
+              <Text wrap="truncate-end">
+                {line === ''
+                  ? ' '
+                  : highlight(line).map(part =>
+                      part.kind === 'url' ? (
+                        <Text color="suggestion" underline>
+                          {part.text}
+                        </Text>
+                      ) : part.kind === 'plain' ? (
+                        part.text
+                      ) : (
+                        <Text {...STYLE[part.kind]}>{part.text}</Text>
+                      ),
+                    )}
+              </Text>
             ))}
             {picked.log.size === 0 && <Text dimColor>No output yet.</Text>}
           </Box>

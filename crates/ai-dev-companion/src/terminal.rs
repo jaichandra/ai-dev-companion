@@ -102,6 +102,18 @@ pub struct TerminalOptions {
 /// script still runs (a foreground job killed by SIGINT would abort it).
 const RECORD_AND_RUN: &str = r#"printf 'agent %s %s\n' "$$" "$(LC_ALL=C ps -o lstart= -p $$)" >> "$0" && "$@""#;
 
+/// Starts the session with ultracode on (dynamic workflows on every task), as `/effort ultracode`
+/// does in a session: the `ultracode` settings key, session-scoped, passed inline.
+pub const ULTRACODE_ARGS: [&str; 2] = ["--settings", r#"{"ultracode":true}"#];
+
+/// The arguments every interactive Claude Code session the companion starts begins with: ultracode
+/// and, from an install tree, the bundled mod.
+pub fn session_args() -> Vec<String> {
+    let mut args: Vec<String> = ULTRACODE_ARGS.iter().map(|a| a.to_string()).collect();
+    args.extend(bundled_mod_args());
+    args
+}
+
 /// `--plugin-dir <install>/mods/companion-panes` when the running binary sits in an install tree
 /// that has the mod (`<install>/bin/<binary>`, `<install>/mods/companion-panes`), so every
 /// Claude Code session the companion starts has the Run pane with nothing to install. Nothing
@@ -328,7 +340,7 @@ impl Terminal {
             options.badge = None;
         }
         let mut argv = vec!["claude".to_string()];
-        argv.extend(bundled_mod_args());
+        argv.extend(session_args());
         argv.extend(args.iter().cloned());
         self.run_in_terminal(cwd, &argv, header, &options).await
     }
@@ -411,6 +423,16 @@ mod tests {
         assert_eq!(cmd, r"cd '/' && clear && printf '\033[1;36m%s\033[0m%s\n\033[36m%s\033[0m\n' 'Review %s \033[31m' ' PR #4' 'x' && 'pwd'");
         let out = sh(&cmd.replace("clear && ", ""));
         assert_eq!(out, "\u{1b}[1;36mReview %s \\033[31m\u{1b}[0m PR #4\n\u{1b}[36mx\u{1b}[0m\n/\n");
+    }
+
+    #[test]
+    fn a_session_starts_with_ultracode_on_and_then_the_bundled_mod_when_installed() {
+        let args = session_args();
+        assert_eq!(&args[..2], ["--settings", r#"{"ultracode":true}"#]);
+        // A test binary is in no install tree, so nothing follows.
+        assert_eq!(args.len(), 2);
+        let parsed: serde_json::Value = serde_json::from_str(&args[1]).unwrap();
+        assert_eq!(parsed["ultracode"], true);
     }
 
     #[test]
@@ -537,7 +559,7 @@ mod tests {
         let leftover: Vec<_> = fs::read_dir(&tmp).unwrap().collect();
         assert_eq!(leftover.len(), 1, "the script stays until the terminal sources it");
         let script = fs::read_to_string(leftover[0].as_ref().unwrap().path().join("review.sh")).unwrap();
-        assert!(script.contains("CLAUDE_CODE_DISABLE_TERMINAL_TITLE='1' 'claude' '--resume' 'abc'") && !script.contains("1337"), "a title replaces the badge and stops Claude retitling: {script}");
+        assert!(script.contains("CLAUDE_CODE_DISABLE_TERMINAL_TITLE='1' 'claude' '--settings' '{\"ultracode\":true}' '--resume' 'abc'") && !script.contains("1337"), "a title replaces the badge and stops Claude retitling: {script}");
 
         let bad = Terminal { osascript: fake_osascript(d.path(), "echo 'not allowed' >&2; exit 1"), tmp_dir: tmp.clone(), ..ok.clone() };
         let e = bad.run_in_terminal("/w", &sv(&["true"]), &[], &TerminalOptions::default()).await.unwrap_err();

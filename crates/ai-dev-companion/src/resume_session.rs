@@ -109,7 +109,7 @@ mod tests {
         assert_eq!(r, ResumeOutcome::Resumed);
         assert!(fs::read_to_string(&f.log).unwrap().contains("do script"));
         let script = fs::read_dir(&f.terminal.tmp_dir).unwrap().next().unwrap().unwrap().path().join("review.sh");
-        assert!(fs::read_to_string(script).unwrap().contains(&format!("'claude' '--resume' '{ID}' '--permission-mode' 'plan'")));
+        assert!(fs::read_to_string(script).unwrap().contains(&format!("'claude' '--settings' '{{\"ultracode\":true}}' '--resume' '{ID}' '--permission-mode' 'plan'")));
     }
 
     #[tokio::test]

@@ -198,7 +198,7 @@ impl CliDeps for SystemCliDeps {
         terminal.open_shell(cwd, &crate::terminal::Terminal::shell_title(cwd)).await.map(|_| ())
     }
     async fn run_claude(&self, args: Vec<String>, cwd: &str) -> i32 {
-        let mut all = crate::terminal::bundled_mod_args();
+        let mut all = crate::terminal::session_args();
         all.extend(args);
         run_inherited("claude", &all, cwd).await
     }

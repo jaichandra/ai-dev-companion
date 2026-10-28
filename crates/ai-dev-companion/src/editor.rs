@@ -257,12 +257,12 @@ mod tests {
             dirs.sort();
             fs::read_to_string(dirs[n].join("review.sh")).unwrap()
         };
-        assert!(read(0).contains("'claude' '--session-id' 'sess-1' '--permission-mode' 'plan' 'Review it'"), "{}", read(0));
+        assert!(read(0).contains("'claude' '--settings' '{\"ultracode\":true}' '--session-id' 'sess-1' '--permission-mode' 'plan' 'Review it'"), "{}", read(0));
         let resume = ReviewSession { new_id: None, resume_id: Some("old-1".into()) };
         let r = f.editors.open_for_review("/w", EditorId::ClaudeCode, "ignored", "auto", &[], &TerminalOptions::default(), &resume).await.unwrap();
         assert_eq!(r.review_note, "Reopened the last review's Claude Code session in a new terminal window.");
         let both = format!("{}{}", read(0), read(1));
-        assert!(both.contains("'claude' '--resume' 'old-1' '--permission-mode' 'auto'") && !both.contains("ignored"), "{both}");
+        assert!(both.contains("'claude' '--settings' '{\"ultracode\":true}' '--resume' 'old-1' '--permission-mode' 'auto'") && !both.contains("ignored"), "{both}");
     }
 
     #[tokio::test]

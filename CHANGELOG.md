@@ -3,6 +3,8 @@
 ## Unreleased
 
 - `mods/companion-panes`: a Claude Code mod with a Run pane. `/dev` opens a pane beside the chat (or `/dev <command>` starts one at once) that suggests the project's `npm run` scripts, Make targets and `cargo run`/`cargo test`, runs a command in the background, streams its output, and stops it (the whole process tree, so a dev server frees its port) or restarts it. The commands run while Claude is busy and never interrupt or queue behind its turn. Claude can read a run's latest output through the `run_output` tool, e.g. a dev server's error. `/shell` (or the pane's Open shell tab button) opens a real terminal tab in the same folder. The sessions the companion opens or resumes load it by themselves (`--plugin-dir` on the installed mod); for sessions you start yourself, `/plugin install companion-panes@<marketplace>` (`install --plugin` prints the line).
+- The Run pane keeps following the bottom of the output while it is scrolled to the bottom and stops when you scroll up (scrolling back down, or End, resumes it), and colours the output: URLs, `# notes`, `▶` banners, command lines, headings, error and warning words and box frames.
+- Every Claude Code session the companion opens or resumes starts with ultracode on (`--settings '{"ultracode":true}'`), so dynamic workflows run on every task.
 - `companion open-shell [--cwd <dir>]`: opens a terminal window (iTerm, else Terminal.app) with a shell in a folder. macOS only.
 
 - A terminal opened for a ticket (Continue in Claude Code, Open in Claude Code, resuming a session) is titled with the ticket key and a few words of its Jira title, e.g. "PROJ-12 Fix login redirect loop". Without a title it is just the key.

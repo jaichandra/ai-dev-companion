@@ -191,6 +191,26 @@ test('the pane stays closed elsewhere, and without any installed words', async (
   expect(other.opened).toEqual([])
 })
 
+test('the output is coloured: a URL underlined, notes dim, a banner green', async ($, on) => {
+  const process = {
+    calls: [] as string[][],
+    lines: ['\u25b6 OPEN THIS IN YOUR BROWSER:\n    http://app.localhost:3000/web/\n        # example web app\n'],
+  }
+  engine(on, process)
+  await $.session.start({ cwd: '/w/sample-app', surface: 'terminal', isInteractive: true })
+  await $.command.run(typed('dev', 'docker compose up'))
+
+  for (const surface of ['terminal', 'desktop'] as const) {
+    const ui = await $.ui.mount({ ...PANE, surface })
+    expect(await ui.find({ type: 'Text', text: /example web app/ })).toBeDefined()
+    const texts = (await ui.findAll({ type: 'Text' })).map(one => one.text)
+    expect(texts).toContain('\u25b6 OPEN THIS IN YOUR BROWSER:')
+    expect(texts).toContain('http://app.localhost:3000/web/')
+    expect(texts).toContain('# example web app')
+    await ui.unmount()
+  }
+})
+
 test('/shell asks the companion binary for a shell tab', async ($, on) => {
   const process = { calls: [] as string[][], lines: [] }
   engine(on, process, { 'companion.json': '{"bin":"/opt/companion/bin/companion"}' })

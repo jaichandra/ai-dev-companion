@@ -2,6 +2,8 @@ import { expect, test } from 'claude-code/testing'
 
 import {
   descendants,
+  highlight,
+  isAtBottom,
   makeTargets,
   matchesAny,
   MAX_LINES,
@@ -105,4 +107,45 @@ test('a word matches a remote or a path whatever its case, and no words match no
   expect(matchesAny('/w/other', ['acme'])).toBe(false)
   expect(matchesAny('/w/other', [])).toBe(false)
   expect(matchesAny('/w/other', ['', '  '])).toBe(false)
+})
+
+test('a line of output is split into the kinds the pane colours', async () => {
+  expect(highlight(' \u25b6 OPEN THIS IN YOUR BROWSER:      \u2502')).toEqual([
+    { text: ' ', kind: 'border' },
+    { text: '\u25b6 OPEN THIS IN YOUR BROWSER:', kind: 'banner' },
+    { text: ' \u2502', kind: 'border' },
+  ])
+  expect(highlight('    http://app.localhost:3000/web/  \u2502')).toEqual([
+    { text: '    ', kind: 'border' },
+    { text: 'http://app.localhost:3000/web/', kind: 'url' },
+    { text: ' \u2502', kind: 'border' },
+  ])
+  expect(highlight('        # Root - redirects to /web/')[1]).toEqual({ text: '# Root - redirects to /web/', kind: 'comment' })
+  expect(highlight('    sandbox logs --api')).toEqual([
+    { text: '    ', kind: 'border' },
+    { text: 'sandbox logs --api', kind: 'command' },
+  ])
+  expect(highlight('sandbox logs --api')).toEqual([{ text: 'sandbox logs --api', kind: 'command' }])
+  expect(highlight('  Debug / supporting URLs (open in browser or curl):')[1]).toEqual({ text: 'Debug / supporting URLs (open in browser or curl):', kind: 'heading' })
+  expect(highlight('2026 ERROR connection refused')).toEqual([{ text: '2026 ERROR connection refused', kind: 'error' }])
+  expect(highlight('WARN slow disk')).toEqual([{ text: 'WARN slow disk', kind: 'warning' }])
+})
+
+test('a URL keeps out the punctuation after it and there can be several in a line', async () => {
+  const parts = highlight('see (https://a.example/x) and https://b.example/y.')
+  expect(parts.filter(part => part.kind === 'url').map(part => part.text)).toEqual(['https://a.example/x', 'https://b.example/y'])
+  expect(parts.map(part => part.text).join('')).toBe('see (https://a.example/x) and https://b.example/y.')
+})
+
+test('plain text and empty lines pass through', async () => {
+  expect(highlight('compiling...')).toEqual([{ text: 'compiling...', kind: 'plain' }])
+  expect(highlight('')).toEqual([])
+})
+
+test('the window is at the bottom when it ends on the last rows or the tree fits', async () => {
+  expect(isAtBottom({ offset: 80, bodyRows: 20, contentRows: 100 })).toBe(true)
+  expect(isAtBottom({ offset: 95, bodyRows: 20, contentRows: 100 })).toBe(true)
+  expect(isAtBottom({ offset: 79, bodyRows: 20, contentRows: 100 })).toBe(false)
+  expect(isAtBottom({ offset: 0, bodyRows: 20, contentRows: 100 })).toBe(false)
+  expect(isAtBottom({ offset: 0, bodyRows: 20, contentRows: 12 })).toBe(true)
 })
