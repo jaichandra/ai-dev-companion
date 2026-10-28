@@ -190,8 +190,17 @@ impl CliDeps for SystemCliDeps {
         let repos = self.repo_paths();
         crate::session_cwd::session_cwd_allowed(Some(cwd), &crate::session_cwd::SessionCwdRules { repo_paths: &repos, sessions_root: Some(&sessions), ..Default::default() }, &self.home)
     }
+    async fn open_shell(&self, cwd: &str) -> Result<(), String> {
+        if !Path::new(cwd).is_dir() {
+            return Err(format!("{cwd} isn't a folder."));
+        }
+        let terminal = crate::terminal::Terminal::default();
+        terminal.open_shell(cwd, &crate::terminal::Terminal::shell_title(cwd)).await.map(|_| ())
+    }
     async fn run_claude(&self, args: Vec<String>, cwd: &str) -> i32 {
-        run_inherited("claude", &args, cwd).await
+        let mut all = crate::terminal::bundled_mod_args();
+        all.extend(args);
+        run_inherited("claude", &all, cwd).await
     }
     async fn run_doctor(&self) -> i32 {
         let Some((program, rest)) = self.doctor_command.split_first() else { return 1 };

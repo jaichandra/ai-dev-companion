@@ -91,6 +91,9 @@ pub struct TerminalOptions {
     /// A review-session status file for the script to record the shell, the command's process
     /// and its exit code in.
     pub status_file: Option<String>,
+    /// Open in a new tab of the terminal's current window (a window when it has none) instead of
+    /// a new window.
+    pub new_tab: bool,
 }
 
 /// Run by `sh -c` with the status file as $0 and the command as "$@": the process records
@@ -98,6 +101,24 @@ pub struct TerminalOptions {
 /// signals only this process's descendants, so it exits normally and the rest of the sourced
 /// script still runs (a foreground job killed by SIGINT would abort it).
 const RECORD_AND_RUN: &str = r#"printf 'agent %s %s\n' "$$" "$(LC_ALL=C ps -o lstart= -p $$)" >> "$0" && "$@""#;
+
+/// `--plugin-dir <install>/mods/companion-panes` when the running binary sits in an install tree
+/// that has the mod (`<install>/bin/<binary>`, `<install>/mods/companion-panes`), so every
+/// Claude Code session the companion starts has the Run pane with nothing to install. Nothing
+/// otherwise (a dev build, tests).
+pub fn bundled_mod_args() -> Vec<String> {
+    let Ok(exe) = std::env::current_exe().and_then(|e| e.canonicalize()) else { return vec![] };
+    exe.parent().and_then(Path::parent).map(bundled_mod_args_in).unwrap_or_default()
+}
+
+fn bundled_mod_args_in(install_dir: &Path) -> Vec<String> {
+    let dir = install_dir.join("mods").join("companion-panes");
+    if dir.join(".claude-plugin").join("plugin.json").is_file() {
+        vec!["--plugin-dir".into(), dir.to_string_lossy().into_owned()]
+    } else {
+        vec![]
+    }
+}
 
 /// The tab title for a ticket's terminal: the key and a few words of the Jira title, cut at a word
 /// (`PROJ-12 Fix login redirect loop`). Just the key when there is no title.
@@ -208,15 +229,28 @@ fn apple_script_string(text: &str) -> String {
 /// `try`, so a terminal that refuses it still runs the review. It prints where the command runs,
 /// for `terminal_focus` (empty if that can't be read).
 pub fn build_terminal_apple_script(use_iterm: bool, command: &str, title: Option<&str>) -> String {
+    build_terminal_apple_script_in(use_iterm, command, title, false)
+}
+
+/// `build_terminal_apple_script`, in a new tab of the current window when `in_tab` (a new window
+/// when the terminal has none). iTerm makes the tab itself. Terminal.app can only make one with
+/// Cmd-T through System Events, which needs the Accessibility permission, so without it the
+/// command opens a window instead.
+pub fn build_terminal_apple_script_in(use_iterm: bool, command: &str, title: Option<&str>, in_tab: bool) -> String {
     let cmd = apple_script_string(command);
     let name = title.filter(|t| !t.is_empty()).map(|t| apple_script_string(&strip_controls(t)));
     if use_iterm {
         let set_name = name.map(|n| format!("try\n            set name to {n}\n          end try")).unwrap_or_default();
+        let make_target = if in_tab {
+            "if (count of windows) is 0 then\n          set newWindow to (create window with default profile)\n        else\n          set newWindow to current window\n          tell newWindow to create tab with default profile\n        end if"
+        } else {
+            "set newWindow to (create window with default profile)"
+        };
         format!(
             r#"
       tell application "iTerm"
         activate
-        set newWindow to (create window with default profile)
+        {make_target}
         tell current session of newWindow
           write text {cmd}
           {set_name}
@@ -230,12 +264,17 @@ pub fn build_terminal_apple_script(use_iterm: bool, command: &str, title: Option
     "#
         )
     } else {
+        let make_tab = if in_tab {
+            format!("if (count of windows) is 0 then\n          set newTab to do script {cmd}\n        else\n          try\n            tell application \"System Events\" to keystroke \"t\" using command down\n            delay 0.4\n            set newTab to do script {cmd} in front window\n          on error\n            set newTab to do script {cmd}\n          end try\n        end if")
+        } else {
+            format!("set newTab to do script {cmd}")
+        };
         let set_title = name.map(|n| format!("try\n          set custom title of newTab to {n}\n          set title displays custom title of newTab to true\n        end try")).unwrap_or_default();
         format!(
             r#"
       tell application "Terminal"
         activate
-        set newTab to do script {cmd}
+        {make_tab}
         {set_title}
         set loc to ""
         try
@@ -289,8 +328,22 @@ impl Terminal {
             options.badge = None;
         }
         let mut argv = vec!["claude".to_string()];
+        argv.extend(bundled_mod_args());
         argv.extend(args.iter().cloned());
         self.run_in_terminal(cwd, &argv, header, &options).await
+    }
+
+    /// A new tab of the terminal's current window (a window when it has none) with a plain interactive shell in `cwd`. The window's own shell
+    /// sources the script, so after `true` returns it stays in `cwd` at its prompt.
+    pub async fn open_shell(&self, cwd: &str, title: &str) -> Result<Option<TerminalLocation>, String> {
+        let header = vec![vec![HeaderSegment::styled("Shell", HeaderStyle::Title), HeaderSegment::plain("  "), HeaderSegment::styled(cwd, HeaderStyle::Path)]];
+        self.run_in_terminal(cwd, &["true".to_string()], &header, &TerminalOptions { title: Some(title.into()), new_tab: true, ..Default::default() }).await
+    }
+
+    /// The tab title for `open_shell`: the folder's name and `shell`.
+    pub fn shell_title(cwd: &str) -> String {
+        let name = Path::new(cwd.trim_end_matches('/')).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+        strip_controls(&if name.is_empty() { "shell".to_string() } else { format!("{name} \u{b7} shell") })
     }
 
     /// Same as `open_claude_code`, but for any argv. Resolves where it opened, if the terminal said.
@@ -305,7 +358,7 @@ impl Terminal {
         // stays in `cwd` afterwards.
         let options = if use_iterm { options.clone() } else { TerminalOptions { badge: None, ..options.clone() } };
         let script_path = write_terminal_script(&self.tmp_dir, cwd, argv, header, &options)?;
-        let script = build_terminal_apple_script(use_iterm, &format!(". {}", shell_quote(&script_path.to_string_lossy())), options.title.as_deref());
+        let script = build_terminal_apple_script_in(use_iterm, &format!(". {}", shell_quote(&script_path.to_string_lossy())), options.title.as_deref(), options.new_tab);
         let remove = || {
             if let Some(dir) = script_path.parent() {
                 let _ = fs::remove_dir_all(dir);
@@ -358,6 +411,41 @@ mod tests {
         assert_eq!(cmd, r"cd '/' && clear && printf '\033[1;36m%s\033[0m%s\n\033[36m%s\033[0m\n' 'Review %s \033[31m' ' PR #4' 'x' && 'pwd'");
         let out = sh(&cmd.replace("clear && ", ""));
         assert_eq!(out, "\u{1b}[1;36mReview %s \\033[31m\u{1b}[0m PR #4\n\u{1b}[36mx\u{1b}[0m\n/\n");
+    }
+
+    #[test]
+    fn the_bundled_mod_is_loaded_only_from_an_install_tree_that_has_it() {
+        let d = tempfile::tempdir().unwrap();
+        assert!(bundled_mod_args_in(d.path()).is_empty());
+        let manifest = d.path().join("mods/companion-panes/.claude-plugin/plugin.json");
+        fs::create_dir_all(manifest.parent().unwrap()).unwrap();
+        fs::write(&manifest, "{}").unwrap();
+        let args = bundled_mod_args_in(d.path());
+        assert_eq!(args[0], "--plugin-dir");
+        assert!(args[1].ends_with("mods/companion-panes"));
+        // A test binary is in no install tree.
+        assert!(bundled_mod_args().is_empty());
+    }
+
+    #[test]
+    fn a_tab_is_made_in_the_current_window_and_a_window_only_when_there_is_none() {
+        let iterm = build_terminal_apple_script_in(true, ". '/tmp/x'", Some("t"), true);
+        assert!(iterm.contains("create tab with default profile") && iterm.contains("set newWindow to current window"));
+        assert!(iterm.contains("if (count of windows) is 0 then"));
+        let term = build_terminal_apple_script_in(false, ". '/tmp/x'", None, true);
+        assert!(term.contains("keystroke \"t\" using command down") && term.contains("do script \". '/tmp/x'\" in front window"));
+        assert!(term.contains("on error"));
+        // Not in a tab: unchanged, a window.
+        let win = build_terminal_apple_script_in(true, "c", None, false);
+        assert!(win.contains("set newWindow to (create window with default profile)") && !win.contains("create tab"));
+        assert_eq!(win, build_terminal_apple_script(true, "c", None));
+    }
+
+    #[test]
+    fn a_shell_title_is_the_folder_name_and_shell() {
+        assert_eq!(Terminal::shell_title("/w/sample-app/"), "sample-app \u{b7} shell");
+        assert_eq!(Terminal::shell_title("/"), "shell");
+        assert_eq!(Terminal::shell_title("/w/a\nb"), "a b \u{b7} shell");
     }
 
     #[test]

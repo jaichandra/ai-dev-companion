@@ -11,6 +11,7 @@ This repository is a **framework**. It knows how to do those things against a gi
 | `crates/ai-dev-companion/` | The service, as a Rust library crate: jobs and worktrees, the Claude runner and its safety guards (the `guard` subcommand), the HTTP API and MCP server, local history, scheduler and watchers, setup wizard, `doctor`, the `companion` CLI. A distribution crate depends on it and supplies its profile and packs. |
 | `chrome-extension/` | The extension: a feature registry, shared UI, the Settings panel. Its `manifest.json` is generated from the environment profile. |
 | `plugin/` | A Claude Code plugin template (MCP bridge, session-start hook, skills). |
+| `mods/companion-panes/` | A Claude Code mod: a Run pane (`/dev`) for dev servers and other commands, and `/shell` for a shell tab. Its own plugin in the marketplace. |
 | `docs/DESIGN.md` | The technical design: architecture, security notes, how each feature and subsystem works, the extension guide, known limitations. |
 | `scripts/` | `check.sh` (clippy and tests: the gate before a commit), `commit.sh`, `mark-ported.py`. |
 

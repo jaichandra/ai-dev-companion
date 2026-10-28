@@ -17,6 +17,7 @@ Guidance for Claude Code when working in this repository.
 - `chrome-extension/` (JavaScript): one file per feature in `features/`, each calling `PaiRegistry.register(entry)`. Its `manifest.json` is generated from the profile and packs by `extension_manifest.rs`.
 - `crates/ai-dev-companion/src/`: `server.rs` (axum routes, host guard, shared secret), `startup.rs` (builds and runs the service), `mcp.rs` (`POST /mcp`), `packs.rs` + `packs/builtin.rs` (the pack contract and the generic features), `features/<id>/{plan,index,feature}.rs` (pure planning, the job runner, the declaration), `providers.rs` (`GitHost`, `IssueTracker`, `CiServer` and their Bitbucket, GitHub, Jira and Jenkins implementations), `claude*.rs` and `guard/` (the Claude runner and its guards), `jobs.rs`/`job_files.rs`, `history_*.rs`, `scheduler.rs`/`watchers.rs`, `settings*.rs`, `doctor.rs`, `setup.rs`, `companion_cli.rs`, `updater.rs`.
 - Git-host differences live in `prereqs.rs` (`GitRemoteRules`: origin parsing, clone URLs, PR page paths, PR keys).
+- `mods/companion-panes/`: a Claude Code mod (its own plugin; `claude plugin validate|test mods/companion-panes`): the Run pane (`/dev`, `run_output` tool) and `/shell`, which runs `companion open-shell`. Mods run in the engine's own sandboxed environment, so `$` is only passed to top-level functions of the module.
 - `plugin/`: the Claude Code plugin template (MCP bridge and session-start hook run the installed binary's `mcp-stdio` and `inbox --brief`; skills).
 
 ## Design decisions to respect

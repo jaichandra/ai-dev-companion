@@ -3,11 +3,11 @@
 
 use std::collections::BTreeMap;
 
-pub const COMMANDS: [&str; 14] = [
+pub const COMMANDS: [&str; 15] = [
     "status", "jobs", "history", "similar", "resume", "forget", "open", "inbox", "digest", "precheck", "hooks",
-    "worktrees", "doctor", "help",
+    "worktrees", "open-shell", "doctor", "help",
 ];
-const VALUE_FLAGS: [&str; 3] = ["--feature", "--search", "--days"];
+const VALUE_FLAGS: [&str; 4] = ["--feature", "--search", "--days", "--cwd"];
 
 fn boolean_flag(arg: &str) -> Option<&'static str> {
     Some(match arg {

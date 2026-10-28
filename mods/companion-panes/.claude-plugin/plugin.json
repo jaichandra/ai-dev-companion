@@ -1,0 +1,7 @@
+{
+  "name": "companion-panes",
+  "version": "0.1.0",
+  "description": "A Run pane for the session: start, watch and stop dev servers and other commands without leaving Claude Code, and open a real shell tab in the same folder",
+  "types": "./types/index.d.ts",
+  "keywords": ["mod", "pane", "run", "dev-server"]
+}

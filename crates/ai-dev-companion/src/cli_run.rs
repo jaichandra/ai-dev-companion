@@ -29,6 +29,7 @@ pub const USAGE: &str = "Usage: companion <command>\n\
                             (PROJ-1234), its saved session, else Claude Code in its worktree.\n\
   forget <key> [--yes]      Delete one item from its local history.\n\
   open <file:line…>         Open a stack-trace line in Cursor.\n\
+  open-shell [--cwd <dir>]  Open a terminal window with a shell in a folder (default: here). macOS only.\n\
   inbox [--all] [--brief]   What the background watchers found for you (--all: seen items too;\n\
                             --brief: one line, or nothing when there is nothing new or the service is down).\n\
   digest                    Your digest: your PRs, reviews waiting on you, your tickets, what's ready.\n\
@@ -74,6 +75,10 @@ pub trait CliDeps: Send + Sync {
     /// The same allow-list as a job's session folder; the default allows nothing.
     fn cwd_allowed(&self, _cwd: &str) -> bool {
         false
+    }
+    /// Opens a new terminal window with a shell in `cwd` (macOS only; the default says so).
+    async fn open_shell(&self, _cwd: &str) -> Result<(), String> {
+        Err("Opening a shell window is only implemented for macOS.".into())
     }
     /// Runs `claude` with `args` in `cwd` in this terminal; its exit code.
     async fn run_claude(&self, args: Vec<String>, cwd: &str) -> i32;
@@ -468,6 +473,15 @@ async fn dispatch<D: CliDeps>(c: &Ctx<'_, D>, command: &str) -> Result<i32, Stri
             c.print(&r, &format!("Opened {}: {}:{}{column} in {}.", one_line(Some(&r["repo"])), one_line(Some(&r["path"])), one_line(Some(&r["line"])), one_line(Some(&r["editor"]))));
             Ok(0)
         }
+        "open-shell" => {
+            let cwd = c.value("cwd").map(|w| d.resolve(&d.cwd(), w)).unwrap_or_else(|| d.cwd());
+            if !d.exists(&cwd) {
+                return Ok(c.fail(&format!("No such folder: {cwd}"), 1));
+            }
+            d.open_shell(&cwd).await?;
+            c.say(&format!("Opened a shell in {cwd}."));
+            Ok(0)
+        }
         other => Ok(c.fail(&format!("Unhandled command \"{other}\"."), 2)),
     }
 }
@@ -603,6 +617,10 @@ mod tests {
         }
         fn cwd_allowed(&self, cwd: &str) -> bool {
             self.allow && cwd.starts_with("/w/")
+        }
+        async fn open_shell(&self, cwd: &str) -> Result<(), String> {
+            self.calls.lock().unwrap().push(json!(["shell", cwd]));
+            Ok(())
         }
         async fn run_claude(&self, args: Vec<String>, cwd: &str) -> i32 {
             self.calls.lock().unwrap().push(json!(["claude", args, cwd]));
@@ -744,6 +762,24 @@ mod tests {
         assert_eq!(bad.main(&["open"]).await, 2);
         assert!(bad.calls().is_empty());
         assert!(bad.err().contains("Open what? Give a location such as src/app/login.ts:42."));
+    }
+
+    #[tokio::test]
+    async fn open_shell_opens_a_window_in_the_given_folder_or_here_and_refuses_a_missing_one() {
+        let mut here = harness(vec![]);
+        here.exists = Box::new(|p| p == "/w");
+        assert_eq!(here.main(&["open-shell"]).await, 0);
+        assert_eq!(here.calls(), [json!(["shell", "/w"])]);
+        assert!(here.out().contains("Opened a shell in /w."));
+        let mut there = harness(vec![]);
+        there.exists = Box::new(|p| p == "/w/sample-app");
+        assert_eq!(there.main(&["open-shell", "--cwd", "sample-app"]).await, 0);
+        assert_eq!(there.calls(), [json!(["shell", "/w/sample-app"])]);
+        let mut gone = harness(vec![]);
+        gone.exists = Box::new(|_| false);
+        assert_eq!(gone.main(&["open-shell", "--cwd", "nope"]).await, 1);
+        assert!(gone.calls().is_empty());
+        assert!(gone.err().contains("No such folder: /w/nope"));
     }
 
     const WT: &str = "/w/sample-app.worktrees/PROJ-7";
