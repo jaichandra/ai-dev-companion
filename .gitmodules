@@ -1,0 +1,3 @@
+[submodule "mods/run-pane"]
+	path = mods/run-pane
+	url = https://github.com/jaichandra/run-pane.git

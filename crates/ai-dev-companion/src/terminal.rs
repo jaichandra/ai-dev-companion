@@ -114,8 +114,8 @@ pub fn session_args() -> Vec<String> {
     args
 }
 
-/// `--plugin-dir <install>/mods/companion-panes` when the running binary sits in an install tree
-/// that has the mod (`<install>/bin/<binary>`, `<install>/mods/companion-panes`), so every
+/// `--plugin-dir <install>/mods/run-pane` when the running binary sits in an install tree
+/// that has the mod (`<install>/bin/<binary>`, `<install>/mods/run-pane`), so every
 /// Claude Code session the companion starts has the Run pane with nothing to install. Nothing
 /// otherwise (a dev build, tests).
 pub fn bundled_mod_args() -> Vec<String> {
@@ -124,7 +124,7 @@ pub fn bundled_mod_args() -> Vec<String> {
 }
 
 fn bundled_mod_args_in(install_dir: &Path) -> Vec<String> {
-    let dir = install_dir.join("mods").join("companion-panes");
+    let dir = install_dir.join("mods").join("run-pane");
     if dir.join(".claude-plugin").join("plugin.json").is_file() {
         vec!["--plugin-dir".into(), dir.to_string_lossy().into_owned()]
     } else {
@@ -439,12 +439,12 @@ mod tests {
     fn the_bundled_mod_is_loaded_only_from_an_install_tree_that_has_it() {
         let d = tempfile::tempdir().unwrap();
         assert!(bundled_mod_args_in(d.path()).is_empty());
-        let manifest = d.path().join("mods/companion-panes/.claude-plugin/plugin.json");
+        let manifest = d.path().join("mods/run-pane/.claude-plugin/plugin.json");
         fs::create_dir_all(manifest.parent().unwrap()).unwrap();
         fs::write(&manifest, "{}").unwrap();
         let args = bundled_mod_args_in(d.path());
         assert_eq!(args[0], "--plugin-dir");
-        assert!(args[1].ends_with("mods/companion-panes"));
+        assert!(args[1].ends_with("mods/run-pane"));
         // A test binary is in no install tree.
         assert!(bundled_mod_args().is_empty());
     }

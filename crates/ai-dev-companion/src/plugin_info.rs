@@ -8,8 +8,8 @@ use serde_json::Value;
 use std::path::{Path, PathBuf};
 
 pub const PLUGIN_NAME: &str = "ai-companion";
-/// The mod (`mods/companion-panes/`) with the Run pane and the shell tab.
-pub const PANES_NAME: &str = "companion-panes";
+/// The mod (`mods/run-pane/`, a submodule: its own repo) with the Run pane and the shell window.
+pub const PANES_NAME: &str = "run-pane";
 
 /// The marketplace is the repo that holds `.claude-plugin/marketplace.json`, so a distribution
 /// names it in its profile (`branding.marketplaceName`); the framework's own repo is
@@ -44,7 +44,7 @@ pub fn plugin_install_text(i: &PluginInstall<'_>) -> String {
     }
     lines.extend([
         String::new(),
-        "The Run pane (/dev) and the shell tab (/shell) are loaded automatically in the Claude Code sessions the companion".into(),
+        "The Run pane (/dev) and the shell window (/shell) are loaded automatically in the Claude Code sessions the companion".into(),
         "opens. To have them in every session you start yourself, also run:".into(),
         String::new(),
         format!("  /plugin install {PANES_NAME}@{}", marketplace_name()),
@@ -137,7 +137,7 @@ mod tests {
         let local = plugin_install_text(&PluginInstall { stable_dir: "/home/me/ai-dev-companion", update_url: Some("/local/repo"), update_ref: None });
         assert!(local.contains("/plugin marketplace add /home/me/ai-dev-companion") && local.contains(&format!("/plugin install {id}")));
         assert!(!local.contains("for the team"));
-        assert!(local.contains(&format!("/plugin install companion-panes@{}", marketplace_name())));
+        assert!(local.contains(&format!("/plugin install run-pane@{}", marketplace_name())));
         let team = plugin_install_text(&PluginInstall { stable_dir: "/s", update_url: Some("https://git.example.com/x.git"), update_ref: Some("release") });
         assert!(team.contains("/plugin marketplace add https://git.example.com/x.git#release"));
         assert!(plugin_install_text(&PluginInstall { stable_dir: "/s", update_url: Some("https://h/x.git"), update_ref: None }).contains("add https://h/x.git\n"));
